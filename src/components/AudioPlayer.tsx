@@ -1,0 +1,235 @@
+import { useEffect, useRef, useState } from 'react';
+import {
+  Play, Pause, SkipBack, SkipForward, Download, Loader2, Check, Trash2, X, Square,
+  Repeat, Gauge, SlidersHorizontal,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import type { Reciter } from '@/data/reciters';
+import { downloadSurahAudio, deleteSurahAudio, isSurahAudioDownloaded } from '@/lib/contentCache';
+import type { SurahPlayer, PlayerVerse } from '@/hooks/useSurahAudio';
+
+interface AudioPlayerProps {
+  reciter: Reciter;
+  chapter: number;
+  surahEnglishName: string;
+  verses: PlayerVerse[];
+  audio: SurahPlayer;
+}
+
+const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
+const TIMES = [
+  { label: '3×', value: 3 },
+  { label: '5×', value: 5 },
+  { label: '7×', value: 7 },
+  { label: '∞', value: 0 },
+];
+
+export default function AudioPlayer({ reciter, chapter, surahEnglishName, verses, audio }: AudioPlayerProps) {
+  const [downloaded, setDownloaded] = useState<boolean | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [dlProgress, setDlProgress] = useState({ done: 0, total: 0 });
+  const [showTools, setShowTools] = useState(false);
+  const [fromVal, setFromVal] = useState(1);
+  const [toVal, setToVal] = useState(1);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const maxAyah = verses.length;
+  const ayahNumbers = verses.map((v) => v.ayah);
+  const downloadable = verses.filter((v) => !!v.audioUrl).map((v) => ({ ayah: v.ayah, url: v.audioUrl as string }));
+
+  useEffect(() => {
+    let active = true;
+    setDownloaded(null);
+    isSurahAudioDownloaded(reciter.apiId, chapter)
+      .then((v) => active && setDownloaded(v))
+      .catch(() => active && setDownloaded(false));
+    return () => {
+      active = false;
+    };
+  }, [reciter.apiId, chapter]);
+
+  useEffect(() => () => abortRef.current?.abort(), [reciter.apiId, chapter]);
+
+  const openTools = () => {
+    const a = audio.playingAyah ?? 1;
+    setFromVal(a);
+    setToVal(a);
+    setShowTools((s) => !s);
+  };
+
+  const handleDownload = async () => {
+    if (!downloadable.length) return;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setDownloading(true);
+    setDlProgress({ done: 0, total: downloadable.length });
+    try {
+      const r = await downloadSurahAudio(reciter.apiId, chapter, downloadable, setDlProgress, controller.signal);
+      if (r.saved === 0) {
+        toast('Download failed', { description: 'Couldn’t reach the audio server for this reciter. Try another reciter or check your connection.' });
+      } else if (r.failed > 0) {
+        setDownloaded(false); // partial — let the user tap again to fill the gaps
+        toast('Partly saved', { description: `${r.saved}/${r.total} ayat saved. Tap download again to finish the rest.` });
+      } else {
+        setDownloaded(true);
+        toast('Saved for offline', { description: `${surahEnglishName} — ${reciter.name}` });
+      }
+    } catch (err) {
+      if ((err as Error)?.name !== 'AbortError') toast('Download failed', { description: 'Check your connection and try again.' });
+    } finally {
+      setDownloading(false);
+      abortRef.current = null;
+    }
+  };
+
+  const handleDelete = async () => {
+    await deleteSurahAudio(reciter.apiId, chapter, ayahNumbers);
+    setDownloaded(false);
+    toast('Removed offline audio', { description: surahEnglishName });
+  };
+
+  const applyRepeat = (times: number) => {
+    const from = Math.min(Math.max(1, fromVal), maxAyah || 1);
+    const to = Math.min(Math.max(from, toVal), maxAyah || 1);
+    audio.setRepeat({ from, to, times });
+    if (!audio.isPlaying) audio.play(from);
+  };
+
+  const pct = dlProgress.total > 0 ? Math.round((dlProgress.done / dlProgress.total) * 100) : 0;
+  const rpt = audio.repeat;
+
+  return (
+    <div className="fixed bottom-0 inset-x-0 z-50 px-3 pb-3 pointer-events-none">
+      <div
+        className="mx-auto max-w-lg rounded-2xl overflow-hidden pointer-events-auto"
+        style={{
+          background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.94), rgba(var(--glass-2), 0.97))',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.18)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          boxShadow: '0 -8px 30px rgba(0, 0, 0, 0.4)',
+        }}
+      >
+        <div className="h-0.5 bg-white/5">
+          <div className="h-full bg-[#14879c] transition-[width] duration-200" style={{ width: `${Math.round(audio.progress * 100)}%` }} />
+        </div>
+
+        {/* Tools panel */}
+        {showTools && (
+          <div className="px-4 py-3 space-y-3 border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <Gauge size={13} className="text-[color:var(--text-muted)]" />
+              <span className="text-[10px] text-[color:var(--text-muted)] uppercase w-12">Speed</span>
+              <div className="flex gap-1 flex-1">
+                {SPEEDS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => audio.setRate(s)}
+                    className="flex-1 py-1 rounded-lg text-[11px] transition-all"
+                    style={{ background: audio.rate === s ? 'rgba(20,135,156,0.25)' : 'rgba(255,255,255,0.04)', color: audio.rate === s ? '#14879c' : 'var(--text-muted)' }}
+                  >
+                    {s}×
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Repeat size={13} className="text-[color:var(--text-muted)]" />
+              <span className="text-[10px] text-[color:var(--text-muted)] uppercase w-12">Repeat</span>
+              <div className="flex items-center gap-1 text-[11px] text-white">
+                <input type="number" min={1} max={maxAyah} value={fromVal}
+                  onChange={(e) => setFromVal(Number(e.target.value))}
+                  className="w-11 px-1 py-1 rounded-md bg-white/5 text-center outline-none" />
+                <span className="text-[color:var(--text-muted)]">→</span>
+                <input type="number" min={1} max={maxAyah} value={toVal}
+                  onChange={(e) => setToVal(Number(e.target.value))}
+                  className="w-11 px-1 py-1 rounded-md bg-white/5 text-center outline-none" />
+              </div>
+              <div className="flex gap-1 flex-1 justify-end">
+                {TIMES.map((t) => {
+                  const on = rpt && rpt.times === t.value && rpt.from === Math.min(fromVal, toVal);
+                  return (
+                    <button key={t.label} onClick={() => applyRepeat(t.value)}
+                      className="px-2 py-1 rounded-lg text-[11px] transition-all"
+                      style={{ background: on ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.04)', color: on ? '#d4af37' : 'var(--text-muted)' }}>
+                      {t.label}
+                    </button>
+                  );
+                })}
+                <button onClick={() => audio.setRepeat(null)}
+                  className="px-2 py-1 rounded-lg text-[11px] transition-all"
+                  style={{ background: !rpt ? 'rgba(20,135,156,0.25)' : 'rgba(255,255,255,0.04)', color: !rpt ? '#14879c' : 'var(--text-muted)' }}>
+                  Off
+                </button>
+              </div>
+            </div>
+            {rpt && (
+              <p className="text-[10px] text-[#d4af37]/80">
+                Repeating ayah {rpt.from}{rpt.to !== rpt.from ? `–${rpt.to}` : ''} · {rpt.times === 0 ? '∞' : `${rpt.times}×`}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-white truncate arabic-text">{reciter.arabicName}</p>
+            <p className="text-[10px] text-[color:var(--text-muted)] truncate">
+              {downloading
+                ? `Downloading… ${dlProgress.done}/${dlProgress.total} (${pct}%)`
+                : audio.playingAyah
+                  ? `${surahEnglishName} · Ayah ${audio.playingAyah}${rpt ? ' · 🔁' : ''}${audio.rate !== 1 ? ` · ${audio.rate}×` : ''}`
+                  : `${surahEnglishName} · ${reciter.style ?? 'Murattal'}`}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button onClick={openTools} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Speed & repeat"
+              style={showTools ? { background: 'rgba(20,135,156,0.15)' } : undefined}>
+              <SlidersHorizontal size={15} className={showTools || rpt || audio.rate !== 1 ? 'text-[#14879c]' : 'text-[color:var(--text-muted)]'} />
+            </button>
+            <button onClick={audio.prev} disabled={!audio.playingAyah || audio.playingAyah <= 1}
+              className="p-2 rounded-lg hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Previous ayah">
+              <SkipBack size={16} className="text-[color:var(--text-muted)]" />
+            </button>
+            <button onClick={() => audio.toggle()}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-[#14879c] hover:bg-[#1697ae] transition-all shadow-lg shadow-[#14879c]/30"
+              aria-label={audio.isPlaying ? 'Pause' : 'Play'}>
+              {audio.loading ? <Loader2 size={18} className="text-white animate-spin" />
+                : audio.isPlaying ? <Pause size={18} className="text-white" fill="currentColor" />
+                : <Play size={18} className="text-white ml-0.5" fill="currentColor" />}
+            </button>
+            <button onClick={audio.next} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Next ayah">
+              <SkipForward size={16} className="text-[color:var(--text-muted)]" />
+            </button>
+            {audio.playingAyah && (
+              <button onClick={audio.stop} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Stop">
+                <Square size={14} className="text-[color:var(--text-muted)]" fill="currentColor" />
+              </button>
+            )}
+          </div>
+
+          <div className="pl-1 border-l border-white/10">
+            {downloading ? (
+              <button onClick={() => abortRef.current?.abort()} className="relative p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Cancel download" title={`Downloading ${pct}% — tap to cancel`}>
+                <Loader2 size={18} className="text-[#14879c] animate-spin" />
+                <X size={10} className="text-white absolute inset-0 m-auto" />
+              </button>
+            ) : downloaded ? (
+              <button onClick={handleDelete} className="group p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Remove offline audio" title="Saved offline — tap to remove">
+                <Check size={18} className="text-emerald-400 group-hover:hidden" />
+                <Trash2 size={18} className="text-red-400 hidden group-hover:block" />
+              </button>
+            ) : (
+              <button onClick={handleDownload} disabled={!downloadable.length} className="p-2 rounded-lg hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Download for offline" title="Download this surah for offline listening">
+                <Download size={18} className="text-[color:var(--text-muted)]" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

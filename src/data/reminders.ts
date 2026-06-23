@@ -1,0 +1,48 @@
+// "The Heartbeat" — gentle, hope-instilling spiritual reminders.
+// Tone: soft, encouraging, non-judgmental, free of harshness or extremism.
+// Shown on app-open and dispatched as scheduled local notifications.
+
+export interface Reminder { ar: string; en: string }
+
+export const REMINDERS: Reminder[] = [
+  { ar: 'صلِّ على النبي ﷺ، فالصلاةُ عليه نورٌ لقلبك وراحةٌ لروحك.', en: 'Send blessings upon the Prophet ﷺ — it brings light to the heart.' },
+  { ar: 'لا تنسَ ذكر الله؛ ﴿أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ﴾.', en: 'Remember Allah — in His remembrance hearts find peace.' },
+  { ar: 'رحمةُ الله أوسعُ من ذنوبك، فلا تيأس من رَوحِ الله.', en: 'Allah’s mercy is vaster than your sins — never despair.' },
+  { ar: '﴿وَتَوَكَّلْ عَلَى الْحَيِّ الَّذِي لَا يَمُوتُ﴾ — ضع همّك عنده وارتَح.', en: 'Put your trust in the Ever-Living who never dies.' },
+  { ar: 'ابتسامتك في وجه أخيك صدقة، فابدأ يومك بخير.', en: 'A smile to your brother is charity — begin your day with one.' },
+  { ar: 'احفظ لسانك؛ فالكلمةُ الطيبة صدقة، والصمتُ عن الأذى سلامة.', en: 'Guard your tongue — a kind word is charity, and silence is safety.' },
+  { ar: 'استغفر الله؛ فمن لزم الاستغفار جعل الله له من كل همٍّ فرجًا.', en: 'Seek forgiveness — it opens a way out of every worry.' },
+  { ar: 'أوقاتُ الصلاة محطّاتُ راحة، فلا تجعل الدنيا تشغلك عنها.', en: 'Prayer is your rest — don’t let the world keep you from it.' },
+  { ar: 'قراءةُ آيةٍ بتدبّر خيرٌ من قراءةِ كثيرٍ بغفلة.', en: 'One verse pondered is better than many read absentmindedly.' },
+  { ar: 'البِرُّ بالوالدين بابٌ من أبواب الجنة، فأكرِمهما اليوم.', en: 'Kindness to parents is a gate to Paradise — honor them today.' },
+  { ar: 'الدنيا دارُ ممرٍّ لا دار مقَر، فلا تتعلّق بما يزول.', en: 'This world is a passage, not a home — don’t cling to what fades.' },
+  { ar: 'سبحان الله وبحمده، مئة مرة تُحَطُّ بها الخطايا وإن كانت كزبد البحر.', en: '“Subhan Allah wa bihamdihi” 100× erases sins like sea-foam.' },
+  { ar: 'لا تحقرنّ من المعروف شيئًا، ولو أن تلقى أخاك بوجهٍ طلق.', en: 'Belittle no good deed — even meeting others cheerfully counts.' },
+  { ar: 'حُسنُ الظنّ بالله عبادة، فأحسِن ظنّك به فهو عند ظنّ عبده.', en: 'Think well of Allah — He is as His servant expects of Him.' },
+  { ar: 'الصبرُ مفتاحُ الفرج، ومع العُسر يُسرًا ثم يُسرًا.', en: 'Patience unlocks relief — with hardship comes ease, then more ease.' },
+  { ar: 'اشكر الله على نعمةٍ تغفل عنها الآن: عينٌ تُبصر، وقلبٌ ينبض.', en: 'Thank Allah for a blessing you overlook now — sight, a beating heart.' },
+  { ar: 'الدعاءُ سلاحُ المؤمن، فارفع يديك ولا تستصغر حاجة.', en: 'Du‘a is the believer’s strength — raise your hands for anything.' },
+  { ar: 'صلةُ الرحم تزيد في العمر وتبارك في الرزق، فصِل من قطعك.', en: 'Keeping family ties brings barakah — reach out today.' },
+  { ar: 'لا تؤجّل توبتك؛ فبابُ الله مفتوحٌ ما لم تَطلع الشمس من مغربها.', en: 'Don’t delay turning back — the door of repentance stays open.' },
+  { ar: 'الغيبةُ تأكل الحسنات؛ فاحفظ لأخيك في غيبته كما تحبّ أن يُحفظ لك.', en: 'Backbiting consumes good deeds — protect others as you’d be protected.' },
+  { ar: 'القرآنُ ربيعُ القلب، فاجعل لك منه وِردًا كلَّ يوم.', en: 'The Qur’an is the heart’s spring — keep a daily portion of it.' },
+  { ar: 'إذا أحزنك ذنبٌ ففرحُ الله بتوبتك أعظم، فعُد إليه.', en: 'If a sin grieves you, Allah’s joy at your return is greater.' },
+  { ar: 'أعطِ ولو القليل؛ فالصدقة تُطفئ الخطيئة كما يُطفئ الماء النار.', en: 'Give, even a little — charity extinguishes sins like water on fire.' },
+  { ar: 'لا تنشغل بعيوب الناس عن إصلاح نفسك؛ طوبى لمن شغله عيبُه.', en: 'Don’t let others’ faults distract you from bettering yourself.' },
+  { ar: 'احفظ بصرك عمّا حرّم الله؛ فطهارةُ القلب تبدأ من غضّ البصر.', en: 'Lower your gaze — purity of heart begins there.' },
+  { ar: 'قل: لا حول ولا قوة إلا بالله، كنزٌ من كنوز الجنة.', en: '“La hawla wa la quwwata illa billah” — a treasure of Paradise.' },
+  { ar: 'الوقتُ أنفاسٌ معدودة، فلا تنفقها فيما لا ينفعك في آخرتك.', en: 'Time is counted breaths — don’t spend them on the worthless.' },
+  { ar: 'كن رحيمًا بمن في الأرض يرحمك من في السماء.', en: 'Be merciful to those on earth, and the One above will be merciful to you.' },
+  { ar: 'اللهمّ اجعل القرآن ربيع قلوبنا ونور صدورنا.', en: 'O Allah, make the Qur’an the spring of our hearts.' },
+  { ar: 'لا تيأس من شخصٍ تدعو له بالهداية؛ فقلوب العباد بين أصبعَي الرحمن.', en: 'Never give up praying for someone’s guidance — hearts are in Allah’s hand.' },
+  { ar: 'حافظ على أذكار الصباح والمساء؛ فهي حصنُك من كل سوء.', en: 'Keep the morning & evening adhkar — your fortress from harm.' },
+  { ar: 'الرضا بقضاء الله راحةٌ لا يعرفها إلا من ذاقها.', en: 'Contentment with Allah’s decree is a peace only the tasting know.' },
+  { ar: 'تذكّر الموت يُلين القلب القاسي ويزهّد في فضول الدنيا.', en: 'Remembering death softens the heart and frees it from excess.' },
+  { ar: 'أحسِن إلى من أساء إليك؛ فإذا الذي بينك وبينه عداوة كأنه وليٌّ حميم.', en: 'Repel evil with good, and an enemy may become a close friend.' },
+  { ar: 'الجنةُ أقربُ إلى أحدكم من شِراك نعله، فلا تستبعد رحمة الله.', en: 'Paradise is nearer than your sandal-strap — don’t deem mercy far.' },
+  { ar: 'سَمِّ الله قبل عملك، فالبركةُ في البدء باسمه.', en: 'Begin with Allah’s name — barakah lies in starting with Him.' },
+  { ar: 'قلبٌ شاكرٌ ولسانٌ ذاكرٌ وزوجةٌ صالحة، خيرُ ما يكنزه المرء.', en: 'A grateful heart, a remembering tongue — the best of treasures.' },
+  { ar: 'لا تجعل الهاتف يسرق خشوعك؛ أعطِ لقلبك حظَّه من السكينة.', en: 'Don’t let the screen steal your stillness — give your heart calm.' },
+  { ar: 'من ستر مسلمًا ستره الله في الدنيا والآخرة.', en: 'Whoever shields a believer, Allah shields them here and hereafter.' },
+  { ar: 'ادعُ لإخوانك بظهر الغيب، فالملَك يقول: ولك بمثل.', en: 'Pray for others in their absence — the angel says: “and the same for you.”' },
+];

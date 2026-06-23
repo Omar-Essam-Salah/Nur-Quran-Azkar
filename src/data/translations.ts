@@ -1,0 +1,31 @@
+// Translation metadata. The full catalogue (126 across 69 languages) is fetched
+// from the API on demand (see useTranslationsList); this file holds the default
+// and a verified "popular" shortlist for quick, offline-friendly labelling.
+
+export interface TranslationInfo {
+  id: number;
+  name: string;
+  language: string;
+}
+
+export const DEFAULT_TRANSLATION_IDS = [131]; // Dr. Mustafa Khattab — The Clear Quran (English)
+
+// Verified against api.quran.com /resources/translations.
+export const POPULAR_TRANSLATIONS: TranslationInfo[] = [
+  { id: 131, name: 'Dr. Mustafa Khattab — The Clear Quran', language: 'english' },
+  { id: 20, name: 'Saheeh International', language: 'english' },
+  { id: 19, name: 'Pickthall', language: 'english' },
+  { id: 85, name: 'M.A.S. Abdel Haleem', language: 'english' },
+  { id: 84, name: 'T. Usmani', language: 'english' },
+  { id: 95, name: 'A. Maududi (Tafhim)', language: 'english' },
+  { id: 134, name: 'King Fahad Complex', language: 'indonesian' },
+  { id: 779, name: 'Rashid Maash', language: 'french' },
+];
+
+export function translationLabel(id: number, catalogue: TranslationInfo[]): string {
+  const all = [...POPULAR_TRANSLATIONS, ...catalogue];
+  const found = all.find((t) => t.id === id);
+  if (!found) return `Translation #${id}`;
+  const lang = found.language.charAt(0).toUpperCase() + found.language.slice(1);
+  return `${found.name} · ${lang}`;
+}

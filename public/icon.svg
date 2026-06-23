@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c2f44"/>
+      <stop offset="1" stop-color="#07151d"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3d98b"/>
+      <stop offset="0.5" stop-color="#d4af37"/>
+      <stop offset="1" stop-color="#a8801f"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- subtle ornamental ring -->
+  <circle cx="256" cy="256" r="170" fill="none" stroke="#d4af37" stroke-opacity="0.18" stroke-width="2"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#14879c" stroke-opacity="0.18" stroke-width="2"/>
+  <!-- crescent -->
+  <g transform="translate(256 250)">
+    <path d="M70 0 A92 92 0 1 1 -22 -88 A74 74 0 1 0 70 0 Z" fill="url(#gold)"/>
+  </g>
+  <!-- open book / mushaf -->
+  <g transform="translate(256 312)">
+    <path d="M0 -34 C -34 -52 -84 -52 -112 -38 L -112 44 C -84 30 -34 30 0 48 C 34 30 84 30 112 44 L 112 -38 C 84 -52 34 -52 0 -34 Z"
+          fill="#0c2f44" stroke="url(#gold)" stroke-width="6" stroke-linejoin="round"/>
+    <line x1="0" y1="-30" x2="0" y2="46" stroke="url(#gold)" stroke-width="5"/>
+    <path d="M-92 -22 C -68 -32 -32 -32 -10 -20" fill="none" stroke="#14879c" stroke-width="4" stroke-opacity="0.8"/>
+    <path d="M92 -22 C 68 -32 32 -32 10 -20" fill="none" stroke="#14879c" stroke-width="4" stroke-opacity="0.8"/>
+  </g>
+  <!-- star -->
+  <circle cx="256" cy="120" r="7" fill="#f3d98b"/>
+</svg>

@@ -1,0 +1,50 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ───────────────────────────────────────────────────────────────────────────
+# Third-party media that is NOT owned by this project (kept out of the repo):
+#  • public/data   — generated from the quran.com API by the scripts in scripts/
+#                    (run `npm run setup:content` to regenerate it locally).
+#  • public/adhan  — adhan recordings owned by their reciters; add licensed
+#                    files locally. The app also streams audio, so it still runs.
+# ───────────────────────────────────────────────────────────────────────────
+public/data/
+public/adhan/
+
+# Capacitor / Android build artifacts (the android/ source is kept)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/assets/public/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Misc
+.capacitor/
+*.tmp
+*.bak
