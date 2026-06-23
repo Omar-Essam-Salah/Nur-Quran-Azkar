@@ -44,13 +44,9 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
       previewRef.current.onended = () => setPreviewing(null);
     }
     const a = previewRef.current;
-    // Unlock the element inside the click gesture so the later play() (after the
-    // fetch await) isn't blocked by the autoplay policy.
-    try {
-      a.src = SILENT_AUDIO;
-      const up = a.play();
-      if (up) up.then(() => { if (a.currentSrc.startsWith('data:')) a.pause(); }).catch(() => {});
-    } catch { /* ignore */ }
+    // Warm up audio on a SEPARATE throwaway element (never the preview element)
+    // so the later play() after the fetch isn't blocked by the autoplay policy.
+    try { const s = new Audio(SILENT_AUDIO); s.volume = 0; const up = s.play(); if (up) up.then(() => s.pause()).catch(() => {}); } catch { /* ignore */ }
     try {
       setPreviewing(r.id);
       setPreviewLoading(true);

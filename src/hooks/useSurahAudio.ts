@@ -291,18 +291,21 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
     setRepeatState(null);
   }, [chapter, reciterApiId]);
 
-  // Unlock the audio element on the first user interaction anywhere, so the
-  // first programmatic play() always succeeds (fixes the first-ayah / default
-  // reciter "no sound" issue).
+  // Warm up audio playback on the first user interaction using a SEPARATE,
+  // throwaway element — NEVER the player's own element. Playing a 0-length clip
+  // on the real element fired its `ended`/`play` events and made it jump across
+  // ayat with a snow flicker. A gesture-initiated play on any element grants the
+  // document the audio permission that the real player then inherits.
   useEffect(() => {
+    let done = false;
     const unlock = () => {
-      const a = audioRef.current as (HTMLAudioElement & { _unlocked?: boolean }) | null;
-      if (!a || a._unlocked) return;
-      a._unlocked = true;
+      if (done) return;
+      done = true;
       try {
-        a.src = SILENT_AUDIO;
-        const p = a.play();
-        if (p) p.then(() => { if (a.currentSrc.startsWith('data:')) { a.pause(); a.currentTime = 0; } }).catch(() => {});
+        const silent = new Audio(SILENT_AUDIO);
+        silent.volume = 0;
+        const p = silent.play();
+        if (p) p.then(() => silent.pause()).catch(() => {});
       } catch { /* ignore */ }
     };
     window.addEventListener('pointerdown', unlock, true);
