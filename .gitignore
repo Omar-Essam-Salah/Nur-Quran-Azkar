@@ -46,7 +46,19 @@ android/app/src/main/assets/public/
 *.keystore
 *.jks
 
+# iOS (Capacitor) — keep the project, ignore build artifacts & generated assets
+ios/App/Pods/
+ios/App/App/public/
+ios/App/build/
+ios/App/DerivedData/
+ios/App/output/
+ios/App/Podfile.lock
+**/xcuserdata/
+*.xcuserstate
+
 # Misc
 .capacitor/
 *.tmp
 *.bak
+ios_install.log
+ios_add.log
