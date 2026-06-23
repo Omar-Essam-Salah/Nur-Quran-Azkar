@@ -262,15 +262,25 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
         setProgress(0);
       }
     };
+    const onError = () => {
+      // A reciter's file failed to load (bad URL / offline). Reset cleanly so the
+      // UI isn't stuck on "loading" and the snow layer reappears.
+      if (audio.currentSrc.startsWith('data:')) return;
+      setLoading(false);
+      setIsPlaying(false);
+      document.body.classList.remove('reciting');
+    };
     audio.addEventListener('play', onPlay);
     audio.addEventListener('pause', onPause);
     audio.addEventListener('timeupdate', onTime);
     audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
     return () => {
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('timeupdate', onTime);
       audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
     };
   }, [playAyah]);
 

@@ -105,6 +105,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       const a = new Audio();
       a.onplay = () => document.body.classList.add('reciting');
       a.onpause = () => document.body.classList.remove('reciting');
+      a.onerror = () => { document.body.classList.remove('reciting'); setAudioPlaying(false); setAudioLoading(false); };
       a.onended = () => {
         idxRef.current += 1;
         if (idxRef.current < playlistRef.current.length) {
