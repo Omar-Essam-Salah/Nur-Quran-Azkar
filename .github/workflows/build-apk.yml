@@ -1,0 +1,73 @@
+name: Build Android APK
+
+# Builds the debug APK in GitHub's cloud so a new build can be produced without
+# the local laptop. Runs on every push to main and on a manual click
+# (Actions tab → "Build Android APK" → Run workflow). The APK is uploaded as a
+# workflow artifact and also published to the "ci-latest" pre-release for an
+# easy direct download (works great from a phone).
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'ios/**', 'CREDITS*', 'LICENSE']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Regenerate offline Qur'an / Hadith / Asma data
+        run: npm run setup:content
+
+      - name: Build web
+        run: npm run build
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Capacitor sync (Android)
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --warning-mode none
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk Nur-Quran-Azkar.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nur-Quran-Azkar-apk
+          path: Nur-Quran-Azkar.apk
+
+      - name: Publish to "ci-latest" pre-release (easy phone download)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view ci-latest >/dev/null 2>&1; then
+            gh release upload ci-latest Nur-Quran-Azkar.apk --clobber
+          else
+            gh release create ci-latest Nur-Quran-Azkar.apk \
+              --prerelease --title "Latest CI build" \
+              --notes "Auto-built from main. Note: bundled adhan recordings are excluded from cloud builds for licensing; streamed recitation audio still works."
+          fi
