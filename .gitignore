@@ -32,6 +32,8 @@ dist-ssr
 # ───────────────────────────────────────────────────────────────────────────
 public/data/
 public/adhan/
+# Adhan recording bundled into the APK as a notification sound (not ours to ship)
+android/app/src/main/res/raw/*.mp3
 
 # Capacitor / Android build artifacts (the android/ source is kept)
 android/.gradle/

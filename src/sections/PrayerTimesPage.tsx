@@ -121,6 +121,17 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
       try {
         const perm = await LocalNotifications.requestPermissions();
         if (perm.display !== 'granted') return;
+        // Android 8+ ties the notification sound to its channel, so create a
+        // dedicated high-importance channel that plays the bundled adhan.
+        await LocalNotifications.createChannel({
+          id: 'adhan',
+          name: 'Adhan · الأذان',
+          description: 'Prayer-time adhan',
+          sound: 'adhan.mp3',
+          importance: 5,
+          visibility: 1,
+          vibration: true,
+        }).catch(() => {});
         const ids = [1001, 1002, 1003, 1004, 1005];
         await LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) }).catch(() => {});
         const prayers: [string, string][] = [['Fajr', 'الفجر'], ['Dhuhr', 'الظهر'], ['Asr', 'العصر'], ['Maghrib', 'المغرب'], ['Isha', 'العشاء']];
@@ -130,7 +141,15 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
             const [h, m] = timings[key].split(':').map(Number);
             const at = new Date();
             at.setHours(h, m, 0, 0);
-            return { id: ids[i], title: t('Prayer Time', 'حان وقت الصلاة'), body: `${t('It is now time for', 'حان الآن وقت صلاة')} ${ar}`, schedule: { at } };
+            return {
+              id: ids[i],
+              title: t('Prayer Time', 'حان وقت الصلاة'),
+              body: `${t('It is now time for', 'حان الآن وقت صلاة')} ${ar}`,
+              schedule: { at },
+              channelId: 'adhan',
+              sound: 'adhan.mp3',
+              smallIcon: 'ic_stat_icon',
+            };
           })
           .filter((n) => n.schedule.at > now);
         if (notifications.length) await LocalNotifications.schedule({ notifications });

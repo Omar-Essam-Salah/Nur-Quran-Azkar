@@ -26,6 +26,13 @@ const juzForPage = (page: number) => {
   for (let i = 0; i < JUZ_START_PAGES.length; i++) if (page >= JUZ_START_PAGES[i]) juz = i + 1;
   return juz;
 };
+// Each juz' is two ahzab; the 2nd hizb begins around the juz' midpoint.
+const hizbForPage = (page: number) => {
+  const juz = juzForPage(page);
+  const start = JUZ_START_PAGES[juz - 1];
+  const end = JUZ_START_PAGES[juz] ?? TOTAL_PAGES + 1;
+  return (juz - 1) * 2 + (page >= start + (end - start) / 2 ? 2 : 1);
+};
 
 export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const [page, setPage] = useState(() => {
@@ -57,6 +64,9 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const [audioLoading, setAudioLoading] = useState(false);
   const [currentVerseKey, setCurrentVerseKey] = useState<string | null>(null);
   const [tafsirFollow, setTafsirFollow] = useState(false);
+  const [pageVerseKeys, setPageVerseKeys] = useState<string[]>([]);
+  const audioPlayingRef = useRef(false);
+  audioPlayingRef.current = audioPlaying;
 
   const loadAndPlayPage = async (p: number) => {
     try {
@@ -131,7 +141,25 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   // Stop audio on unmount.
   useEffect(() => () => { audioElRef.current?.pause(); document.body.classList.remove('reciting'); }, []);
 
-  const cycleZoom = () => setZoom((z) => ZOOM_LEVELS[(ZOOM_LEVELS.indexOf(z) + 1) % ZOOM_LEVELS.length]);
+  // Tafsir works WITHOUT recitation: when the window is open, load the current
+  // page's ayat so the user can read tafsir and step through ayat manually.
+  useEffect(() => {
+    if (!tafsirFollow) return;
+    let active = true;
+    fetch(`https://api.quran.com/api/v4/verses/by_page/${page}?per_page=50&fields=verse_key`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!active) return;
+        const keys = ((d?.verses ?? []) as { verse_key: string }[]).map((v) => v.verse_key);
+        setPageVerseKeys(keys);
+        if (!audioPlayingRef.current) setCurrentVerseKey(keys[0] ?? null); // default to first ayah
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [tafsirFollow, page]);
+
+  const zoomIn = () => setZoom((z) => ZOOM_LEVELS[Math.min(ZOOM_LEVELS.length - 1, ZOOM_LEVELS.indexOf(z) + 1)]);
+  const zoomOut = () => setZoom((z) => ZOOM_LEVELS[Math.max(0, ZOOM_LEVELS.indexOf(z) - 1)]);
   const commitPage = () => {
     const n = Number(pageStr);
     if (n >= 1 && n <= TOTAL_PAGES) setPage(n);
@@ -218,17 +246,6 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
                 : <Play size={18} className="text-[#14879c]" fill="currentColor" />}
           </button>
           <button
-            onClick={cycleZoom}
-            className="p-2 rounded-xl hover:bg-white/10 transition-all relative"
-            title="تكبير / تصغير"
-            aria-label="Zoom"
-          >
-            {zoom > 1
-              ? <ZoomOut size={18} className="text-[color:var(--text-muted)]" />
-              : <ZoomIn size={18} className="text-[color:var(--text-muted)]" />}
-            {zoom > 1 && <span className="absolute -bottom-0.5 -right-0.5 text-[8px] font-bold text-[#d4af37]">{zoom}×</span>}
-          </button>
-          <button
             onClick={toggleBookmark}
             className="p-2 rounded-xl hover:bg-white/10 transition-all"
             title={isBookmarked ? 'إزالة العلامة' : 'حفظ الصفحة'}
@@ -287,7 +304,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
             loading="lazy"
             decoding="async"
             onLoad={() => setLoaded(true)}
-            onDoubleClick={cycleZoom}
+            onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
             className="w-full h-auto rounded-xl transition-opacity duration-300"
             style={{
               opacity: loaded ? 1 : 0,
@@ -299,8 +316,28 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
         </div>
       </div>
 
+      {/* Floating zoom controls — affect only the page image, not the UI */}
+      <div className="fixed right-3 bottom-28 z-30 flex flex-col items-center gap-2">
+        <button onClick={zoomIn} disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
+          className="w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
+          style={{ background: 'rgba(var(--glass-2), 0.92)', border: '1px solid rgba(var(--hair), 0.15)', backdropFilter: 'blur(6px)' }}
+          aria-label="Zoom in">
+          <ZoomIn size={18} className="text-white" />
+        </button>
+        {zoom > 1 && <span className="text-[10px] font-bold text-[#d4af37]">{zoom}×</span>}
+        <button onClick={zoomOut} disabled={zoom <= ZOOM_LEVELS[0]}
+          className="w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
+          style={{ background: 'rgba(var(--glass-2), 0.92)', border: '1px solid rgba(var(--hair), 0.15)', backdropFilter: 'blur(6px)' }}
+          aria-label="Zoom out">
+          <ZoomOut size={18} className="text-white" />
+        </button>
+      </div>
+
       {/* Pager */}
       <div className="sticky bottom-0 px-4 pb-4">
+        <p className="mx-auto max-w-md text-center text-[10px] text-[color:var(--text-muted)] mb-1.5 arabic-text">
+          الجزء {juzForPage(page)} · الحزب {hizbForPage(page)} · الصفحة {page} من {TOTAL_PAGES}
+        </p>
         <div
           className="mx-auto max-w-md flex items-center gap-3 rounded-2xl px-3 py-2"
           style={{
@@ -371,9 +408,10 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
         </div>
       </div>
 
-      {/* Floating translucent tafsir window that follows the recitation */}
+      {/* Floating translucent tafsir window — follows recitation, or step through
+          ayat manually with the arrows (works without playing audio). */}
       {tafsirFollow && currentVerseKey && (
-        <MushafTafsirPanel verseKey={currentVerseKey} onClose={() => setTafsirFollow(false)} />
+        <MushafTafsirPanel verseKey={currentVerseKey} keys={pageVerseKeys} onSelect={setCurrentVerseKey} onClose={() => setTafsirFollow(false)} />
       )}
 
       {/* Page index (jump to any page, grouped by Juz') */}
@@ -415,10 +453,11 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
 
 // Translucent panel that shows the tafsir of the ayah currently being recited
 // in the mushaf, updating automatically as the recitation advances.
-function MushafTafsirPanel({ verseKey, onClose }: { verseKey: string; onClose: () => void }) {
+function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: string; keys: string[]; onSelect: (k: string) => void; onClose: () => void }) {
   const [text, setText] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [ayahText, setAyahText] = useState('');
+  const idx = keys.indexOf(verseKey);
 
   // The recited ayah's own text (offline) — shown highlighted in yellow.
   useEffect(() => {
@@ -447,22 +486,32 @@ function MushafTafsirPanel({ verseKey, onClose }: { verseKey: string; onClose: (
         className="mx-auto max-w-md rounded-2xl p-3 pointer-events-auto"
         style={{ background: 'rgba(var(--glass-2), 0.86)', border: '1px solid rgba(212,175,55,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
       >
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px] text-[#d4af37] arabic-text">الآية {verseKey} · تفسير السعدي</span>
-          <button onClick={onClose} className="p-0.5 rounded hover:bg-white/10" aria-label="Close">
-            <X size={15} className="text-[color:var(--text-muted)]" />
-          </button>
+        <div className="flex items-center justify-between mb-1.5 gap-2">
+          <span className="text-[11px] text-[#d4af37] arabic-text flex-1 truncate">الآية {verseKey} · تفسير السعدي</span>
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => idx > 0 && onSelect(keys[idx - 1])} disabled={idx <= 0}
+              className="p-1 rounded hover:bg-white/10 disabled:opacity-30" aria-label="Previous ayah" title="الآية السابقة">
+              <ChevronRight size={15} className="text-[color:var(--text-muted)]" />
+            </button>
+            <button onClick={() => idx >= 0 && idx < keys.length - 1 && onSelect(keys[idx + 1])} disabled={idx < 0 || idx >= keys.length - 1}
+              className="p-1 rounded hover:bg-white/10 disabled:opacity-30" aria-label="Next ayah" title="الآية التالية">
+              <ChevronLeft size={15} className="text-[color:var(--text-muted)]" />
+            </button>
+            <button onClick={onClose} className="p-1 rounded hover:bg-white/10" aria-label="Close">
+              <X size={15} className="text-[color:var(--text-muted)]" />
+            </button>
+          </div>
         </div>
 
         {/* Recited ayah — highlighted in yellow, follows the recitation */}
         {ayahText && (
           <p className="arabic-text text-[16px] leading-loose mb-2 px-2.5 py-2 rounded-lg" dir="rtl"
-             style={{ background: 'rgba(212,175,55,0.18)', color: '#fff', border: '1px solid rgba(212,175,55,0.38)' }}>
+             style={{ background: 'rgba(212,175,55,0.18)', color: 'rgb(var(--text-strong-rgb))', border: '1px solid rgba(212,175,55,0.38)' }}>
             {ayahText}
           </p>
         )}
 
-        <div className="overflow-y-auto custom-scrollbar text-[12.5px] text-white/85 arabic-text leading-loose" dir="rtl" style={{ maxHeight: '24vh' }}>
+        <div className="overflow-y-auto custom-scrollbar text-[12.5px] arabic-text leading-loose" dir="rtl" style={{ maxHeight: '24vh', color: 'rgba(var(--text-strong-rgb), 0.85)' }}>
           {loading
             ? <div className="flex justify-center py-4"><Loader2 size={18} className="animate-spin text-[#14879c]" /></div>
             : text

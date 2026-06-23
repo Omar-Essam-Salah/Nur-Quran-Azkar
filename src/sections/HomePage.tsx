@@ -24,6 +24,10 @@ export default function HomePage({
   onToggleSearch
 }: HomePageProps) {
   const { lang, toggle, t } = useI18n();
+  const isAr = lang === 'ar';
+  // Selected language goes on top (large); the other below (small).
+  const primary = (en: string, ar: string) => (isAr ? ar : en);
+  const secondary = (en: string, ar: string) => (isAr ? en : ar);
   const hijriDate = useMemo(() => getHijriDate(), []);
   const gregorianDate = useMemo(() => 
     new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
@@ -151,9 +155,9 @@ export default function HomePage({
           
           <div className="relative">
             <img src="/assets/moon.svg" alt="Moon" className="w-16 h-16 mx-auto opacity-80" />
-            <h2 className="text-3xl font-bold mt-3 gradient-text">Nur</h2>
-            <p className="text-xs text-[color:var(--text-muted)] mt-2 uppercase tracking-wider">Your Daily Devotion</p>
-            <p className="text-xs text-[color:var(--text-muted)]/70 mt-1">Ad-free, private, designed for peace</p>
+            <h2 className="text-3xl font-bold mt-3 gradient-text">{t('Nur', 'نور')}</h2>
+            <p className="text-xs text-[color:var(--text-muted)] mt-2 uppercase tracking-wider arabic-text">{t('Your Daily Devotion', 'عبادتك اليومية')}</p>
+            <p className="text-xs text-[color:var(--text-muted)]/70 mt-1 arabic-text">{t('Ad-free, private, designed for peace', 'بلا إعلانات، خصوصيّة تامة، مصمّم للسكينة')}</p>
           </div>
 
           {/* Daily Verse */}
@@ -183,8 +187,8 @@ export default function HomePage({
                   >
                     <Icon size={20} style={{ color: item.color }} />
                   </div>
-                  <span className="text-[10px] text-[color:var(--text-muted)]">{item.label}</span>
-                  <span className="text-[8px] text-white/30 arabic-text -mt-1">{item.arabic}</span>
+                  <span className={`text-[10px] text-white/80 ${isAr ? 'arabic-text' : ''}`}>{primary(item.label, item.arabic)}</span>
+                  <span className={`text-[8px] text-white/30 -mt-1 ${isAr ? '' : 'arabic-text'}`}>{secondary(item.label, item.arabic)}</span>
                 </button>
               );
             })}
@@ -201,8 +205,8 @@ export default function HomePage({
             <Book size={22} className="text-[#d4af37]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white">Paper Mushaf <span className="arabic-text">· المصحف الشريف</span></p>
-            <p className="text-xs text-[color:var(--text-muted)]">Read the printed Madani Mushaf, page by page</p>
+            <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('Paper Mushaf', 'المصحف الشريف')}</p>
+            <p className="text-xs text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Read the printed Madani Mushaf, page by page', 'اقرأ المصحف المدني المطبوع صفحة بصفحة')}</p>
           </div>
           <div className="w-8 h-8 rounded-full bg-[#d4af37]/15 flex items-center justify-center group-hover:bg-[#d4af37]/25 transition-all">
             <ChevronLeft size={16} className="text-[#d4af37]" />
@@ -216,8 +220,8 @@ export default function HomePage({
               <BookOpen size={18} className="text-[#14879c]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white arabic-text">قصص الأنبياء</p>
-              <p className="text-[10px] text-[color:var(--text-muted)]">Stories of the Prophets</p>
+              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('Stories of the Prophets', 'قصص الأنبياء')}</p>
+              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary('Stories of the Prophets', 'قصص الأنبياء')}</p>
             </div>
           </button>
           <button onClick={() => onNavigate('hadith')} className="glass-card-sm p-4 flex flex-col items-start gap-2 text-left">
@@ -225,8 +229,8 @@ export default function HomePage({
               <ScrollText size={18} className="text-[#d4af37]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white arabic-text">الأربعون النووية</p>
-              <p className="text-[10px] text-[color:var(--text-muted)]">40 Hadith</p>
+              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('40 Hadith', 'الأربعون النووية')}</p>
+              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary('40 Hadith', 'الأربعون النووية')}</p>
             </div>
           </button>
           <button onClick={() => onNavigate('asma')} className="glass-card-sm p-4 flex flex-col items-start gap-2 text-left">
@@ -234,8 +238,8 @@ export default function HomePage({
               <Sparkles size={18} className="text-[#14879c]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white arabic-text">الأسماء الحسنى</p>
-              <p className="text-[10px] text-[color:var(--text-muted)]">99 Names</p>
+              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('99 Names', 'الأسماء الحسنى')}</p>
+              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary('99 Names', 'الأسماء الحسنى')}</p>
             </div>
           </button>
           <button onClick={() => onNavigate('khatma')} className="glass-card-sm p-4 flex flex-col items-start gap-2 text-left">
@@ -243,8 +247,8 @@ export default function HomePage({
               <Target size={18} className="text-[#14879c]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white arabic-text">خطة الختمة</p>
-              <p className="text-[10px] text-[color:var(--text-muted)]">Khatma plan</p>
+              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('Khatma Plan', 'خطة الختمة')}</p>
+              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary('Khatma Plan', 'خطة الختمة')}</p>
             </div>
           </button>
           <button onClick={() => onNavigate('ramadan')} className="glass-card-sm p-4 flex flex-col items-start gap-2 text-left">
@@ -252,8 +256,8 @@ export default function HomePage({
               <Moon size={18} className="text-[#d4af37]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white arabic-text">وضع رمضان</p>
-              <p className="text-[10px] text-[color:var(--text-muted)]">Ramadan</p>
+              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('Ramadan', 'وضع رمضان')}</p>
+              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary('Ramadan', 'وضع رمضان')}</p>
             </div>
           </button>
         </div>
@@ -270,8 +274,8 @@ export default function HomePage({
                 <BookOpen size={20} className="text-[#14879c]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">{lastReadSurah.englishName}</p>
-                <p className="text-xs text-[color:var(--text-muted)]">Verse {lastRead.ayahNumber} of {lastReadSurah.verses}</p>
+                <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{isAr ? lastReadSurah.name : lastReadSurah.englishName}</p>
+                <p className="text-xs text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Verse', 'آية')} {lastRead.ayahNumber} {t('of', 'من')} {lastReadSurah.verses}</p>
               </div>
               <div className="w-8 h-8 rounded-full bg-[#14879c]/20 flex items-center justify-center group-hover:bg-[#14879c]/30 transition-all">
                 <Bookmark size={14} className="text-[#14879c]" />
@@ -288,7 +292,7 @@ export default function HomePage({
               onClick={() => onNavigate('quran')}
               className="text-[10px] text-[#14879c] hover:text-[#14879c]/80 transition-colors"
             >
-              View All
+              {t('View All', 'عرض الكل')}
             </button>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -303,8 +307,8 @@ export default function HomePage({
                     <span className="text-xs font-bold text-[#14879c]">{surah.number}</span>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{surah.name}</p>
-                    <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{surah.arabic}</p>
+                    <p className={`text-sm font-medium text-white truncate ${isAr ? 'arabic-text' : ''}`}>{primary(surah.name, surah.arabic)}</p>
+                    <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary(surah.name, surah.arabic)}</p>
                   </div>
                 </div>
                 <p className="text-[10px] text-[#14879c]/70 mt-2">{surah.reason}</p>
@@ -316,12 +320,12 @@ export default function HomePage({
         {/* Azkar Categories */}
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
-            <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider">Adhkar</h3>
+            <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider">{t('Adhkar', 'الأذكار')}</h3>
             <button 
               onClick={() => onNavigate('azkar')}
               className="text-[10px] text-[#d4af37] hover:text-[#d4af37]/80 transition-colors"
             >
-              View All
+              {t('View All', 'عرض الكل')}
             </button>
           </div>
           <div className="space-y-2">
@@ -338,8 +342,8 @@ export default function HomePage({
                   <Sparkles size={18} style={{ color: azkar.color }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white">{azkar.name}</p>
-                  <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{azkar.arabic}</p>
+                  <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary(azkar.name, azkar.arabic)}</p>
+                  <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary(azkar.name, azkar.arabic)}</p>
                 </div>
                 <div 
                   className="w-6 h-6 rounded-full flex items-center justify-center"
@@ -364,15 +368,15 @@ export default function HomePage({
               <Heart size={20} className="text-[#f472b6]" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-white">Your Bookmarks</p>
-              <p className="text-xs text-[color:var(--text-muted)]">{bookmarksCount} saved items</p>
+              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{t('Your Bookmarks', 'محفوظاتك')}</p>
+              <p className="text-xs text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{bookmarksCount} {t('saved items', 'عنصرًا محفوظًا')}</p>
             </div>
           </button>
         )}
 
         {/* Extra Tools */}
         <div>
-          <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider mb-3 px-1">More Tools</h3>
+          <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider mb-3 px-1">{t('More Tools', 'أدوات أخرى')}</h3>
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => onNavigate('tasbih')}
@@ -382,8 +386,8 @@ export default function HomePage({
                 <span className="text-xl text-[#10b981] font-bold">33</span>
               </div>
               <div>
-                <p className="text-sm font-medium text-white">Tasbih</p>
-                <p className="text-[10px] text-[color:var(--text-muted)]">Digital Counter</p>
+                <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{t('Tasbih', 'السبحة')}</p>
+                <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Digital Counter', 'عدّاد رقمي')}</p>
               </div>
             </button>
             <button
@@ -394,8 +398,8 @@ export default function HomePage({
                 <Bookmark size={20} className="text-[#f472b6]" />
               </div>
               <div>
-                <p className="text-sm font-medium text-white">Bookmarks</p>
-                <p className="text-[10px] text-[color:var(--text-muted)]">Saved Verses</p>
+                <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{t('Bookmarks', 'المحفوظات')}</p>
+                <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Saved Verses', 'آيات محفوظة')}</p>
               </div>
             </button>
           </div>
