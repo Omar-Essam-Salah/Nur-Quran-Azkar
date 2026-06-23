@@ -196,9 +196,9 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     if (touchStartX.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 50) {
-      // swipe right → previous page; swipe left → next page (RTL reading)
-      if (dx > 0) goPrev();
-      else goNext();
+      // RTL mushaf: swipe left→right turns FORWARD (next page); right→left goes back.
+      if (dx > 0) goNext();
+      else goPrev();
     }
     touchStartX.current = null;
   };
