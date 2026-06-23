@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, Clock, Compass, MapPin, Sunrise, Sun, Sunset, Moon, Navigation, Bell, BellOff, Loader2, Volume2, PlayCircle, ChevronDown } from 'lucide-react';
 import type { Page } from '@/types';
 import { computePrayerTimes, getHijriDate } from '@/lib/prayer';
+import { getCachedGeo } from '@/lib/permissions';
 import { useI18n } from '@/i18n';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
@@ -44,13 +45,16 @@ const adhanOptions = [
 
 export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageProps) {
   const { t } = useI18n();
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  // Seed from the cached location so prayer times compute instantly on every
+  // mount (the calculation is local/instant) — no GPS wait, no loading hang.
+  const cachedGeo = useMemo(() => getCachedGeo(), []);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(cachedGeo);
   const [locationError, setLocationError] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   const [timings, setTimings] = useState<Record<string, string> | null>(null);
   const [hijriDate, setHijriDate] = useState<string>('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(cachedGeo === null);
 
   const [adhanEnabled, setAdhanEnabled] = useState(() => localStorage.getItem('nur-adhan-enabled') === '1');
   const [adhanOpen, setAdhanOpen] = useState(false);
@@ -93,21 +97,27 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setLocation(loc);
+          try { localStorage.setItem('nur-geo', JSON.stringify({ ...loc, t: Date.now() })); } catch { /* ignore */ }
         },
         () => {
-          setLocationError('Location access denied. Using Cairo as default.');
-          setLocation({ lat: 30.0444, lng: 31.2357 }); 
-        }
+          // Keep the cached location if we have one; otherwise fall back to Makkah.
+          if (!getCachedGeo()) {
+            setLocationError(t('Location unavailable. Using Makkah as default.', 'تعذّر تحديد الموقع. يُستخدم موقع مكة افتراضيًا.'));
+            setLocation({ lat: 21.3891, lng: 39.8579 });
+          }
+        },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 },
       );
-    } else {
-      setLocation({ lat: 30.0444, lng: 31.2357 });
+    } else if (!location) {
+      setLocation({ lat: 21.3891, lng: 39.8579 });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!location) return;
-    setLoading(true);
     setTimings(computePrayerTimes(location.lat, location.lng));
     setHijriDate(getHijriDate(new Date(), 'en'));
     setLoading(false);

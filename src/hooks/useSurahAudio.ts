@@ -2,6 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAudioBlob } from '@/lib/contentCache';
 import { recordDeed } from '@/lib/ledger';
 
+// A zero-length silent clip used to "unlock" the <audio> element inside the
+// first user gesture, so that a later programmatic play() (which runs AFTER an
+// IndexedDB await and is therefore outside the gesture) isn't blocked by the
+// browser's autoplay policy. This was why the very first ayah / the default
+// reciter often produced no sound.
+export const SILENT_AUDIO =
+  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+
 export interface PlayerVerse {
   ayah: number;
   audioUrl: string | null;
@@ -282,6 +290,28 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
     setLoading(false);
     setRepeatState(null);
   }, [chapter, reciterApiId]);
+
+  // Unlock the audio element on the first user interaction anywhere, so the
+  // first programmatic play() always succeeds (fixes the first-ayah / default
+  // reciter "no sound" issue).
+  useEffect(() => {
+    const unlock = () => {
+      const a = audioRef.current as (HTMLAudioElement & { _unlocked?: boolean }) | null;
+      if (!a || a._unlocked) return;
+      a._unlocked = true;
+      try {
+        a.src = SILENT_AUDIO;
+        const p = a.play();
+        if (p) p.then(() => { if (a.currentSrc.startsWith('data:')) { a.pause(); a.currentTime = 0; } }).catch(() => {});
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('pointerdown', unlock, true);
+    window.addEventListener('touchstart', unlock, true);
+    return () => {
+      window.removeEventListener('pointerdown', unlock, true);
+      window.removeEventListener('touchstart', unlock, true);
+    };
+  }, []);
 
   useEffect(() => {
     return () => {

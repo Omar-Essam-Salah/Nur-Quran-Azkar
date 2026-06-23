@@ -143,7 +143,7 @@ const AyahView = memo(function AyahView({
 export default function QuranReader({
   surahNumber, initialAyah, onBack, onBookmark, isBookmarked, updateLastRead, settings,
 }: QuranReaderProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [showTranslation, setShowTranslation] = useState(settings.showTranslation);
   const [fontSize, setFontSize] = useState(settings.arabicFontSize);
   const [showControls, setShowControls] = useState(false);
@@ -320,8 +320,8 @@ export default function QuranReader({
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-semibold text-white truncate">{surah.englishName}</h1>
-            <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{surah.name} · {surah.verses} {t('verses', 'آية')}</p>
+            <h1 className={`text-base font-semibold text-white truncate ${lang === 'ar' ? 'arabic-text' : ''}`}>{lang === 'ar' ? surah.name : surah.englishName}</h1>
+            <p className={`text-[10px] text-[color:var(--text-muted)] ${lang === 'ar' ? '' : 'arabic-text'}`}>{lang === 'ar' ? surah.englishName : surah.name} · {surah.verses} {t('verses', 'آية')}</p>
           </div>
           <div className="flex items-center gap-1">
             <button onClick={() => setShowControls(!showControls)} className="p-2 rounded-xl hover:bg-white/10 transition-all">
@@ -452,11 +452,11 @@ export default function QuranReader({
         {/* Footer nav */}
         <div className="flex items-center justify-between pt-4">
           <button onClick={() => goToSurah(surahNumber - 1)} disabled={surahNumber <= 1} className="glass-btn flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-30">
-            <ChevronLeft size={16} /> Previous
+            <ChevronLeft size={16} /> {t('Previous', 'السابقة')}
           </button>
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-[10px] text-[color:var(--text-muted)] hover:text-white transition-colors">{t('Top', 'أعلى')}</button>
           <button onClick={() => goToSurah(surahNumber + 1)} disabled={surahNumber >= 114} className="glass-btn flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-30">
-            Next <ChevronRight size={16} />
+            {t('Next', 'التالية')} <ChevronRight size={16} />
           </button>
         </div>
         <div className="h-8" />
@@ -468,7 +468,7 @@ export default function QuranReader({
           <div className="w-full max-w-lg bg-[color:var(--app-bg)] border border-white/10 rounded-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
               <div>
-                <h3 className="text-white font-semibold text-sm">Tafsir Ayah {tafsirVerse.ayah}</h3>
+                <h3 className="text-white font-semibold text-sm arabic-text">{t('Tafsir · Ayah', 'تفسير · آية')} {tafsirVerse.ayah}</h3>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {TAFSIRS.map(t => (
                     <button
@@ -491,7 +491,7 @@ export default function QuranReader({
               ) : tafsirData ? (
                 <div dangerouslySetInnerHTML={{ __html: tafsirData.text }} className="tafsir-html" />
               ) : (
-                <p className="text-center py-10">Tafsir not available. Check connection.</p>
+                <p className="text-center py-10 arabic-text">{t('Tafsir not available. Check your connection.', 'التفسير غير متاح. تحقّق من اتصالك بالإنترنت.')}</p>
               )}
             </div>
           </div>

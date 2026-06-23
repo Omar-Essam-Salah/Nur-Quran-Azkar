@@ -5,6 +5,7 @@ import { RECITERS, everyayahUrl, type Reciter } from '@/data/reciters';
 import { useTranslationsList } from '@/hooks/useTranslationsList';
 import { POPULAR_TRANSLATIONS, DEFAULT_TRANSLATION_IDS, translationLabel } from '@/data/translations';
 import { absoluteAudioUrl } from '@/lib/quranApi';
+import { SILENT_AUDIO } from '@/hooks/useSurahAudio';
 import { exportData, importData } from '@/lib/backup';
 import { isPrayerDnd, setPrayerDnd } from '@/lib/reminders';
 import { useI18n } from '@/i18n';
@@ -38,11 +39,19 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
   const previewReciter = async (r: Reciter) => {
     if (previewing === r.id) { stopPreview(); return; }
     stopPreview();
+    if (!previewRef.current) {
+      previewRef.current = new Audio();
+      previewRef.current.onended = () => setPreviewing(null);
+    }
+    const a = previewRef.current;
+    // Unlock the element inside the click gesture so the later play() (after the
+    // fetch await) isn't blocked by the autoplay policy.
     try {
-      if (!previewRef.current) {
-        previewRef.current = new Audio();
-        previewRef.current.onended = () => setPreviewing(null);
-      }
+      a.src = SILENT_AUDIO;
+      const up = a.play();
+      if (up) up.then(() => { if (a.currentSrc.startsWith('data:')) a.pause(); }).catch(() => {});
+    } catch { /* ignore */ }
+    try {
       setPreviewing(r.id);
       setPreviewLoading(true);
       // Al-Fatihah ayah 1 for this reciter — short and recognizable.
@@ -55,7 +64,6 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
         url = absoluteAudioUrl(data?.audio_files?.[0]?.url ?? null);
       }
       if (!url) { stopPreview(); return; }
-      const a = previewRef.current;
       a.src = url;
       await a.play();
       setPreviewLoading(false);
@@ -407,18 +415,18 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
         {/* About */}
         <div className="glass-card-sm p-4 space-y-3">
           <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider">{tr('About Nur', 'عن نور')}</h3>
-          <div className="space-y-2 text-xs text-white/70">
+          <div className="space-y-2 text-xs text-white/70 arabic-text" dir={tr('ltr', 'rtl')}>
             <p>
-              Nur is a free, ad-free Quran and Azkar application designed for Muslims worldwide. 
-              Our mission is to provide a serene, distraction-free digital space for daily devotion.
+              {tr('Nur is a free, ad-free Quran and Azkar app for Muslims everywhere — a serene, distraction-free space for daily devotion.',
+                  'نُور تطبيق قرآن وأذكار مجاني بلا إعلانات لكل المسلمين — مساحة هادئة خالية من المشتّتات للعبادة اليومية.')}
             </p>
             <p className="text-[color:var(--text-muted)]">
-              All Quran translations are sourced from authentic translations. 
-              Adhkar are compiled from Sahih Bukhari, Sahih Muslim, and other authentic sources.
+              {tr('Adhkar are compiled from Sahih al-Bukhari, Sahih Muslim and other authentic sources.',
+                  'الأذكار مجموعة من صحيح البخاري وصحيح مسلم وغيرها من المصادر الموثوقة.')}
             </p>
             <div className="pt-2 border-t border-white/5">
-              <p className="text-[10px] text-[color:var(--text-muted)]">Version 1.0.0</p>
-              <p className="text-[10px] text-[color:var(--text-muted)]">Made with love for the Ummah</p>
+              <p className="text-[10px] text-[color:var(--text-muted)]">{tr('Version', 'الإصدار')} 1.0.0</p>
+              <p className="text-[10px] text-[color:var(--text-muted)]">{tr('Made with love for the Ummah', 'صُنع بحبٍّ للأمّة')}</p>
             </div>
           </div>
         </div>
