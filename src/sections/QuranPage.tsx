@@ -14,7 +14,8 @@ type ViewMode = 'list' | 'grid';
 type FilterType = 'all' | 'meccan' | 'medinan';
 
 export default function QuranPage({ onOpenSurah, onBack, onToggleSearch }: QuranPageProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const isAr = lang === 'ar';
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [filter, setFilter] = useState<FilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -170,8 +171,8 @@ export default function QuranPage({ onOpenSurah, onBack, onToggleSearch }: Quran
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-white">{surah.englishName}</p>
-                        <p className="text-sm arabic-text text-white/80">{surah.name}</p>
+                        <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{isAr ? surah.name : surah.englishName}</p>
+                        <p className={`text-sm text-white/80 ${isAr ? '' : 'arabic-text'}`}>{isAr ? surah.englishName : surah.name}</p>
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span 
@@ -212,8 +213,8 @@ export default function QuranPage({ onOpenSurah, onBack, onToggleSearch }: Quran
                         {surah.number}
                       </span>
                     </div>
-                    <p className="text-[11px] font-medium text-white leading-tight">{surah.englishName}</p>
-                    <p className="text-[10px] arabic-text text-white/50">{surah.name}</p>
+                    <p className={`text-[11px] font-medium text-white leading-tight ${isAr ? 'arabic-text' : ''}`}>{isAr ? surah.name : surah.englishName}</p>
+                    <p className={`text-[10px] text-white/50 ${isAr ? '' : 'arabic-text'}`}>{isAr ? surah.englishName : surah.name}</p>
                   </button>
                 ))}
               </div>
@@ -236,9 +237,9 @@ export default function QuranPage({ onOpenSurah, onBack, onToggleSearch }: Quran
                       <button
                         key={s.number}
                         onClick={() => onOpenSurah(s.number)}
-                        className="text-[10px] px-2 py-1 rounded-full bg-white/5 hover:bg-[#14879c]/20 text-[color:var(--text-muted)] hover:text-[#14879c] transition-all"
+                        className={`text-[10px] px-2 py-1 rounded-full bg-white/5 hover:bg-[#14879c]/20 text-[color:var(--text-muted)] hover:text-[#14879c] transition-all ${isAr ? 'arabic-text' : ''}`}
                       >
-                        {s.englishName}
+                        {isAr ? s.name : s.englishName}
                       </button>
                     ))
                   }

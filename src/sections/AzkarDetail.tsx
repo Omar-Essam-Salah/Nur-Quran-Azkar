@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft, Bookmark, BookmarkCheck, RotateCcw, ChevronRight, Volume2, Info } from 'lucide-react';
 import { getAzkarCategoryById } from '@/data/azkarData';
+import { useI18n } from '@/i18n';
 
 interface AzkarDetailProps {
   categoryId: string;
@@ -10,6 +11,8 @@ interface AzkarDetailProps {
 }
 
 export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmarked }: AzkarDetailProps) {
+  const { t, lang } = useI18n();
+  const isAr = lang === 'ar';
   const category = getAzkarCategoryById(categoryId);
   const [itemCounts, setItemCounts] = useState<Record<string, number>>({});
   const [showTransliteration, setShowTransliteration] = useState(true);
@@ -51,7 +54,7 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
   if (!category) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-[color:var(--text-muted)]">Category not found</p>
+        <p className="text-[color:var(--text-muted)] arabic-text">{t('Category not found', 'الفئة غير موجودة')}</p>
       </div>
     );
   }
@@ -81,13 +84,13 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
               <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-base font-semibold text-white">{category.name}</h1>
-              <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{category.arabicName}</p>
+              <h1 className={`text-base font-semibold text-white ${isAr ? 'arabic-text' : ''}`}>{isAr ? category.arabicName : category.name}</h1>
+              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{isAr ? category.name : category.arabicName}</p>
             </div>
-            <button 
+            <button
               onClick={resetAll}
               className="p-2 rounded-xl hover:bg-white/10 transition-all"
-              title="Reset all counters"
+              title={t('Reset all counters', 'تصفير كل العدّادات')}
             >
               <RotateCcw size={16} className="text-[color:var(--text-muted)]" />
             </button>
@@ -96,7 +99,7 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
           {/* Progress Bar */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-[color:var(--text-muted)]">Progress</span>
+              <span className="text-[10px] text-[color:var(--text-muted)] arabic-text">{t('Progress', 'التقدّم')}</span>
               <span className="text-[10px] text-[#14879c]">{totalCurrent}/{totalTarget} ({progressPercent}%)</span>
             </div>
             <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
@@ -112,16 +115,18 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
             </div>
           </div>
 
-          {/* Toggle Transliteration */}
-          <div className="flex justify-end">
-            <button
-              onClick={() => setShowTransliteration(!showTransliteration)}
-              className="text-[10px] text-[#14879c] hover:text-[#14879c]/80 transition-colors flex items-center gap-1"
-            >
-              <Volume2 size={10} />
-              {showTransliteration ? 'Hide' : 'Show'} Transliteration
-            </button>
-          </div>
+          {/* Toggle Transliteration — only useful for non-Arabic readers */}
+          {!isAr && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowTransliteration(!showTransliteration)}
+                className="text-[10px] text-[#14879c] hover:text-[#14879c]/80 transition-colors flex items-center gap-1"
+              >
+                <Volume2 size={10} />
+                {showTransliteration ? 'Hide' : 'Show'} Transliteration
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -135,8 +140,8 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
               border: '1px solid rgba(16, 185, 129, 0.2)',
             }}
           >
-            <p className="text-sm font-semibold text-[#10b981]">All Adhkar Completed!</p>
-            <p className="text-xs text-[color:var(--text-muted)]">May Allah accept your remembrance.</p>
+            <p className="text-sm font-semibold text-[#10b981] arabic-text">{t('All Adhkar Completed!', 'تمّت جميع الأذكار!')}</p>
+            <p className="text-xs text-[color:var(--text-muted)] arabic-text">{t('May Allah accept your remembrance.', 'تقبّل الله ذكرك.')}</p>
           </div>
         )}
 
@@ -168,7 +173,7 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
                         color: isComplete ? '#10b981' : '#14879c',
                       }}
                     >
-                      {index + 1} of {category.items.length}
+                      {index + 1} {t('of', 'من')} {category.items.length}
                     </span>
                     <div className="flex items-center gap-1">
                       <button
@@ -200,13 +205,15 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
                     {item.arabic}
                   </p>
 
-                  {/* Translation */}
-                  <p className="text-xs text-[color:var(--text-muted)] leading-relaxed">
-                    {item.translation}
-                  </p>
+                  {/* Translation — hidden in Arabic mode (it's the English meaning) */}
+                  {!isAr && (
+                    <p className="text-xs text-[color:var(--text-muted)] leading-relaxed">
+                      {item.translation}
+                    </p>
+                  )}
 
                   {/* Transliteration */}
-                  {showTransliteration && item.transliteration && (
+                  {!isAr && showTransliteration && item.transliteration && (
                     <p className="text-[11px] text-[#14879c]/70 italic leading-relaxed border-t border-white/5 pt-2">
                       {item.transliteration}
                     </p>
@@ -216,13 +223,13 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
                   {isExpanded && (
                     <div className="space-y-2 pt-2 border-t border-white/5">
                       {item.reference && (
-                        <p className="text-[10px] text-[#d4af37]">
-                          <span className="text-[color:var(--text-muted)]">Reference: </span>{item.reference}
+                        <p className="text-[10px] text-[#d4af37] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>
+                          <span className="text-[color:var(--text-muted)]">{t('Reference: ', 'المصدر: ')}</span>{item.reference}
                         </p>
                       )}
                       {item.virtue && (
-                        <p className="text-[10px] text-[#10b981]">
-                          <span className="text-[color:var(--text-muted)]">Virtue: </span>{item.virtue}
+                        <p className="text-[10px] text-[#10b981] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>
+                          <span className="text-[color:var(--text-muted)]">{t('Virtue: ', 'الفضل: ')}</span>{item.virtue}
                         </p>
                       )}
                     </div>
@@ -278,9 +285,9 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
                             : '1px solid rgba(20, 135, 156, 0.2)',
                         }}
                       >
-                        {isComplete ? 'Completed' : (
+                        {isComplete ? <span className="arabic-text">{t('Completed', 'اكتمل')}</span> : (
                           <>
-                            Count <ChevronRight size={12} />
+                            <span className="arabic-text">{t('Count', 'عُدّ')}</span> <ChevronRight size={12} className={isAr ? 'rotate-180' : ''} />
                           </>
                         )}
                       </button>

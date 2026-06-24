@@ -33,6 +33,7 @@ import GuidePage from '@/sections/GuidePage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
 import { recordDeed } from '@/lib/ledger';
 import { requestStartupPermissions } from '@/lib/permissions';
+import { useI18n } from '@/i18n';
 
 function App() {
   // نظام History Stack لتتبع التنقلات بشكل دقيق وحل مشكلة أزرار الرجوع
@@ -51,6 +52,7 @@ function App() {
   const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks();
   const { lastRead, updateLastRead } = useLastRead();
   const { settings, setSettings } = useSettings();
+  const { t } = useI18n();
   const { counts, activeDhikr, setActiveDhikr, increment, reset, getCount } = useTasbih();
 
   // Navigation handler
@@ -96,11 +98,11 @@ function App() {
       );
       if (existing) {
         removeBookmark(existing.id);
-        toast('Removed from bookmarks', { description: 'The item has been removed from your bookmarks.' });
+        toast(t('Removed from bookmarks', 'أُزيل من المفضّلة'), { description: t('The item has been removed from your bookmarks.', 'تمّت إزالة العنصر من مفضّلتك.') });
       }
     } else {
       addBookmark(bookmark);
-      toast('Added to bookmarks', { description: 'The item has been saved to your bookmarks.' });
+      toast(t('Added to bookmarks', 'أُضيف للمفضّلة'), { description: t('The item has been saved to your bookmarks.', 'تمّ حفظ العنصر في مفضّلتك.') });
     }
   }, [bookmarks, isBookmarked, addBookmark, removeBookmark]);
 

@@ -7,11 +7,13 @@ import { toast } from 'sonner';
 import type { Reciter } from '@/data/reciters';
 import { downloadSurahAudio, deleteSurahAudio, isSurahAudioDownloaded } from '@/lib/contentCache';
 import type { SurahPlayer, PlayerVerse } from '@/hooks/useSurahAudio';
+import { useI18n } from '@/i18n';
 
 interface AudioPlayerProps {
   reciter: Reciter;
   chapter: number;
   surahEnglishName: string;
+  surahName?: string; // Arabic surah name
   verses: PlayerVerse[];
   audio: SurahPlayer;
 }
@@ -24,7 +26,10 @@ const TIMES = [
   { label: '∞', value: 0 },
 ];
 
-export default function AudioPlayer({ reciter, chapter, surahEnglishName, verses, audio }: AudioPlayerProps) {
+export default function AudioPlayer({ reciter, chapter, surahEnglishName, surahName, verses, audio }: AudioPlayerProps) {
+  const { t, lang } = useI18n();
+  const reciterName = lang === 'ar' ? reciter.arabicName : reciter.name;
+  const surahLabel = lang === 'ar' ? (surahName ?? surahEnglishName) : surahEnglishName;
   const [downloaded, setDownloaded] = useState<boolean | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [dlProgress, setDlProgress] = useState({ done: 0, total: 0 });
@@ -63,19 +68,20 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, verses
     abortRef.current = controller;
     setDownloading(true);
     setDlProgress({ done: 0, total: downloadable.length });
+    toast(t('Downloading…', 'جارٍ التحميل…'), { description: `${surahLabel} — ${reciterName}` });
     try {
       const r = await downloadSurahAudio(reciter.apiId, chapter, downloadable, setDlProgress, controller.signal);
       if (r.saved === 0) {
-        toast('Download failed', { description: 'Couldn’t reach the audio server for this reciter. Try another reciter or check your connection.' });
+        toast(t('Download failed', 'فشل التحميل'), { description: t('Couldn’t reach the audio server for this reciter. Try another reciter or check your connection.', 'تعذّر الوصول لخادم الصوت لهذا القارئ. جرّب قارئًا آخر أو تحقّق من اتصالك.') });
       } else if (r.failed > 0) {
         setDownloaded(false); // partial — let the user tap again to fill the gaps
-        toast('Partly saved', { description: `${r.saved}/${r.total} ayat saved. Tap download again to finish the rest.` });
+        toast(t('Partly saved', 'تم حفظ جزء'), { description: t(`${r.saved}/${r.total} ayat saved. Tap download again to finish.`, `تم حفظ ${r.saved}/${r.total} آية. اضغط تحميل مرّة أخرى لإكمال الباقي.`) });
       } else {
         setDownloaded(true);
-        toast('Saved for offline', { description: `${surahEnglishName} — ${reciter.name}` });
+        toast(t('Saved for offline ✓', 'تم الحفظ للاستماع دون إنترنت ✓'), { description: `${surahLabel} — ${reciterName}` });
       }
     } catch (err) {
-      if ((err as Error)?.name !== 'AbortError') toast('Download failed', { description: 'Check your connection and try again.' });
+      if ((err as Error)?.name !== 'AbortError') toast(t('Download failed', 'فشل التحميل'), { description: t('Check your connection and try again.', 'تحقّق من اتصالك وحاول مرّة أخرى.') });
     } finally {
       setDownloading(false);
       abortRef.current = null;
@@ -85,7 +91,7 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, verses
   const handleDelete = async () => {
     await deleteSurahAudio(reciter.apiId, chapter, ayahNumbers);
     setDownloaded(false);
-    toast('Removed offline audio', { description: surahEnglishName });
+    toast(t('Removed offline audio', 'تمّت إزالة الصوت المحمّل'), { description: surahLabel });
   };
 
   const applyRepeat = (times: number) => {
@@ -120,7 +126,7 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, verses
           <div className="px-4 py-3 space-y-3 border-b border-white/5">
             <div className="flex items-center gap-2">
               <Gauge size={13} className="text-[color:var(--text-muted)]" />
-              <span className="text-[10px] text-[color:var(--text-muted)] uppercase w-12">Speed</span>
+              <span className="text-[10px] text-[color:var(--text-muted)] uppercase w-12 arabic-text">{t('Speed', 'السرعة')}</span>
               <div className="flex gap-1 flex-1">
                 {SPEEDS.map((s) => (
                   <button
@@ -137,7 +143,7 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, verses
 
             <div className="flex items-center gap-2">
               <Repeat size={13} className="text-[color:var(--text-muted)]" />
-              <span className="text-[10px] text-[color:var(--text-muted)] uppercase w-12">Repeat</span>
+              <span className="text-[10px] text-[color:var(--text-muted)] uppercase w-12 arabic-text">{t('Repeat', 'التكرار')}</span>
               <div className="flex items-center gap-1 text-[11px] text-white">
                 <input type="number" min={1} max={maxAyah} value={fromVal}
                   onChange={(e) => setFromVal(Number(e.target.value))}
@@ -161,13 +167,13 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, verses
                 <button onClick={() => audio.setRepeat(null)}
                   className="px-2 py-1 rounded-lg text-[11px] transition-all"
                   style={{ background: !rpt ? 'rgba(20,135,156,0.25)' : 'rgba(255,255,255,0.04)', color: !rpt ? '#14879c' : 'var(--text-muted)' }}>
-                  Off
+                  {t('Off', 'إيقاف')}
                 </button>
               </div>
             </div>
             {rpt && (
-              <p className="text-[10px] text-[#d4af37]/80">
-                Repeating ayah {rpt.from}{rpt.to !== rpt.from ? `–${rpt.to}` : ''} · {rpt.times === 0 ? '∞' : `${rpt.times}×`}
+              <p className="text-[10px] text-[#d4af37]/80 arabic-text" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+                {t('Repeating ayah', 'تكرار الآية')} {rpt.from}{rpt.to !== rpt.from ? `–${rpt.to}` : ''} · {rpt.times === 0 ? '∞' : `${rpt.times}×`}
               </p>
             )}
           </div>
@@ -175,13 +181,13 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, verses
 
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-white truncate arabic-text">{reciter.arabicName}</p>
-            <p className="text-[10px] text-[color:var(--text-muted)] truncate">
+            <p className={`text-xs font-medium text-white truncate ${lang === 'ar' ? 'arabic-text' : ''}`}>{reciterName}</p>
+            <p className="text-[10px] text-[color:var(--text-muted)] truncate arabic-text" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
               {downloading
-                ? `Downloading… ${dlProgress.done}/${dlProgress.total} (${pct}%)`
+                ? `${t('Downloading…', 'جارٍ التحميل…')} ${dlProgress.done}/${dlProgress.total} (${pct}%)`
                 : audio.playingAyah
-                  ? `${surahEnglishName} · Ayah ${audio.playingAyah}${rpt ? ' · 🔁' : ''}${audio.rate !== 1 ? ` · ${audio.rate}×` : ''}`
-                  : `${surahEnglishName} · ${reciter.style ?? 'Murattal'}`}
+                  ? `${surahLabel} · ${t('Ayah', 'آية')} ${audio.playingAyah}${rpt ? ' · 🔁' : ''}${audio.rate !== 1 ? ` · ${audio.rate}×` : ''}`
+                  : `${surahLabel} · ${reciter.style ?? 'Murattal'}`}
             </p>
           </div>
 

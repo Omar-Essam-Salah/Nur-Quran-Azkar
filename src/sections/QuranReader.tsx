@@ -386,12 +386,12 @@ export default function QuranReader({
             </div>
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-white">{surah.englishName}</h2>
-            <p className="text-xs text-[color:var(--text-muted)]">{surah.englishNameTranslation}</p>
+            <h2 className={`text-lg font-semibold text-white ${lang === 'ar' ? 'arabic-text' : ''}`}>{lang === 'ar' ? surah.name : surah.englishName}</h2>
+            {lang !== 'ar' && <p className="text-xs text-[color:var(--text-muted)]">{surah.englishNameTranslation}</p>}
           </div>
           <div className="flex items-center justify-center gap-3">
-            <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: surah.type === 'Meccan' ? 'rgba(20,135,156,0.15)' : 'rgba(212,175,55,0.15)', color: surah.type === 'Meccan' ? '#14879c' : '#d4af37' }}>{surah.type}</span>
-            <span className="text-[10px] text-[color:var(--text-muted)]">{surah.verses} Verses · {reciter.arabicName}</span>
+            <span className="text-[10px] px-2 py-1 rounded-full arabic-text" style={{ background: surah.type === 'Meccan' ? 'rgba(20,135,156,0.15)' : 'rgba(212,175,55,0.15)', color: surah.type === 'Meccan' ? '#14879c' : '#d4af37' }}>{t(surah.type, surah.type === 'Meccan' ? 'مكية' : 'مدنية')}</span>
+            <span className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir={lang === 'ar' ? 'rtl' : 'ltr'}>{surah.verses} {t('Verses', 'آية')} · {lang === 'ar' ? reciter.arabicName : reciter.name}</span>
           </div>
         </div>
 
@@ -503,6 +503,7 @@ export default function QuranReader({
         reciter={reciter}
         chapter={surahNumber}
         surahEnglishName={surah.englishName}
+        surahName={surah.name}
         verses={playerVerses}
         audio={audio}
       />

@@ -29,7 +29,8 @@ const colorMap: Record<string, string> = {
 };
 
 export default function AzkarPage({ onOpenAzkar, onBack }: AzkarPageProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const isAr = lang === 'ar';
   return (
     <div className="page-enter min-h-screen">
       {/* Header */}
@@ -86,8 +87,8 @@ export default function AzkarPage({ onOpenAzkar, onBack }: AzkarPageProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-white">{category.name}</p>
-                      <p className="text-xs arabic-text text-white/50 mt-0.5">{category.arabicName}</p>
+                      <p className={`text-sm font-semibold text-white ${isAr ? 'arabic-text' : ''}`}>{isAr ? category.arabicName : category.name}</p>
+                      <p className={`text-xs text-white/50 mt-0.5 ${isAr ? '' : 'arabic-text'}`}>{isAr ? category.name : category.arabicName}</p>
                     </div>
                     <div 
                       className="w-8 h-8 rounded-full flex items-center justify-center"
