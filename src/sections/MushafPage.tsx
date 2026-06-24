@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, LayoutGrid, X, Play, Pause, ZoomIn, ZoomOut, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, ZoomIn, ZoomOut, BookOpen, Search } from 'lucide-react';
 import { getReciter, everyayahUrl } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
 import { loadAyahRange } from '@/lib/localQuran';
+import { surahList } from '@/data/surahList';
+import { startPageForSurah } from '@/data/mushafPages';
 
 interface MushafPageProps {
   onBack: () => void;
@@ -47,7 +49,15 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const touchStartX = useRef<number | null>(null);
   const [pageStr, setPageStr] = useState(String(page));
   const [showIndex, setShowIndex] = useState(false);
+  const [indexQuery, setIndexQuery] = useState('');
   const [zoom, setZoom] = useState(1);
+
+  // Which surah the current page belongs to (for highlighting in the index).
+  const currentSurahNumber = useMemo(() => {
+    let n = 1;
+    for (let i = 0; i < surahList.length; i++) if (page >= startPageForSurah(i + 1)) n = i + 1;
+    return n;
+  }, [page]);
   useEffect(() => { setPageStr(String(page)); }, [page]);
 
   // ── Page recitation audio (plays the current page's verses in sequence,
@@ -159,8 +169,28 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     return () => { active = false; };
   }, [tafsirFollow, page]);
 
-  const zoomIn = () => setZoom((z) => ZOOM_LEVELS[Math.min(ZOOM_LEVELS.length - 1, ZOOM_LEVELS.indexOf(z) + 1)]);
-  const zoomOut = () => setZoom((z) => ZOOM_LEVELS[Math.max(0, ZOOM_LEVELS.indexOf(z) - 1)]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+
+  const centerScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+      el.scrollTop = Math.max(0, (el.scrollHeight - el.clientHeight) / 2);
+    });
+  };
+  // Work from the current (possibly pinch-set) zoom to the next/previous level.
+  const zoomIn = () => setZoom((z) => ZOOM_LEVELS.find((l) => l > z + 0.05) ?? ZOOM_LEVELS[ZOOM_LEVELS.length - 1]);
+  const zoomOut = () => setZoom((z) => [...ZOOM_LEVELS].reverse().find((l) => l < z - 0.05) ?? ZOOM_LEVELS[0]);
+
+  // Keep the page centred when zooming (buttons / double-tap). Skip during a
+  // pinch so it doesn't fight the user's fingers.
+  useEffect(() => {
+    if (pinchRef.current) return;
+    if (zoom > 1) centerScroll();
+    else scrollRef.current?.scrollTo({ left: 0, top: 0 });
+  }, [zoom]);
   const commitPage = () => {
     const n = Number(pageStr);
     if (n >= 1 && n <= TOTAL_PAGES) setPage(n);
@@ -192,8 +222,21 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const goNext = () => setPage((p) => Math.min(TOTAL_PAGES, p + 1)); // forward in reading
   const goPrev = () => setPage((p) => Math.max(1, p - 1));
 
-  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  // Combined gesture handling: 1 finger = swipe pages (only at 1×), 2 fingers = pinch zoom.
+  const touchDist = (t: React.TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) { pinchRef.current = { dist: touchDist(e.touches), zoom }; touchStartX.current = null; }
+    else if (zoom === 1) { touchStartX.current = e.touches[0].clientX; }
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchRef.current) {
+      const ratio = touchDist(e.touches) / pinchRef.current.dist;
+      const nz = Math.min(3, Math.max(1, pinchRef.current.zoom * ratio));
+      setZoom(Math.round(nz * 20) / 20);
+    }
+  };
   const onTouchEnd = (e: React.TouchEvent) => {
+    if (pinchRef.current) { pinchRef.current = null; return; }
     if (touchStartX.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 50) {
@@ -285,9 +328,11 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
 
       {/* Page image (pannable when zoomed; swipe pages only at 1×) */}
       <div
+        ref={scrollRef}
         className="flex-1 overflow-auto px-3 pb-4 select-none"
-        onTouchStart={zoom === 1 ? onTouchStart : undefined}
-        onTouchEnd={zoom === 1 ? onTouchEnd : undefined}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
         <div
           className="relative mx-auto"
@@ -349,31 +394,20 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
           }}
         >
           {/* Forward (next page, to the left in RTL) */}
-          <button
-            onClick={goNext}
-            disabled={page >= TOTAL_PAGES}
-            className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30"
-            aria-label="Next page"
-          >
+          <button onClick={goNext} disabled={page >= TOTAL_PAGES}
+            className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Next page">
             <ChevronLeft size={20} className="text-white" />
           </button>
 
-          <input
-            type="range"
-            min={1}
-            max={TOTAL_PAGES}
-            value={page}
-            onChange={(e) => setPage(Number(e.target.value))}
-            className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-[#14879c]"
-            dir="rtl"
-          />
+          {/* Surah index — the main way to jump around */}
+          <button onClick={() => setShowIndex(true)}
+            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
+            <ListTree size={16} className="text-[#14879c]" />
+            <span className="text-xs text-white arabic-text">فهرس السور</span>
+          </button>
 
-          <button
-            onClick={goPrev}
-            disabled={page <= 1}
-            className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30"
-            aria-label="Previous page"
-          >
+          <button onClick={goPrev} disabled={page <= 1}
+            className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Previous page">
             <ChevronRight size={20} className="text-white" />
           </button>
 
@@ -386,25 +420,13 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
             onChange={(e) => setPageStr(e.target.value)}
             onBlur={commitPage}
             onKeyDown={(e) => { if (e.key === 'Enter') { commitPage(); (e.currentTarget as HTMLInputElement).blur(); } }}
-            className="w-14 px-2 py-1.5 rounded-lg bg-white/5 text-center text-xs text-white outline-none"
+            className="w-12 px-1.5 py-1.5 rounded-lg bg-white/5 text-center text-xs text-white outline-none"
+            title="رقم الصفحة"
           />
 
-          <button
-            onClick={() => setTafsirFollow((v) => !v)}
-            className="p-2 rounded-xl hover:bg-white/10 transition-all"
-            aria-label="Tafsir window"
-            title="نافذة التفسير مع التلاوة"
-          >
+          <button onClick={() => setTafsirFollow((v) => !v)}
+            className="p-2 rounded-xl hover:bg-white/10 transition-all" aria-label="Tafsir window" title="نافذة التفسير مع التلاوة">
             <BookOpen size={18} className={tafsirFollow ? 'text-[#d4af37]' : 'text-white'} />
-          </button>
-
-          <button
-            onClick={() => setShowIndex(true)}
-            className="p-2 rounded-xl hover:bg-white/10 transition-all"
-            aria-label="Index"
-            title="فهرس الصفحات"
-          >
-            <LayoutGrid size={18} className="text-white" />
           </button>
         </div>
       </div>
@@ -422,29 +444,49 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
             <button onClick={() => setShowIndex(false)} className="p-2 rounded-xl hover:bg-white/10">
               <X size={18} className="text-white" />
             </button>
-            <h2 className="text-base font-semibold text-white arabic-text">فهرس الصفحات</h2>
+            <h2 className="text-base font-semibold text-white arabic-text flex-1">فهرس السور</h2>
           </div>
-          <div className="flex-1 overflow-y-auto px-4 py-4 max-w-lg mx-auto w-full space-y-4">
-            {JUZ_START_PAGES.map((start, i) => {
-              const end = (JUZ_START_PAGES[i + 1] ?? TOTAL_PAGES + 1) - 1;
-              return (
-                <div key={i}>
-                  <p className="text-[10px] text-[#d4af37] mb-1.5 arabic-text">الجزء {i + 1}</p>
-                  <div className="grid grid-cols-6 gap-1.5" dir="ltr">
-                    {Array.from({ length: end - start + 1 }, (_, k) => start + k).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => { setPage(p); setShowIndex(false); }}
-                        className="py-2 rounded-lg text-xs transition-all"
-                        style={{ background: p === page ? 'rgba(20,135,156,0.3)' : 'rgba(var(--hair),0.05)', color: p === page ? '#14879c' : '#fff', border: '1px solid rgba(var(--hair),0.06)' }}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+          <div className="px-4 pt-3 max-w-lg mx-auto w-full">
+            <div className="relative">
+              <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)]" />
+              <input
+                value={indexQuery}
+                onChange={(e) => setIndexQuery(e.target.value)}
+                placeholder="ابحث باسم السورة أو رقمها…"
+                className="w-full pr-9 pl-3 py-2.5 rounded-xl bg-white/5 text-sm text-white arabic-text text-right outline-none border border-transparent focus:border-[#14879c]/40 placeholder:text-[color:var(--text-muted)]/60"
+                dir="rtl"
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-3 max-w-lg mx-auto w-full space-y-1.5">
+            {surahList
+              .filter((s) => {
+                const q = indexQuery.trim();
+                if (!q) return true;
+                return s.name.includes(q) || s.englishName.toLowerCase().includes(q.toLowerCase()) || String(s.number) === q;
+              })
+              .map((s) => {
+                const sp = startPageForSurah(s.number);
+                const active = currentSurahNumber === s.number;
+                return (
+                  <button
+                    key={s.number}
+                    onClick={() => { setPage(sp); setShowIndex(false); setIndexQuery(''); }}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl transition-all"
+                    style={{ background: active ? 'rgba(20,135,156,0.18)' : 'rgba(var(--hair),0.04)', border: active ? '1px solid rgba(20,135,156,0.35)' : '1px solid rgba(var(--hair),0.06)' }}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-[#14879c]/15 flex items-center justify-center flex-shrink-0">
+                      <span className="text-[11px] font-bold text-[#14879c]">{s.number}</span>
+                    </div>
+                    <div className="flex-1 min-w-0 text-right">
+                      <p className="text-sm font-medium text-white arabic-text">{s.name}</p>
+                      <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir="rtl">{s.verses} آية · {s.type === 'Meccan' ? 'مكية' : 'مدنية'}</p>
+                    </div>
+                    <span className="text-[10px] text-[#d4af37] arabic-text flex-shrink-0">ص {sp}</span>
+                  </button>
+                );
+              })}
+            <div className="h-6" />
           </div>
         </div>
       )}

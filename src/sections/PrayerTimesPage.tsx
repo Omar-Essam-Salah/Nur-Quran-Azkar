@@ -50,6 +50,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   const cachedGeo = useMemo(() => getCachedGeo(), []);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(cachedGeo);
   const [locationError, setLocationError] = useState('');
+  const [locating, setLocating] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const [timings, setTimings] = useState<Record<string, string> | null>(null);
@@ -93,26 +94,31 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
     return () => audio.removeEventListener('error', handleError);
   }, [audioSrc]);
 
+  const requestLocation = () => {
+    if (!navigator.geolocation) { if (!getCachedGeo()) setLocation({ lat: 21.3891, lng: 39.8579 }); return; }
+    setLocating(true);
+    setLocationError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setLocation(loc);
+        setLocationError('');
+        setLocating(false);
+        try { localStorage.setItem('nur-geo', JSON.stringify({ ...loc, t: Date.now() })); } catch { /* ignore */ }
+      },
+      () => {
+        // GPS / location services are off. We can't turn them on for the user,
+        // so explain it and offer a Retry; keep the cached/default meanwhile.
+        setLocating(false);
+        setLocationError(t('Turn on Location/GPS in your device, then tap Retry.', 'فعّل خدمة الموقع (GPS) من جهازك ثم اضغط إعادة المحاولة.'));
+        if (!getCachedGeo() && !location) setLocation({ lat: 21.3891, lng: 39.8579 });
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  };
+
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setLocation(loc);
-          try { localStorage.setItem('nur-geo', JSON.stringify({ ...loc, t: Date.now() })); } catch { /* ignore */ }
-        },
-        () => {
-          // Keep the cached location if we have one; otherwise fall back to Makkah.
-          if (!getCachedGeo()) {
-            setLocationError(t('Location unavailable. Using Makkah as default.', 'تعذّر تحديد الموقع. يُستخدم موقع مكة افتراضيًا.'));
-            setLocation({ lat: 21.3891, lng: 39.8579 });
-          }
-        },
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 },
-      );
-    } else if (!location) {
-      setLocation({ lat: 21.3891, lng: 39.8579 });
-    }
+    requestLocation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -334,11 +340,18 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
               <div className="flex items-center justify-center gap-1.5 pt-1">
                 <MapPin size={12} className="text-[#14879c]" />
                 <span className="text-[10px] text-[color:var(--text-muted)]">
-                  {location ? `${location.lat.toFixed(2)}, ${location.lng.toFixed(2)}` : t('Locating...', 'جاري تحديد الموقع...')}
+                  {locating ? t('Locating…', 'جاري تحديد الموقع…') : location ? `${location.lat.toFixed(2)}, ${location.lng.toFixed(2)}` : t('Locating…', 'جاري تحديد الموقع…')}
                 </span>
               </div>
               {locationError && (
-                <p className="text-[10px] text-[#f59e0b]">{locationError}</p>
+                <div className="flex flex-col items-center gap-1.5 pt-1">
+                  <p className="text-[10px] text-[#f59e0b] arabic-text text-center px-4" dir={t('ltr', 'rtl')}>{locationError}</p>
+                  <button onClick={requestLocation} disabled={locating}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-medium flex items-center gap-1.5 disabled:opacity-50"
+                    style={{ background: 'rgba(20,135,156,0.18)', color: '#14879c' }}>
+                    <Navigation size={12} /> {t('Retry', 'إعادة المحاولة')}
+                  </button>
+                </div>
               )}
             </div>
 

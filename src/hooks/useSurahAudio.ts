@@ -265,6 +265,10 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
     };
     const onError = () => {
       if (audio.currentSrc.startsWith('data:')) return;
+      // Rapidly changing src (fast next/prev/back) aborts the in-flight load and
+      // fires an 'error' with code ABORTED. That's not a real failure — ignore it,
+      // otherwise the reset below kills the playback the newest tap just started.
+      if (audio.error && audio.error.code === audio.error.MEDIA_ERR_ABORTED) return;
       // The network file failed (offline / bad URL). If this ayah was downloaded,
       // recover by playing the saved blob; otherwise reset cleanly so the UI
       // isn't stuck on "loading" and the snow layer reappears.

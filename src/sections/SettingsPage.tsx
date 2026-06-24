@@ -26,12 +26,14 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
   // ── Reciter sample preview (does NOT change the active reciter) ──
   const previewRef = useRef<HTMLAudioElement | null>(null);
   const previewTimer = useRef<number | undefined>(undefined);
-  const [previewing, setPreviewing] = useState<string | null>(null); // reciter id loading/playing
+  const previewToken = useRef(0); // guards against rapid switching between reciters
+  const [previewing, setPreviewing] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const stopPreview = () => {
+    previewToken.current++; // invalidate any in-flight preview
     window.clearTimeout(previewTimer.current);
-    if (previewRef.current) { previewRef.current.pause(); previewRef.current.currentTime = 0; }
+    if (previewRef.current) { try { previewRef.current.pause(); previewRef.current.removeAttribute('src'); } catch { /* ignore */ } }
     setPreviewing(null);
     setPreviewLoading(false);
   };
@@ -39,13 +41,15 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
   const previewReciter = async (r: Reciter) => {
     if (previewing === r.id) { stopPreview(); return; }
     stopPreview();
+    const token = ++previewToken.current;
     if (!previewRef.current) {
       previewRef.current = new Audio();
       previewRef.current.onended = () => setPreviewing(null);
+      previewRef.current.onerror = () => { if (token === previewToken.current) { setPreviewing(null); setPreviewLoading(false); } };
     }
     const a = previewRef.current;
-    // Warm up audio on a SEPARATE throwaway element (never the preview element)
-    // so the later play() after the fetch isn't blocked by the autoplay policy.
+    // Warm up audio on a SEPARATE throwaway element so the later play() isn't
+    // blocked by the autoplay policy.
     try { const s = new Audio(SILENT_AUDIO); s.volume = 0; const up = s.play(); if (up) up.then(() => s.pause()).catch(() => {}); } catch { /* ignore */ }
     try {
       setPreviewing(r.id);
@@ -59,13 +63,15 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
         const data = await res.json();
         url = absoluteAudioUrl(data?.audio_files?.[0]?.url ?? null);
       }
-      if (!url) { stopPreview(); return; }
+      if (token !== previewToken.current) return; // a newer preview took over
+      if (!url) { if (token === previewToken.current) stopPreview(); return; }
       a.src = url;
       await a.play();
+      if (token !== previewToken.current) { try { a.pause(); } catch { /* ignore */ } return; }
       setPreviewLoading(false);
       previewTimer.current = window.setTimeout(stopPreview, 8000); // ~8s snippet
     } catch {
-      stopPreview();
+      if (token === previewToken.current) stopPreview();
     }
   };
 

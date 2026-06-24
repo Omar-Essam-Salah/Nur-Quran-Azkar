@@ -3,7 +3,9 @@
 // reinforcement only: it never scolds, only encourages.
 
 const KEY = 'nur-ledger';
-export const DAILY_GOAL_AYAHS = 20;
+// Kept small on purpose: the gauge should feel rewarding from the very first
+// ayah, not demand a big number before it moves.
+export const DAILY_GOAL_AYAHS = 10;
 
 export interface LedgerState {
   totalAyahs: number;
@@ -76,10 +78,15 @@ function countBookmarks(): number {
 export function getLedger(): LedgerView {
   const s = rollover(load());
   save(s);
+  // Simply showing up today already fills the gauge a little (you came back to
+  // your Lord) — every ayah after that pushes you closer. Small actions count.
+  const openedToday = s.lastActive === ymd(new Date());
+  const base = openedToday ? 12 : 0;
+  const fromAyat = Math.min(88, Math.round((s.todayAyahs / DAILY_GOAL_AYAHS) * 88));
   return {
     ...s,
     dhikrTotal: sumTasbih(),
     bookmarks: countBookmarks(),
-    goalPct: Math.min(100, Math.round((s.todayAyahs / DAILY_GOAL_AYAHS) * 100)),
+    goalPct: Math.min(100, base + fromAyat),
   };
 }

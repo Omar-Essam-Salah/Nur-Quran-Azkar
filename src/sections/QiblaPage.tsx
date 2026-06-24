@@ -57,8 +57,11 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
   useEffect(() => {
     let absoluteSeen = false;
     let everReceived = false;
-    // Smoothed heading as a unit vector (atan2 gives a wrap-safe average).
+    // Smoothed heading as a unit vector (atan2 gives a wrap-safe average), then
+    // accumulated into a CONTINUOUS (unwrapped) value so the CSS rotation always
+    // animates the short way — no violent spin when crossing 0°/360°.
     let sSin = 0, sCos = 1, primed = false;
+    let continuous = 0;
 
     const screenAngle = (): number => {
       const a = (window.screen?.orientation && window.screen.orientation.angle);
@@ -71,12 +74,19 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
       setNoSensor(false);
       const rad = (heading * Math.PI) / 180;
       const k = 0.2; // smoothing strength
-      if (!primed) { sSin = Math.sin(rad); sCos = Math.cos(rad); primed = true; }
-      else { sSin += k * (Math.sin(rad) - sSin); sCos += k * (Math.cos(rad) - sCos); }
-      const deg = (Math.atan2(sSin, sCos) * 180) / Math.PI;
-      const norm = (deg + 360) % 360;
-      headingRef.current = norm;
-      setCompassHeading(norm);
+      if (!primed) {
+        sSin = Math.sin(rad); sCos = Math.cos(rad); primed = true;
+        continuous = heading; headingRef.current = heading; setCompassHeading(heading);
+        return;
+      }
+      sSin += k * (Math.sin(rad) - sSin);
+      sCos += k * (Math.cos(rad) - sCos);
+      const deg = (Math.atan2(sSin, sCos) * 180) / Math.PI; // -180..180
+      let delta = deg - (((continuous % 360) + 360) % 360);  // shortest step to the new angle
+      if (delta > 180) delta -= 360; else if (delta < -180) delta += 360;
+      continuous += delta;
+      headingRef.current = continuous;
+      setCompassHeading(continuous);
     };
 
     const headingFromEvent = (e: DeviceOrientationEvent): number | null => {
@@ -142,9 +152,10 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
     if (fgRef.current) fgRef.current.style.transform = 'translateZ(40px)';
   }, []);
 
-  // The qibla marker sits at this screen angle from the top (your facing dir).
-  const qiblaScreen = (qiblaDirection - compassHeading + 360) % 360;
-  const signedDiff = ((qiblaDirection - compassHeading + 540) % 360) - 180; // -180..180
+  // The qibla marker sits at this screen angle from the top. Kept CONTINUOUS
+  // (no %360) so it rotates the short way as the heading crosses 0°/360°.
+  const qiblaScreen = qiblaDirection - compassHeading;
+  const signedDiff = ((qiblaDirection - compassHeading) % 360 + 540) % 360 - 180; // -180..180
   const aligned = Math.abs(signedDiff) <= 6; // facing the qibla
 
   return (
