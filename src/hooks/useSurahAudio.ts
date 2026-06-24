@@ -93,11 +93,11 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
     if (!audio) return;
     const { reciterApiId, chapter, rate } = latest.current;
     const token = ++loadTokenRef.current;
-    // Only take the shared element when another player (adhan/preview/mushaf)
-    // currently holds it. While we're already the owner — i.e. fast tapping
-    // between ayat in the same reader — we do NOT re-claim, so playback stays as
-    // light as a plain `src = …` swap and the element never thrashes.
-    if (!isOwner(ownerRef.current)) ownerRef.current = claimAudio();
+    // Take the shared element. claimAudio() only pause()s (no load()), so this
+    // is a cheap, race-free way to (a) stop any other player — adhan, preview,
+    // mushaf — and (b) mark ourselves owner so our handlers stay live. The new
+    // src we set below frees the previous source's decoder on its own.
+    ownerRef.current = claimAudio();
 
     setLoading(true);
     setPlayingAyah(ayah);
@@ -111,23 +111,24 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
       if (isBlob) objectUrlRef.current = src;
       audio.src = src;
       audio.playbackRate = rate;
-      // Try to play, retrying while the element buffers. Each attempt bails the
-      // moment a newer tap takes over (token change), so only the ayah the user
-      // finally landed on keeps trying — this is what fixes "jump to 4, come
-      // back, and 1/2/3 won't play": the final src just needs a few ms to be
-      // ready, and we keep nudging it until it is.
-      let settled = false;
-      const attempt = (n: number) => {
-        if (settled || token !== loadTokenRef.current) return;
-        audio.play()
-          .then(() => { settled = true; audio.playbackRate = rate; if (token === loadTokenRef.current) setLoading(false); })
-          .catch(() => {
-            if (settled || token !== loadTokenRef.current) return;
-            if (n >= 5) { setIsPlaying(false); setLoading(false); return; }
-            window.setTimeout(() => attempt(n + 1), 160);
-          });
-      };
-      attempt(0);
+      audio.play()
+        .then(() => { audio.playbackRate = rate; if (token === loadTokenRef.current) setLoading(false); })
+        .catch(() => {
+          // First play() can be rejected before the element is "warm" — retry
+          // a couple of times while it buffers, bailing if a newer tap took over.
+          // This is what lets you jump to ayah 4 and come back to 1/2/3.
+          const retry = (n: number) => {
+            if (token !== loadTokenRef.current) return;
+            audio.play()
+              .then(() => { audio.playbackRate = rate; if (token === loadTokenRef.current) setLoading(false); })
+              .catch(() => {
+                if (token !== loadTokenRef.current) return;
+                if (n >= 3) { setIsPlaying(false); setLoading(false); return; }
+                window.setTimeout(() => retry(n + 1), 160);
+              });
+          };
+          window.setTimeout(() => retry(1), 150);
+        });
     };
 
     // FAST PATH: a network URL is ready → start it NOW, synchronously, still
