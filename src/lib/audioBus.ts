@@ -40,19 +40,18 @@ export function audioEl(): HTMLAudioElement {
 
 /**
  * Take ownership of the shared element for a NEW playback. Hard-stops whatever
- * the previous owner was doing and aborts any in-flight / stuck network load so
- * its decoder is released before the new sound starts. Returns a token; store
- * it and gate your handlers with `isOwner(token)`.
+ * the previous owner was doing; the new owner then assigns its own `src`, which
+ * reuses the single decoder and aborts any in-flight/stuck load of the previous
+ * sound. Returns a token; store it and gate your handlers with `isOwner(token)`.
  *
- * Note: we use removeAttribute('src') + load() (never src = '') so the reset
- * does NOT fire a spurious 'error' event on the shared element.
+ * We deliberately only pause() here — we do NOT call load(). A load() would run
+ * asynchronously and race with the play() the new owner issues right after,
+ * aborting it (which broke fast navigation between ayat). Reassigning `src` is
+ * enough to free the previous source's decoder.
  */
 export function claimAudio(): number {
   const a = audioEl();
-  if (a) {
-    try { a.pause(); } catch { /* ignore */ }
-    try { a.removeAttribute('src'); a.load(); } catch { /* ignore */ }
-  }
+  if (a) { try { a.pause(); } catch { /* ignore */ } }
   return ++owner;
 }
 

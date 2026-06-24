@@ -93,10 +93,11 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
     if (!audio) return;
     const { reciterApiId, chapter, rate } = latest.current;
     const token = ++loadTokenRef.current;
-    // Take the shared element: hard-stops/frees any other sound (e.g. a stuck
-    // adhan or preview) so it can't freeze this playback. Synchronous — keeps
-    // the in-gesture play() below valid against the autoplay policy.
-    ownerRef.current = claimAudio();
+    // Only take the shared element when another player (adhan/preview/mushaf)
+    // currently holds it. While we're already the owner — i.e. fast tapping
+    // between ayat in the same reader — we do NOT re-claim, so playback stays as
+    // light as a plain `src = …` swap and the element never thrashes.
+    if (!isOwner(ownerRef.current)) ownerRef.current = claimAudio();
 
     setLoading(true);
     setPlayingAyah(ayah);
@@ -110,17 +111,23 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
       if (isBlob) objectUrlRef.current = src;
       audio.src = src;
       audio.playbackRate = rate;
-      audio.play()
-        .then(() => { audio.playbackRate = rate; if (token === loadTokenRef.current) setLoading(false); })
-        .catch(() => {
-          // First play() can be rejected before the element is "warm" — retry once.
-          window.setTimeout(() => {
-            if (token !== loadTokenRef.current) return;
-            audio.play()
-              .then(() => { audio.playbackRate = rate; setLoading(false); })
-              .catch(() => { setIsPlaying(false); setLoading(false); });
-          }, 150);
-        });
+      // Try to play, retrying while the element buffers. Each attempt bails the
+      // moment a newer tap takes over (token change), so only the ayah the user
+      // finally landed on keeps trying — this is what fixes "jump to 4, come
+      // back, and 1/2/3 won't play": the final src just needs a few ms to be
+      // ready, and we keep nudging it until it is.
+      let settled = false;
+      const attempt = (n: number) => {
+        if (settled || token !== loadTokenRef.current) return;
+        audio.play()
+          .then(() => { settled = true; audio.playbackRate = rate; if (token === loadTokenRef.current) setLoading(false); })
+          .catch(() => {
+            if (settled || token !== loadTokenRef.current) return;
+            if (n >= 5) { setIsPlaying(false); setLoading(false); return; }
+            window.setTimeout(() => attempt(n + 1), 160);
+          });
+      };
+      attempt(0);
     };
 
     // FAST PATH: a network URL is ready → start it NOW, synchronously, still
