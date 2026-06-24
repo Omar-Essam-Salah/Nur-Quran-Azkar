@@ -34,10 +34,14 @@ export default defineConfig({
             urlPattern: ({ url }) => url.hostname === 'verses.quran.com' || url.hostname === 'everyayah.com' || url.hostname === 'audio.qurancdn.com' || url.hostname === 'mirrors.quranicaudio.com' || url.hostname === 'download.quranicaudio.com',
             handler: 'CacheFirst',
             options: {
-              cacheName: 'quran-audio',
+              // v2: previous installs cached OPAQUE (status 0) audio that fails
+              // to replay (416 on the Range request). The element now fetches
+              // with CORS, so only real 200/206 responses are cached here; the
+              // new cache name abandons the old broken opaque entries.
+              cacheName: 'quran-audio-v2',
               rangeRequests: true,
               expiration: { maxEntries: 4000, maxAgeSeconds: 60 * 60 * 24 * 120 },
-              cacheableResponse: { statuses: [0, 200] },
+              cacheableResponse: { statuses: [200] },
             },
           },
           {

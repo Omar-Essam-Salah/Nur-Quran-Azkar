@@ -34,6 +34,13 @@ export function audioEl(): HTMLAudioElement {
   if (el === null && typeof Audio !== 'undefined') {
     el = new Audio();
     el.preload = 'auto';
+    // CRITICAL: request audio with CORS. All our audio hosts send
+    // `Access-Control-Allow-Origin: *`, so this yields real 200/206 responses
+    // instead of opaque ones. Opaque responses can't satisfy the Range request
+    // the player sends when re-playing a cached ayah, so the service-worker
+    // cache returned 416 → MEDIA_ERR (code 4): going BACK to an already-played
+    // ayah silently failed while going forward (fresh from network) worked.
+    el.crossOrigin = 'anonymous';
   }
   return el as HTMLAudioElement;
 }
