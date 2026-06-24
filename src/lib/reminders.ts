@@ -64,8 +64,9 @@ export function peekReminder(): Reminder {
   return REMINDERS[pickIndex(false)];
 }
 
-// Hours of the day we allow a nudge (all outside the 23:30–04:30 sleep window).
-const NUDGE_HOURS = [8, 13, 17, 21];
+// Hourly reminders through the waking day. The sleep-window check below still
+// filters out 23:30–04:30, and prayer-DND (if on) skips around prayer times.
+const NUDGE_HOURS = Array.from({ length: 17 }, (_, i) => 6 + i); // 06:00 … 22:00
 
 function inSleepWindow(d: Date): boolean {
   const mins = d.getHours() * 60 + d.getMinutes();
@@ -77,7 +78,7 @@ function inSleepWindow(d: Date): boolean {
  * Schedule gentle reminders for the coming days. Safe no-op on web / when the
  * plugin or permission isn't available. Cancels its own previous schedule first.
  */
-export async function scheduleSpiritualNudges(days = 5): Promise<void> {
+export async function scheduleSpiritualNudges(days = 3): Promise<void> {
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications');
 
@@ -114,7 +115,8 @@ export async function scheduleSpiritualNudges(days = 5): Promise<void> {
           title: 'نور · تذكير',
           body: r.ar,
           schedule: { at, allowWhileIdle: true },
-          smallIcon: 'ic_stat_icon',
+          smallIcon: 'ic_stat_nur',
+          largeIcon: 'nur_logo',
         });
       }
     }

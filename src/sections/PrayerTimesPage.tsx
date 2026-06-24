@@ -133,8 +133,11 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
         if (perm.display !== 'granted') return;
         // Android 8+ ties the notification sound to its channel, so create a
         // dedicated high-importance channel that plays the bundled adhan.
+        // NOTE: Android caches a channel's sound at creation time and ignores
+        // later changes, so we use a fresh channel id to guarantee the adhan
+        // sound actually plays (older installs had a soundless 'adhan' channel).
         await LocalNotifications.createChannel({
-          id: 'adhan',
+          id: 'nur-adhan-v2',
           name: 'Adhan · الأذان',
           description: 'Prayer-time adhan',
           sound: 'adhan.mp3',
@@ -156,9 +159,10 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
               title: t('Prayer Time', 'حان وقت الصلاة'),
               body: `${t('It is now time for', 'حان الآن وقت صلاة')} ${ar}`,
               schedule: { at },
-              channelId: 'adhan',
+              channelId: 'nur-adhan-v2',
               sound: 'adhan.mp3',
-              smallIcon: 'ic_stat_icon',
+              smallIcon: 'ic_stat_nur',
+              largeIcon: 'nur_logo',
             };
           })
           .filter((n) => n.schedule.at > now);
