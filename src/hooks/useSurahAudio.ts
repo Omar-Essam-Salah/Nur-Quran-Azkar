@@ -102,48 +102,49 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
     setProgress(0);
     recordDeed('ayah'); // Soul Ledger: count each ayah recited
 
-    const blob = await getAudioBlob(reciterApiId, chapter, ayah);
-    if (token !== loadTokenRef.current) return;
-    revokeUrl();
+    const start = (src: string, isBlob: boolean) => {
+      if (token !== loadTokenRef.current) return;
+      revokeUrl();
+      if (isBlob) objectUrlRef.current = src;
+      audio.src = src;
+      audio.playbackRate = rate;
+      audio.play()
+        .then(() => { audio.playbackRate = rate; if (token === loadTokenRef.current) setLoading(false); })
+        .catch(() => {
+          // First play() can be rejected before the element is "warm" — retry once.
+          window.setTimeout(() => {
+            if (token !== loadTokenRef.current) return;
+            audio.play()
+              .then(() => { audio.playbackRate = rate; setLoading(false); })
+              .catch(() => { setIsPlaying(false); setLoading(false); });
+          }, 150);
+        });
+    };
 
-    let src: string | null;
-    if (blob) {
-      src = URL.createObjectURL(blob);
-      objectUrlRef.current = src;
-    } else {
-      src = verseFor(ayah)?.audioUrl ?? null;
-      // Offline-first text loads before the network enriches audio URLs. If the
-      // URL isn't ready yet (common on the very first ayah right after opening a
-      // surah), wait briefly instead of silently skipping the ayah.
-      for (let tries = 0; !src && tries < 20; tries++) {
-        await new Promise((r) => setTimeout(r, 150));
-        if (token !== loadTokenRef.current) return;
-        src = verseFor(ayah)?.audioUrl ?? null;
-      }
-    }
-    if (!src) {
-      setLoading(false);
-      setIsPlaying(false);
+    // FAST PATH: a network URL is ready → start it NOW, synchronously, still
+    // inside the user's tap. This is the fix for the first ayah / default reciter
+    // not playing: an `await` before play() leaves the user-gesture context and
+    // the browser blocks autoplay. (Offline-downloaded audio is recovered by the
+    // 'error' handler, which swaps in the saved blob.)
+    const netUrl = verseFor(ayah)?.audioUrl ?? null;
+    if (netUrl) {
+      start(netUrl, false);
       return;
     }
 
-    audio.src = src;
-    audio.playbackRate = rate;
-    try {
-      await audio.play();
-      audio.playbackRate = rate;
-    } catch {
-      // The first programmatic play() can be rejected (autoplay policy / not yet
-      // buffered). Retry once shortly before giving up.
-      try {
-        await new Promise((r) => setTimeout(r, 140));
-        if (token === loadTokenRef.current) { await audio.play(); audio.playbackRate = rate; }
-      } catch {
-        if (token === loadTokenRef.current) setIsPlaying(false);
-      }
-    } finally {
-      if (token === loadTokenRef.current) setLoading(false);
+    // No URL yet (offline-first text loaded before audio was enriched, or a
+    // download-only surah): use a saved blob, or wait briefly for the URL.
+    const blob = await getAudioBlob(reciterApiId, chapter, ayah);
+    if (token !== loadTokenRef.current) return;
+    if (blob) { start(URL.createObjectURL(blob), true); return; }
+    let src: string | null = null;
+    for (let tries = 0; !src && tries < 20; tries++) {
+      await new Promise((r) => setTimeout(r, 150));
+      if (token !== loadTokenRef.current) return;
+      src = verseFor(ayah)?.audioUrl ?? null;
     }
+    if (!src) { setLoading(false); setIsPlaying(false); return; }
+    start(src, false);
   }, []);
 
   const play = useCallback((ayah?: number) => {
@@ -263,12 +264,25 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
       }
     };
     const onError = () => {
-      // A reciter's file failed to load (bad URL / offline). Reset cleanly so the
-      // UI isn't stuck on "loading" and the snow layer reappears.
       if (audio.currentSrc.startsWith('data:')) return;
-      setLoading(false);
-      setIsPlaying(false);
-      document.body.classList.remove('reciting');
+      // The network file failed (offline / bad URL). If this ayah was downloaded,
+      // recover by playing the saved blob; otherwise reset cleanly so the UI
+      // isn't stuck on "loading" and the snow layer reappears.
+      const { reciterApiId, chapter, playingAyah } = latest.current;
+      const reset = () => { setLoading(false); setIsPlaying(false); document.body.classList.remove('reciting'); };
+      if (playingAyah != null) {
+        getAudioBlob(reciterApiId, chapter, playingAyah).then((blob) => {
+          if (blob && latest.current.playingAyah === playingAyah) {
+            revokeUrl();
+            const url = URL.createObjectURL(blob);
+            objectUrlRef.current = url;
+            audio.src = url;
+            void audio.play().catch(reset);
+          } else reset();
+        }).catch(reset);
+        return;
+      }
+      reset();
     };
     audio.addEventListener('play', onPlay);
     audio.addEventListener('pause', onPause);
