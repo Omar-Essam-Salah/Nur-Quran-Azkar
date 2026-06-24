@@ -186,9 +186,9 @@
     100% { transform: translate3d(var(--drift, 0px), 112vh, 0); opacity: 0; }
   }
 
-  /* While reciting, drop the snow layer entirely so the audio decode + word-sync
-     re-renders stay perfectly smooth (no competing compositor work). */
-  body.reciting .snow-layer { display: none; }
+  /* Snow stays falling consistently — even during recitation. The previous jank
+     came from per-card backdrop-filter (now removed), not the snow, so there's no
+     need to hide it (which looked to users like the app had frozen). */
 
   /* Moon Element */
   .moon-element {
@@ -302,6 +302,25 @@ html.light .glass-card {
 html.light .glass-card-sm {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(238, 243, 245, 0.94));
   box-shadow: 0 6px 20px rgba(18, 52, 60, 0.07);
+}
+
+/* ─── Toasts (sonner) ───────────────────────────────────────────────────────
+   Force readable colours in BOTH themes. The default colours relied on raw HSL
+   variables that aren't valid as direct colours, so the toast text came out
+   washed-out / invisible — especially in Light Mode. */
+[data-sonner-toast] {
+  background: rgb(var(--glass-1)) !important;
+  color: rgb(var(--text-strong-rgb)) !important;
+  border: 1px solid rgba(var(--hair), 0.18) !important;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28) !important;
+}
+[data-sonner-toast] [data-title] { color: rgb(var(--text-strong-rgb)) !important; font-weight: 600; }
+[data-sonner-toast] [data-description] { color: rgba(var(--text-strong-rgb), 0.82) !important; }
+[data-sonner-toast] [data-icon] { color: #14879c !important; }
+[data-sonner-toast] [data-close-button] {
+  background: rgb(var(--glass-2)) !important;
+  color: rgb(var(--text-strong-rgb)) !important;
+  border: 1px solid rgba(var(--hair), 0.2) !important;
 }
 
 /* ─── Tajweed Colors ─── */
