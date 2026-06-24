@@ -4,6 +4,7 @@ import type { Page } from '@/types';
 import { computePrayerTimes, getHijriDate } from '@/lib/prayer';
 import { getCachedGeo } from '@/lib/permissions';
 import { useI18n } from '@/i18n';
+import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
 interface PrayerTimesPageProps {
@@ -63,36 +64,25 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
     return localStorage.getItem('nur-adhan-voice') || 'makkah';
   });
   const [lastPlayedPrayer, setLastPlayedPrayer] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const ownerRef = useRef(0); // our claim on the shared audio element
   const [audioSrc, setAudioSrc] = useState<string>('');
   const [_useFallback, setUseFallback] = useState(false);
 
+  // The adhan plays through the app-wide shared audio element (lib/audioBus.ts).
+  // We keep ONLY the selected file path here — no persistent <audio> element,
+  // which used to permanently reserve a media decoder and starve the reciter.
   const setAudioSource = (id: string) => {
     const option = adhanOptions.find(a => a.id === id) ?? adhanOptions[0];
-    const src = option.local;
-    setAudioSrc(src);
+    setAudioSrc(option.local);
     setUseFallback(false);
-    if (audioRef.current) {
-      audioRef.current.src = src;
-      audioRef.current.load();
-    }
   };
 
   useEffect(() => {
     setAudioSource(selectedAdhan);
   }, [selectedAdhan]);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleError = () => {
-      console.warn('تعذّر تحميل ملف الأذان:', audioSrc);
-    };
-
-    audio.addEventListener('error', handleError);
-    return () => audio.removeEventListener('error', handleError);
-  }, [audioSrc]);
+  // Stop the adhan if it's still playing (e.g. a preview) when leaving the page.
+  useEffect(() => () => { if (isOwner(ownerRef.current)) { try { audioEl().pause(); } catch { /* ignore */ } } }, []);
 
   const requestLocation = () => {
     if (!navigator.geolocation) { if (!getCachedGeo()) setLocation({ lat: 21.3891, lng: 39.8579 }); return; }
@@ -184,13 +174,16 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
       const now = new Date();
       setCurrentTime(now);
 
-      if (timings && adhanEnabled && audioRef.current && audioSrc) {
+      if (timings && adhanEnabled && audioSrc) {
         const nowHHMM = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        
+
         const prayersToCheck = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
         for (const prayer of prayersToCheck) {
           if (timings[prayer] === nowHHMM && lastPlayedPrayer !== prayer) {
-            audioRef.current.play().catch(e => console.log("Autoplay blocked:", e));
+            ownerRef.current = claimAudio();
+            const a = audioEl();
+            a.src = audioSrc; a.volume = 1;
+            a.play().catch(e => console.log("Autoplay blocked:", e));
             setLastPlayedPrayer(prayer);
             break;
           }
@@ -259,32 +252,27 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   }, [prayerList, currentTime]);
 
   const toggleAdhan = () => {
-    if (!adhanEnabled && audioRef.current && audioSrc) {
-      audioRef.current.volume = 0;
-      audioRef.current.play().then(() => {
-        audioRef.current!.pause();
-        audioRef.current!.volume = 1;
-        audioRef.current!.currentTime = 0;
-      }).catch(e => console.log(e));
-    }
+    // Unlock audio on this tap so the prayer-time auto-play later isn't blocked.
+    if (!adhanEnabled) unlockAudio();
     const nv = !adhanEnabled;
     setAdhanEnabled(nv);
     localStorage.setItem('nur-adhan-enabled', nv ? '1' : '0');
   };
 
   const previewAdhan = async () => {
-    if (!audioRef.current) {
-      alert("لم يتم تحميل مشغل الصوت بعد");
-      return;
-    }
     if (!audioSrc) {
       alert("جاري تحميل ملف الأذان، انتظر قليلاً...");
       return;
     }
     try {
-      audioRef.current.currentTime = 0;
-      audioRef.current.volume = 1;
-      await audioRef.current.play();
+      unlockAudio();
+      ownerRef.current = claimAudio(); // take the shared element (frees any other sound)
+      const a = audioEl();
+      a.onended = null;
+      a.onerror = null;
+      a.src = audioSrc;
+      a.volume = 1;
+      await a.play();
     } catch (err: any) {
       console.error("خطأ في معاينة الأذان:", err);
       alert(`حدث خطأ في تشغيل الأذان: ${err.message || "يرجى المحاولة مرة أخرى"}`);
@@ -293,8 +281,6 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
 
   return (
     <div className="page-enter min-h-screen">
-      <audio ref={audioRef} src={audioSrc} preload="auto" crossOrigin="anonymous" />
-
       <header className="sticky top-0 z-40 px-4 py-3">
         <div 
           className="mx-auto max-w-lg flex items-center gap-3 rounded-2xl px-4 py-3"

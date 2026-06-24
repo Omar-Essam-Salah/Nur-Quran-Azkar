@@ -1,11 +1,11 @@
 import { ArrowLeft, Moon, Sun, Monitor, Type, Languages, BookOpen, Trash2, AlertTriangle, AudioLines, Globe, Search, Check, X, Play, Square, Loader2, DatabaseBackup, Copy, Upload } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { RECITERS, everyayahUrl, type Reciter } from '@/data/reciters';
 import { useTranslationsList } from '@/hooks/useTranslationsList';
 import { POPULAR_TRANSLATIONS, DEFAULT_TRANSLATION_IDS, translationLabel } from '@/data/translations';
 import { absoluteAudioUrl } from '@/lib/quranApi';
-import { SILENT_AUDIO } from '@/hooks/useSurahAudio';
+import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
 import { exportData, importData } from '@/lib/backup';
 import { isPrayerDnd, setPrayerDnd } from '@/lib/reminders';
 import { useI18n } from '@/i18n';
@@ -24,33 +24,36 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
   const { list: trCatalogue } = useTranslationsList();
 
   // ── Reciter sample preview (does NOT change the active reciter) ──
-  const previewRef = useRef<HTMLAudioElement | null>(null);
+  // Plays through the app-wide shared audio element (see lib/audioBus.ts), so a
+  // preview can never collide with / freeze the reciter or the adhan.
   const previewTimer = useRef<number | undefined>(undefined);
   const previewToken = useRef(0); // guards against rapid switching between reciters
+  const ownerRef = useRef(0);     // our claim on the shared element
   const [previewing, setPreviewing] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const stopPreview = () => {
     previewToken.current++; // invalidate any in-flight preview
     window.clearTimeout(previewTimer.current);
-    if (previewRef.current) { try { previewRef.current.pause(); previewRef.current.removeAttribute('src'); } catch { /* ignore */ } }
+    if (isOwner(ownerRef.current)) {
+      try { const a = audioEl(); a.pause(); a.removeAttribute('src'); } catch { /* ignore */ }
+    }
     setPreviewing(null);
     setPreviewLoading(false);
   };
+
+  // Stop any preview when leaving Settings so it doesn't keep the shared element.
+  useEffect(() => () => { stopPreview(); }, []);
 
   const previewReciter = async (r: Reciter) => {
     if (previewing === r.id) { stopPreview(); return; }
     stopPreview();
     const token = ++previewToken.current;
-    if (!previewRef.current) {
-      previewRef.current = new Audio();
-      previewRef.current.onended = () => setPreviewing(null);
-      previewRef.current.onerror = () => { if (token === previewToken.current) { setPreviewing(null); setPreviewLoading(false); } };
-    }
-    const a = previewRef.current;
-    // Warm up audio on a SEPARATE throwaway element so the later play() isn't
-    // blocked by the autoplay policy.
-    try { const s = new Audio(SILENT_AUDIO); s.volume = 0; const up = s.play(); if (up) up.then(() => s.pause()).catch(() => {}); } catch { /* ignore */ }
+    unlockAudio(); // warm up on this tap so the later play() isn't blocked
+    ownerRef.current = claimAudio(); // take the shared element (frees any other sound)
+    const a = audioEl();
+    a.onended = () => { if (token === previewToken.current) setPreviewing(null); };
+    a.onerror = () => { if (token === previewToken.current && isOwner(ownerRef.current)) { setPreviewing(null); setPreviewLoading(false); } };
     try {
       setPreviewing(r.id);
       setPreviewLoading(true);

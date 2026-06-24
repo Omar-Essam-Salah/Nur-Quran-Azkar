@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, ZoomIn, ZoomOut, BookOpen, Search } from 'lucide-react';
 import { getReciter, everyayahUrl } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
+import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
 import { loadAyahRange } from '@/lib/localQuran';
 import { surahList } from '@/data/surahList';
 import { startPageForSurah } from '@/data/mushafPages';
@@ -67,6 +68,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     catch { return getReciter(undefined); }
   }, []);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
+  const ownerRef = useRef(0); // our claim on the app-wide shared audio element
   const playlistRef = useRef<{ url: string; key?: string }[]>([]);
   const idxRef = useRef(0);
   const playingPageRef = useRef<number>(page);
@@ -82,6 +84,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     try {
       setAudioLoading(true);
       playingPageRef.current = p;
+      ownerRef.current = claimAudio(); // take the shared element (frees adhan/preview)
       let items: { url: string; key?: string }[];
       if (reciter.everyayah) {
         // everyayah reciters: get the page's verse keys and build per-ayah URLs.
@@ -110,34 +113,38 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     } catch { setAudioLoading(false); setAudioPlaying(false); }
   };
 
+  // (Re)install our handlers on the shared element and return it. Handlers
+  // no-op unless we still own the element, so the adhan / reciter / preview
+  // never drive the mushaf's state (and vice-versa).
   const ensureAudioEl = (): HTMLAudioElement => {
-    if (!audioElRef.current) {
-      const a = new Audio();
-      a.onplay = () => document.body.classList.add('reciting');
-      a.onpause = () => document.body.classList.remove('reciting');
-      a.onerror = () => { document.body.classList.remove('reciting'); setAudioPlaying(false); setAudioLoading(false); };
-      a.onended = () => {
-        idxRef.current += 1;
-        if (idxRef.current < playlistRef.current.length) {
-          const it = playlistRef.current[idxRef.current];
-          setCurrentVerseKey(it.key ?? null);
-          a.src = it.url;
-          void a.play().catch(() => {});
-        } else {
-          const np = playingPageRef.current + 1; // page finished → continue reading
-          if (np <= TOTAL_PAGES) { setPage(np); void loadAndPlayPage(np); }
-          else setAudioPlaying(false);
-        }
-      };
-      audioElRef.current = a;
-    }
-    return audioElRef.current;
+    const a = audioEl();
+    a.onplay = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.add('reciting'); };
+    a.onpause = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.remove('reciting'); };
+    a.onerror = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.remove('reciting'); setAudioPlaying(false); setAudioLoading(false); };
+    a.onended = () => {
+      if (!isOwner(ownerRef.current)) return;
+      idxRef.current += 1;
+      if (idxRef.current < playlistRef.current.length) {
+        const it = playlistRef.current[idxRef.current];
+        setCurrentVerseKey(it.key ?? null);
+        a.src = it.url;
+        void a.play().catch(() => {});
+      } else {
+        const np = playingPageRef.current + 1; // page finished → continue reading
+        if (np <= TOTAL_PAGES) { setPage(np); void loadAndPlayPage(np); }
+        else setAudioPlaying(false);
+      }
+    };
+    audioElRef.current = a;
+    return a;
   };
 
   const toggleAudio = () => {
-    const a = ensureAudioEl();
+    const a = audioEl();
     if (audioPlaying) { a.pause(); setAudioPlaying(false); return; }
-    if (a.src && a.paused && playingPageRef.current === page && playlistRef.current.length) {
+    // Resume only if we still hold the shared element from this same page.
+    if (isOwner(ownerRef.current) && a.src && a.paused && playingPageRef.current === page && playlistRef.current.length) {
+      ensureAudioEl();
       void a.play(); setAudioPlaying(true); return;
     }
     void loadAndPlayPage(page);
@@ -149,8 +156,8 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  // Stop audio on unmount.
-  useEffect(() => () => { audioElRef.current?.pause(); document.body.classList.remove('reciting'); }, []);
+  // Stop audio on unmount (only if we still own the shared element).
+  useEffect(() => () => { if (isOwner(ownerRef.current)) { try { audioEl().pause(); } catch { /* ignore */ } document.body.classList.remove('reciting'); } }, []);
 
   // Tafsir works WITHOUT recitation: when the window is open, load the current
   // page's ayat so the user can read tafsir and step through ayat manually.

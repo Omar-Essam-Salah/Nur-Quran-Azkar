@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAudioBlob } from '@/lib/contentCache';
 import { recordDeed } from '@/lib/ledger';
+import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
 
-// A zero-length silent clip used to "unlock" the <audio> element inside the
-// first user gesture, so that a later programmatic play() (which runs AFTER an
-// IndexedDB await and is therefore outside the gesture) isn't blocked by the
-// browser's autoplay policy. This was why the very first ayah / the default
-// reciter often produced no sound.
-export const SILENT_AUDIO =
-  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+// Re-exported for older importers. The reciter, the Settings preview, the
+// adhan and the Mushaf all share ONE audio element now (see lib/audioBus.ts) so
+// a stuck sound can never freeze the next one.
+export { SILENT_AUDIO } from '@/lib/audioBus';
 
 export interface PlayerVerse {
   ayah: number;
@@ -62,6 +60,7 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
   const loadTokenRef = useRef(0);
+  const ownerRef = useRef(0); // our claim on the shared audio element
   const playsDoneRef = useRef(0); // completed plays of the repeat range
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -75,9 +74,8 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
   const latest = useRef({ reciterApiId, chapter, verses, playingAyah, rate, repeat });
   latest.current = { reciterApiId, chapter, verses, playingAyah, rate, repeat };
 
-  if (audioRef.current === null && typeof Audio !== 'undefined') {
-    audioRef.current = new Audio();
-    audioRef.current.preload = 'auto';
+  if (audioRef.current === null) {
+    audioRef.current = audioEl(); // the one app-wide shared element
   }
 
   const revokeUrl = () => {
@@ -95,6 +93,10 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
     if (!audio) return;
     const { reciterApiId, chapter, rate } = latest.current;
     const token = ++loadTokenRef.current;
+    // Take the shared element: hard-stops/frees any other sound (e.g. a stuck
+    // adhan or preview) so it can't freeze this playback. Synchronous — keeps
+    // the in-gesture play() below valid against the autoplay policy.
+    ownerRef.current = claimAudio();
 
     setLoading(true);
     setPlayingAyah(ayah);
@@ -154,7 +156,9 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
     const target = ayah ?? latest.current.playingAyah;
     if (target == null) {
       void playAyah(latest.current.verses[0]?.ayah ?? 1);
-    } else if (ayah == null && audio.src && audio.paused) {
+    } else if (ayah == null && isOwner(ownerRef.current) && audio.src && audio.paused) {
+      // Resume only if we still hold the shared element; otherwise restart so we
+      // reclaim it from whatever played in between (adhan, preview…).
       void audio.play().catch(() => setIsPlaying(false));
     } else {
       void playAyah(target);
@@ -220,9 +224,12 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const onPlay = () => { setIsPlaying(true); document.body.classList.add('reciting'); };
-    const onPause = () => { setIsPlaying(false); document.body.classList.remove('reciting'); };
+    // All handlers no-op unless we currently own the shared element, so audio
+    // played by the adhan / preview / mushaf never drives the reciter's state.
+    const onPlay = () => { if (!isOwner(ownerRef.current)) return; setIsPlaying(true); document.body.classList.add('reciting'); };
+    const onPause = () => { if (!isOwner(ownerRef.current)) return; setIsPlaying(false); document.body.classList.remove('reciting'); };
     const onTime = () => {
+      if (!isOwner(ownerRef.current)) return;
       if (audio.duration > 0) setProgress(audio.currentTime / audio.duration);
       const ayah = latest.current.playingAyah;
       const verse = ayah != null ? verseFor(ayah) : undefined;
@@ -231,6 +238,7 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
       }
     };
     const onEnded = () => {
+      if (!isOwner(ownerRef.current)) return;
       const { playingAyah, verses, repeat } = latest.current;
       const cur = playingAyah ?? 0;
 
@@ -264,7 +272,9 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
       }
     };
     const onError = () => {
-      if (audio.currentSrc.startsWith('data:')) return;
+      if (!isOwner(ownerRef.current)) return;
+      // An empty src (set by claimAudio's reset) is not a real failure.
+      if (!audio.currentSrc || audio.currentSrc.startsWith('data:')) return;
       // Rapidly changing src (fast next/prev/back) aborts the in-flight load and
       // fires an 'error' with code ABORTED. That's not a real failure — ignore it,
       // otherwise the reset below kills the playback the newest tap just started.
@@ -325,17 +335,7 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
   // ayat with a snow flicker. A gesture-initiated play on any element grants the
   // document the audio permission that the real player then inherits.
   useEffect(() => {
-    let done = false;
-    const unlock = () => {
-      if (done) return;
-      done = true;
-      try {
-        const silent = new Audio(SILENT_AUDIO);
-        silent.volume = 0;
-        const p = silent.play();
-        if (p) p.then(() => silent.pause()).catch(() => {});
-      } catch { /* ignore */ }
-    };
+    const unlock = () => unlockAudio();
     window.addEventListener('pointerdown', unlock, true);
     window.addEventListener('touchstart', unlock, true);
     return () => {
