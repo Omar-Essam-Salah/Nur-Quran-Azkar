@@ -61,6 +61,8 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
   const objectUrlRef = useRef<string | null>(null);
   const loadTokenRef = useRef(0);
   const ownerRef = useRef(0); // our claim on the shared audio element
+  const playTimerRef = useRef<number | undefined>(undefined); // coalesces rapid taps
+  const lastStartRef = useRef(0); // ms timestamp of the last real load+play
   const playsDoneRef = useRef(0); // completed plays of the repeat range
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -88,22 +90,17 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
   const verseFor = (ayah: number): PlayerVerse | undefined =>
     latest.current.verses.find((v) => v.ayah === ayah);
 
-  const playAyah = useCallback(async (ayah: number) => {
+  // The ACTUAL load+play for one ayah. Never call this directly from the UI —
+  // go through playAyah(), which coalesces rapid taps so this runs once.
+  const doPlayAyah = useCallback(async (ayah: number, token: number) => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || token !== loadTokenRef.current) return;
     const { reciterApiId, chapter, rate } = latest.current;
-    const token = ++loadTokenRef.current;
-    // Take the shared element. claimAudio() only pause()s (no load()), so this
-    // is a cheap, race-free way to (a) stop any other player — adhan, preview,
-    // mushaf — and (b) mark ourselves owner so our handlers stay live. The new
-    // src we set below frees the previous source's decoder on its own.
+    lastStartRef.current = Date.now();
+    // Take the shared element (stops adhan/preview/mushaf, marks us owner) and
+    // reset it cleanly so the new src loads on Android WebView.
     ownerRef.current = claimAudio();
-
-    setLoading(true);
-    setPlayingAyah(ayah);
-    setCurrentWord(0);
-    setProgress(0);
-    recordDeed('ayah'); // Soul Ledger: count each ayah recited
+    recordDeed('ayah'); // Soul Ledger: count each ayah actually played
 
     const start = (src: string, isBlob: boolean) => {
       if (token !== loadTokenRef.current) return;
@@ -114,9 +111,8 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
       audio.play()
         .then(() => { audio.playbackRate = rate; if (token === loadTokenRef.current) setLoading(false); })
         .catch(() => {
-          // First play() can be rejected before the element is "warm" — retry
-          // a couple of times while it buffers, bailing if a newer tap took over.
-          // This is what lets you jump to ayah 4 and come back to 1/2/3.
+          // play() can be rejected before the element is "warm" — retry a few
+          // times while it buffers, bailing if a newer tap took over.
           const retry = (n: number) => {
             if (token !== loadTokenRef.current) return;
             audio.play()
@@ -131,11 +127,8 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
         });
     };
 
-    // FAST PATH: a network URL is ready → start it NOW, synchronously, still
-    // inside the user's tap. This is the fix for the first ayah / default reciter
-    // not playing: an `await` before play() leaves the user-gesture context and
-    // the browser blocks autoplay. (Offline-downloaded audio is recovered by the
-    // 'error' handler, which swaps in the saved blob.)
+    // FAST PATH: a network URL is ready → start it NOW, synchronously. (When
+    // called inside the tap, this also keeps us within the user gesture.)
     const netUrl = verseFor(ayah)?.audioUrl ?? null;
     if (netUrl) {
       start(netUrl, false);
@@ -156,6 +149,26 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
     if (!src) { setLoading(false); setIsPlaying(false); return; }
     start(src, false);
   }, []);
+
+  // Public entry. Updates the UI instantly, but COALESCES rapid taps: a single,
+  // deliberate tap plays immediately; while you're quickly flipping between
+  // ayat we wait for you to settle and then load+play only the final one. This
+  // is the fix for "the audio stops when I flip between several ayat" — Android
+  // WebView can't survive a burst of load() calls, so we only ever issue one.
+  const playAyah = useCallback((ayah: number) => {
+    const token = ++loadTokenRef.current;
+    setLoading(true);
+    setPlayingAyah(ayah);
+    setCurrentWord(0);
+    setProgress(0);
+    window.clearTimeout(playTimerRef.current);
+    const idle = Date.now() - lastStartRef.current > 350;
+    if (idle) {
+      void doPlayAyah(ayah, token); // instant for a deliberate tap (and in-gesture)
+    } else {
+      playTimerRef.current = window.setTimeout(() => { void doPlayAyah(ayah, token); }, 200);
+    }
+  }, [doPlayAyah]);
 
   const play = useCallback((ayah?: number) => {
     const audio = audioRef.current;
@@ -195,6 +208,7 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
       audio.removeAttribute('src');
       audio.load();
     }
+    window.clearTimeout(playTimerRef.current);
     revokeUrl();
     loadTokenRef.current++;
     playsDoneRef.current = 0;
@@ -354,6 +368,7 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
 
   useEffect(() => {
     return () => {
+      window.clearTimeout(playTimerRef.current);
       const audio = audioRef.current;
       if (audio) {
         audio.pause();
