@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { App as CapApp } from '@capacitor/app';
 import Splash from '@/components/Splash';
 import DailyReminder from '@/components/DailyReminder';
+import Onboarding from '@/components/Onboarding';
 import LedgerPage from '@/sections/LedgerPage';
 import GuidePage from '@/sections/GuidePage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
@@ -42,6 +43,9 @@ function App() {
   const [selectedAzkar, setSelectedAzkar] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [onboarded, setOnboarded] = useState(() => {
+    try { return localStorage.getItem('nur-onboarded') === '1'; } catch { return true; }
+  });
   const [selectedAyah, setSelectedAyah] = useState<number | null>(null);
 
   const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks();
@@ -119,10 +123,12 @@ function App() {
   // Schedule the gentle spiritual nudges for the coming days (native only; no-op on web).
   // Also mark today active in the Soul Ledger (streak / active-days tracking).
   useEffect(() => {
-    void requestStartupPermissions(); // ask for location + notifications up-front
+    // First launch is handled by the Onboarding screen (explicit prompts); on
+    // later launches re-check permissions silently.
+    if (onboarded) void requestStartupPermissions();
     void scheduleSpiritualNudges();
     recordDeed('open');
-  }, []);
+  }, [onboarded]);
 
   // Keyboard shortcut for search
   useEffect(() => {
@@ -190,7 +196,8 @@ function App() {
   return (
     <div className="relative min-h-screen bg-[color:var(--app-bg)] text-white overflow-x-hidden">
       {showSplash && <Splash onDone={() => setShowSplash(false)} />}
-      {!showSplash && <DailyReminder />}
+      {!showSplash && !onboarded && <Onboarding onDone={() => setOnboarded(true)} />}
+      {!showSplash && onboarded && <DailyReminder />}
       {/* Background Starfield */}
       {showStarfield && <Starfield />}
       
