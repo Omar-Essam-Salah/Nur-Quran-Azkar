@@ -40,18 +40,22 @@ export function audioEl(): HTMLAudioElement {
 
 /**
  * Take ownership of the shared element for a NEW playback. Hard-stops whatever
- * the previous owner was doing; the new owner then assigns its own `src`, which
- * reuses the single decoder and aborts any in-flight/stuck load of the previous
- * sound. Returns a token; store it and gate your handlers with `isOwner(token)`.
+ * the previous owner was doing and resets the element to a clean slate so the
+ * next `src` we assign loads reliably. Returns a token; store it and gate your
+ * handlers with `isOwner(token)`.
  *
- * We deliberately only pause() here — we do NOT call load(). A load() would run
- * asynchronously and race with the play() the new owner issues right after,
- * aborting it (which broke fast navigation between ayat). Reassigning `src` is
- * enough to free the previous source's decoder.
+ * The reset (removeAttribute('src') + load()) is REQUIRED: unlike a freshly
+ * created <audio>, this one element is reused across reciter/adhan/preview/
+ * mushaf, and on Android WebView simply reassigning `.src` on a used element
+ * doesn't always restart the load — playback would silently never begin. We use
+ * removeAttribute (never src = '') so this reset doesn't itself raise an error.
  */
 export function claimAudio(): number {
   const a = audioEl();
-  if (a) { try { a.pause(); } catch { /* ignore */ } }
+  if (a) {
+    try { a.pause(); } catch { /* ignore */ }
+    try { a.removeAttribute('src'); a.load(); } catch { /* ignore */ }
+  }
   return ++owner;
 }
 
