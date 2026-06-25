@@ -84,7 +84,7 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'Nur - Quran & Azkar',
+        name: 'Nur',
         short_name: 'Nur',
         description: 'تطبيق القرآن والأذكار - خالي من الإعلانات ويعمل بدون إنترنت',
         theme_color: '#081d23',

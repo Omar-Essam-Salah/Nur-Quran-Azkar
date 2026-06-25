@@ -337,43 +337,39 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
         )}
       </header>
 
-      {/* Page image (pannable when zoomed; swipe pages only at 1×) */}
+      {/* Page image — fills the screen; the page's own border is the edge.
+          (Pannable when zoomed; swipe pages only at 1×.) */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-auto px-3 pb-4 select-none"
+        className="flex-1 overflow-auto select-none"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         <div
           className="relative mx-auto"
-          style={{ width: `${Math.round(zoom * 100)}%`, maxWidth: zoom > 1 ? 'none' : '29rem', transition: 'width 0.2s ease' }}
+          style={{ width: `${Math.round(zoom * 100)}%`, transition: 'width 0.2s ease' }}
         >
           {!loaded && (
             <div className="absolute inset-0 flex items-center justify-center z-10">
               <Loader2 size={28} className="text-[#d4af37] animate-spin" />
             </div>
           )}
-          {/* Gilt edge around the illuminated page. */}
-          <div className="mushaf-frame">
-            <div className="mushaf-paper">
-              <img
-                key={page}
-                src={localPageUrl(page)}
-                alt={`صفحة ${page}`}
-                loading="lazy"
-                decoding="async"
-                onLoad={() => setLoaded(true)}
-                onError={(e) => {
-                  const t = e.currentTarget;
-                  if (!t.dataset.fb) { t.dataset.fb = '1'; t.src = cdnPageUrl(page); }
-                }}
-                onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
-                className="transition-opacity duration-300"
-                style={{ opacity: loaded ? 1 : 0 }}
-              />
-            </div>
-          </div>
+          <img
+            key={page}
+            src={localPageUrl(page)}
+            alt={`صفحة ${page}`}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setLoaded(true)}
+            onError={(e) => {
+              const t = e.currentTarget;
+              if (!t.dataset.fb) { t.dataset.fb = '1'; t.src = cdnPageUrl(page); }
+            }}
+            onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
+            className="mushaf-page-img transition-opacity duration-300"
+            style={{ opacity: loaded ? 1 : 0 }}
+          />
         </div>
       </div>
 

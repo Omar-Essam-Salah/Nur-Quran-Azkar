@@ -340,37 +340,20 @@ tajweed.idgham_mutaqaribayn { color: #1697AE; }
 tajweed.iqlab { color: #26BFFD; }
 tajweed.ghunnah { color: #FF7E1E; }
 
-/* ─── Ornate paper Mushaf (already-illuminated pages on a gilt edge) ─── */
+/* ─── Paper Mushaf — the illuminated page fills the screen, its own ornate
+       border IS the edge (white margins trimmed off the source images). ─── */
 .mushaf-stage {
   background:
     radial-gradient(ellipse at 50% 22%, rgba(212,175,55,0.10), transparent 55%),
     radial-gradient(ellipse at 50% 100%, rgba(20,135,156,0.08), transparent 60%),
     linear-gradient(165deg, #0a1c18 0%, #11241d 45%, #1c140b 100%);
 }
-/* A slim gilt edge around the (already decorated) page — like a gold-edged
-   book page, without competing with the page's own ornament. */
-.mushaf-frame {
-  position: relative;
-  border-radius: 12px;
-  padding: 6px;
-  background:
-    linear-gradient(135deg, #f3d98a 0%, #b88a2c 22%, #e6c267 48%, #9c7a28 72%, #f1dc93 100%);
-  box-shadow:
-    0 18px 45px rgba(0,0,0,0.5),
-    0 0 0 1px rgba(74,52,12,0.55) inset;
-}
-.mushaf-paper {
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fdfcf7;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
-}
-.mushaf-paper > img {
+.mushaf-page-img {
   display: block;
   width: 100%;
   height: auto;
+  box-shadow: 0 8px 34px rgba(0,0,0,0.42);
 }
 /* Dim the bright page a touch at night for comfort (dark is the default theme;
    the app adds the `light` class for light mode). */
-html:not(.light) .mushaf-paper > img { filter: brightness(0.94); }
+html:not(.light) .mushaf-page-img { filter: brightness(0.95); }

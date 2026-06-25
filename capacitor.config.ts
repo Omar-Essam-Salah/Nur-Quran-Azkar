@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.nur.quranazkar',
-  appName: 'Nur — Quran & Azkar',
+  appName: 'Nur',
   webDir: 'dist',
   backgroundColor: '#081d23',
   android: {

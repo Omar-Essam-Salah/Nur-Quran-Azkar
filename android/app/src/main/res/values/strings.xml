@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Nur — Quran &amp; Azkar</string>
-    <string name="title_activity_main">Nur — Quran &amp; Azkar</string>
+    <string name="app_name">Nur</string>
+    <string name="title_activity_main">Nur</string>
     <string name="package_name">com.nur.quranazkar</string>
     <string name="custom_url_scheme">com.nur.quranazkar</string>
 </resources>
