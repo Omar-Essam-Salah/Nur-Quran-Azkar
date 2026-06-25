@@ -447,6 +447,13 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
             <div className="pt-2 border-t border-white/5">
               <p className="text-[10px] text-[color:var(--text-muted)]">{tr('Version', 'الإصدار')} 1.0.0</p>
               <p className="text-[10px] text-[color:var(--text-muted)]">{tr('Made with love for the Ummah', 'صُنع بحبٍّ للأمّة')}</p>
+              <p className="text-[10px] text-[#d4af37] arabic-text mt-1" dir={tr('ltr', 'rtl')}>
+                {tr('© 2026 Omar Essam Salah — All rights reserved', '© 2026 عمر عصام صلاح الدين — جميع الحقوق محفوظة')}
+              </p>
+              <p className="text-[9px] text-[color:var(--text-muted)]/70 arabic-text" dir={tr('ltr', 'rtl')}>
+                {tr('Quran text, recitations & translations are from sources published freely for the sake of Allah; rights belong to their owners.',
+                    'نصوص القرآن والتلاوات والترجمات من مصادر نشرها أصحابها مجانًا لوجه الله، والحقوق لأصحابها.')}
+              </p>
             </div>
           </div>
         </div>

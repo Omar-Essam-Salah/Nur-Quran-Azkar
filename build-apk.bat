@@ -30,14 +30,14 @@ echo  [2/4] Syncing Android  (npx cap sync) ...
 call npx cap sync android || goto :failed
 
 echo.
-echo  [3/4] Assembling the APK  (gradlew assembleDebug) ...
+echo  [3/4] Assembling the SIGNED RELEASE APK  (gradlew assembleRelease) ...
 pushd android
-call gradlew.bat assembleDebug || (popd & goto :failed)
+call gradlew.bat assembleRelease || (popd & goto :failed)
 popd
 
 echo.
 echo  [4/4] Copying the APK ...
-set "APK=android\app\build\outputs\apk\debug\app-debug.apk"
+set "APK=android\app\build\outputs\apk\release\app-release.apk"
 if not exist "%APK%" goto :failed
 copy /Y "%APK%" "D:\UserData\Downloads\Nur-Quran-Azkar.apk" >nul
 copy /Y "%APK%" "%USERPROFILE%\Desktop\Nur-Quran-Azkar.apk" >nul

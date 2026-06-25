@@ -38,6 +38,11 @@ public/mushaf/
 # Adhan recording bundled into the APK as a notification sound (not ours to ship)
 android/app/src/main/res/raw/*.mp3
 
+# Release signing — NEVER commit (anyone with these can sign apps as you)
+android/keystore.properties
+*.keystore
+*.jks
+
 # Capacitor / Android build artifacts (the android/ source is kept)
 android/.gradle/
 android/build/
