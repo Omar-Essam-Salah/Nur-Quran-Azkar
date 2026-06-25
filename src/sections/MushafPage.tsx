@@ -23,7 +23,10 @@ const JUZ_START_PAGES = [
 ];
 
 const pad3 = (n: number) => String(n).padStart(3, '0');
-const pageImageUrl = (page: number) => `https://files.quran.app/hafs/madani/width_1024/page${pad3(page)}.png`;
+// The illuminated "Mushaf al-Wasat" pages are bundled locally (offline, in
+// public/mushaf). Falls back to the plain CDN render if a page is ever missing.
+const localPageUrl = (page: number) => `${import.meta.env.BASE_URL}mushaf/${pad3(page)}.webp`;
+const cdnPageUrl = (page: number) => `https://files.quran.app/hafs/madani/width_1024/page${pad3(page)}.png`;
 const juzForPage = (page: number) => {
   let juz = 1;
   for (let i = 0; i < JUZ_START_PAGES.length; i++) if (page >= JUZ_START_PAGES[i]) juz = i + 1;
@@ -36,19 +39,6 @@ const hizbForPage = (page: number) => {
   const end = JUZ_START_PAGES[juz] ?? TOTAL_PAGES + 1;
   return (juz - 1) * 2 + (page >= start + (end - start) / 2 ? 2 : 1);
 };
-
-// Rub-el-hizb (۞) corner medallion — two overlapping squares + a gilt centre.
-function RubStar({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <g fill="#5e4413">
-        <rect x="5.5" y="5.5" width="13" height="13" rx="2" />
-        <rect x="5.5" y="5.5" width="13" height="13" rx="2" transform="rotate(45 12 12)" />
-      </g>
-      <circle cx="12" cy="12" r="2.5" fill="#caa23f" />
-    </svg>
-  );
-}
 
 export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const [page, setPage] = useState(() => {
@@ -234,7 +224,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     [page - 1, page + 1].forEach((p) => {
       if (p >= 1 && p <= TOTAL_PAGES) {
         const img = new Image();
-        img.src = pageImageUrl(p);
+        img.src = localPageUrl(p);
       }
     });
   }, [page]);
@@ -364,20 +354,20 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
               <Loader2 size={28} className="text-[#d4af37] animate-spin" />
             </div>
           )}
-          {/* Gilded frame → parchment page (image multiplies onto the cream). */}
+          {/* Gilt edge around the illuminated page. */}
           <div className="mushaf-frame">
-            <RubStar className="mushaf-corner tl" />
-            <RubStar className="mushaf-corner tr" />
-            <RubStar className="mushaf-corner bl" />
-            <RubStar className="mushaf-corner br" />
             <div className="mushaf-paper">
               <img
                 key={page}
-                src={pageImageUrl(page)}
+                src={localPageUrl(page)}
                 alt={`صفحة ${page}`}
                 loading="lazy"
                 decoding="async"
                 onLoad={() => setLoaded(true)}
+                onError={(e) => {
+                  const t = e.currentTarget;
+                  if (!t.dataset.fb) { t.dataset.fb = '1'; t.src = cdnPageUrl(page); }
+                }}
                 onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
                 className="transition-opacity duration-300"
                 style={{ opacity: loaded ? 1 : 0 }}
