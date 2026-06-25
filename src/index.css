@@ -339,3 +339,66 @@ tajweed.idgham_mutajanisayn,
 tajweed.idgham_mutaqaribayn { color: #1697AE; }
 tajweed.iqlab { color: #26BFFD; }
 tajweed.ghunnah { color: #FF7E1E; }
+
+/* ─── Ornate paper Mushaf (Golden-Quran style) ─── */
+.mushaf-stage {
+  background:
+    radial-gradient(ellipse at 50% 22%, rgba(212,175,55,0.10), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(20,135,156,0.08), transparent 60%),
+    linear-gradient(165deg, #0a1c18 0%, #11241d 45%, #1c140b 100%);
+}
+/* The gilded "mat" that frames the page. */
+.mushaf-frame {
+  position: relative;
+  border-radius: 16px;
+  padding: 16px;
+  background:
+    linear-gradient(135deg, #f7e7a8 0%, #c89b3c 16%, #8a6a22 34%, #e3c068 52%, #9c7a28 72%, #f1dc93 100%);
+  box-shadow:
+    0 22px 55px rgba(0,0,0,0.55),
+    0 2px 0 rgba(255,255,255,0.18) inset,
+    0 0 0 1px rgba(90,64,18,0.55) inset;
+}
+/* Inner gold hairline frame. */
+.mushaf-frame::before {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border: 1.5px solid rgba(74,52,12,0.6);
+  border-radius: 9px;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.12) inset;
+  pointer-events: none;
+  z-index: 2;
+}
+/* The parchment page. The page image multiplies onto it so the white paper
+   turns warm cream and the black text stays crisp — easy on the eyes. */
+.mushaf-paper {
+  position: relative;
+  isolation: isolate;
+  border-radius: 7px;
+  overflow: hidden;
+  background:
+    radial-gradient(135% 120% at 50% 0%, #fbf5e1 0%, #f4e8c6 58%, #ead9af 100%);
+  box-shadow: inset 0 0 34px rgba(120,90,40,0.20);
+}
+.mushaf-paper > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: multiply;
+}
+/* Rub-el-hizb corner medallions. */
+.mushaf-corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  z-index: 3;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
+}
+.mushaf-corner.tl { top: 4px; left: 4px; }
+.mushaf-corner.tr { top: 4px; right: 4px; }
+.mushaf-corner.bl { bottom: 4px; left: 4px; }
+.mushaf-corner.br { bottom: 4px; right: 4px; }
+/* Dim the bright page a touch at night for comfort (dark is the default theme;
+   the app adds the `light` class for light mode). */
+html:not(.light) .mushaf-paper > img { filter: brightness(0.93); }

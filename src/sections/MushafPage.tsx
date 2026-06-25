@@ -37,6 +37,19 @@ const hizbForPage = (page: number) => {
   return (juz - 1) * 2 + (page >= start + (end - start) / 2 ? 2 : 1);
 };
 
+// Rub-el-hizb (۞) corner medallion — two overlapping squares + a gilt centre.
+function RubStar({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <g fill="#5e4413">
+        <rect x="5.5" y="5.5" width="13" height="13" rx="2" />
+        <rect x="5.5" y="5.5" width="13" height="13" rx="2" transform="rotate(45 12 12)" />
+      </g>
+      <circle cx="12" cy="12" r="2.5" fill="#caa23f" />
+    </svg>
+  );
+}
+
 export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const [page, setPage] = useState(() => {
     if (initialPage) return Math.min(Math.max(1, initialPage), TOTAL_PAGES);
@@ -59,6 +72,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     for (let i = 0; i < surahList.length; i++) if (page >= startPageForSurah(i + 1)) n = i + 1;
     return n;
   }, [page]);
+  const currentSurah = surahList.find((s) => s.number === currentSurahNumber);
   useEffect(() => { setPageStr(String(page)); }, [page]);
 
   // ── Page recitation audio (plays the current page's verses in sequence,
@@ -264,7 +278,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   }, []);
 
   return (
-    <div className="page-enter min-h-screen flex flex-col" style={{ background: 'var(--app-bg)' }}>
+    <div className="page-enter min-h-screen flex flex-col mushaf-stage">
       {/* Header */}
       <header className="sticky top-0 z-40 px-4 py-3">
         <div
@@ -280,9 +294,9 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
           <button onClick={onBack} className="p-2 rounded-xl hover:bg-white/10 transition-all">
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
-          <div className="flex-1">
-            <h1 className="text-base font-semibold text-white">المصحف الشريف</h1>
-            <p className="text-[10px] text-[color:var(--text-muted)]">مصحف المدينة — رواية حفص</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base font-semibold text-white arabic-text truncate">سورة {currentSurah?.name ?? ''}</h1>
+            <p className="text-[10px] text-[#d4af37] arabic-text">مصحف المدينة · الجزء {juzForPage(page)}</p>
           </div>
           <button
             onClick={toggleAudio}
@@ -343,29 +357,33 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       >
         <div
           className="relative mx-auto"
-          style={{ width: `${Math.round(zoom * 100)}%`, maxWidth: zoom > 1 ? 'none' : '28rem', transition: 'width 0.2s ease' }}
+          style={{ width: `${Math.round(zoom * 100)}%`, maxWidth: zoom > 1 ? 'none' : '29rem', transition: 'width 0.2s ease' }}
         >
           {!loaded && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 size={28} className="text-[#14879c] animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <Loader2 size={28} className="text-[#d4af37] animate-spin" />
             </div>
           )}
-          <img
-            key={page}
-            src={pageImageUrl(page)}
-            alt={`صفحة ${page}`}
-            loading="lazy"
-            decoding="async"
-            onLoad={() => setLoaded(true)}
-            onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
-            className="w-full h-auto rounded-xl transition-opacity duration-300"
-            style={{
-              opacity: loaded ? 1 : 0,
-              background: '#fffdf7',
-              boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
-              border: '1px solid rgba(var(--hair), 0.1)',
-            }}
-          />
+          {/* Gilded frame → parchment page (image multiplies onto the cream). */}
+          <div className="mushaf-frame">
+            <RubStar className="mushaf-corner tl" />
+            <RubStar className="mushaf-corner tr" />
+            <RubStar className="mushaf-corner bl" />
+            <RubStar className="mushaf-corner br" />
+            <div className="mushaf-paper">
+              <img
+                key={page}
+                src={pageImageUrl(page)}
+                alt={`صفحة ${page}`}
+                loading="lazy"
+                decoding="async"
+                onLoad={() => setLoaded(true)}
+                onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
+                className="transition-opacity duration-300"
+                style={{ opacity: loaded ? 1 : 0 }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
