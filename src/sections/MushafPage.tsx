@@ -180,9 +180,11 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   }, [tafsirFollow, page]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  // Pinch state incl. the focal point (content fraction fx/fy) so zoom anchors
-  // under the fingers instead of jumping to a corner.
-  const pinchRef = useRef<{ dist: number; zoom: number; fx: number; fy: number } | null>(null);
+  const pageElRef = useRef<HTMLDivElement>(null);
+  const skipCenterRef = useRef(false); // after a pinch we set the scroll ourselves
+  // Pinch state: scaled smoothly via CSS transform (GPU, no reflow) during the
+  // gesture, then committed to a real width once. fx/fy = focal content point.
+  const pinchRef = useRef<{ startDist: number; startZoom: number; midX: number; midY: number; fx: number; fy: number } | null>(null);
 
   const centerScroll = () => {
     const el = scrollRef.current;
@@ -196,7 +198,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   // Keep the page centred when zooming (pinch / double-tap). Skip during a
   // pinch so it doesn't fight the user's fingers.
   useEffect(() => {
-    if (pinchRef.current) return;
+    if (skipCenterRef.current) { skipCenterRef.current = false; return; } // pinch sets its own scroll
     if (zoom > 1) centerScroll();
     else scrollRef.current?.scrollTo({ left: 0, top: 0 });
   }, [zoom]);
@@ -242,31 +244,45 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       const el = scrollRef.current;
       const m = midpoint(e.touches);
       const sw = el?.scrollWidth || 1, sh = el?.scrollHeight || 1;
-      // Remember the content point under the fingers so we can keep it there.
-      pinchRef.current = {
-        dist: touchDist(e.touches), zoom,
-        fx: ((el?.scrollLeft ?? 0) + m.x) / sw,
-        fy: ((el?.scrollTop ?? 0) + m.y) / sh,
-      };
+      const originX = (el?.scrollLeft ?? 0) + m.x;
+      const originY = (el?.scrollTop ?? 0) + m.y;
+      pinchRef.current = { startDist: touchDist(e.touches), startZoom: zoom, midX: m.x, midY: m.y, fx: originX / sw, fy: originY / sh };
+      // Scale around the point under the fingers — that point stays put.
+      if (pageElRef.current) {
+        pageElRef.current.style.transformOrigin = `${originX}px ${originY}px`;
+        pageElRef.current.style.willChange = 'transform';
+      }
       touchStartX.current = null;
     } else if (zoom === 1) { touchStartX.current = e.touches[0].clientX; }
   };
   const onTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && pinchRef.current) {
+    if (e.touches.length === 2 && pinchRef.current && pageElRef.current) {
       const p = pinchRef.current;
-      const ratio = touchDist(e.touches) / p.dist;
-      setZoom(Math.round(Math.min(3, Math.max(1, p.zoom * ratio)) * 100) / 100); // fine steps = smooth
-      const m = midpoint(e.touches);
-      // After the width updates, scroll so the focal point stays under the fingers.
-      requestAnimationFrame(() => {
-        const el = scrollRef.current; if (!el) return;
-        el.scrollLeft = p.fx * el.scrollWidth - m.x;
-        el.scrollTop = p.fy * el.scrollHeight - m.y;
-      });
+      const target = Math.min(4, Math.max(1, p.startZoom * (touchDist(e.touches) / p.startDist)));
+      // Pure GPU transform — no React, no layout reflow → buttery smooth.
+      pageElRef.current.style.transform = `scale(${target / p.startZoom})`;
     }
   };
   const onTouchEnd = (e: React.TouchEvent) => {
-    if (pinchRef.current) { pinchRef.current = null; return; }
+    if (pinchRef.current && pageElRef.current) {
+      const p = pinchRef.current;
+      const match = /scale\(([\d.]+)\)/.exec(pageElRef.current.style.transform);
+      const newZoom = Math.round(Math.min(4, Math.max(1, p.startZoom * (match ? parseFloat(match[1]) : 1))) * 100) / 100;
+      // Drop the temporary transform and commit the real width once.
+      pageElRef.current.style.transform = '';
+      pageElRef.current.style.transformOrigin = '';
+      pageElRef.current.style.willChange = '';
+      const { fx, fy, midX, midY } = p;
+      pinchRef.current = null;
+      skipCenterRef.current = true;
+      setZoom(newZoom);
+      requestAnimationFrame(() => {
+        const el = scrollRef.current; if (!el) return;
+        el.scrollLeft = fx * el.scrollWidth - midX;
+        el.scrollTop = fy * el.scrollHeight - midY;
+      });
+      return;
+    }
     if (touchStartX.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 50) {
@@ -304,14 +320,15 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       <div
         ref={scrollRef}
         className={`absolute inset-0 overflow-auto select-none ${zoom === 1 ? 'flex items-center justify-center' : ''}`}
-        style={{ paddingTop: chrome ? 40 : 6, paddingBottom: chrome ? 112 : 6, transition: 'padding 0.3s ease' }}
+        style={{ paddingTop: 6, paddingBottom: chrome ? 64 : 6, transition: 'padding 0.3s ease' }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         <div
+          ref={pageElRef}
           className="relative mx-auto flex-shrink-0"
-          style={{ width: `${Math.round(zoom * 100)}%`, transition: pinchRef.current ? 'none' : 'width 0.2s ease' }}
+          style={{ width: `${Math.round(zoom * 100)}%` }}
         >
           {!loaded && (
             <div className="absolute inset-0 flex items-center justify-center z-10">
