@@ -221,19 +221,41 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   useEffect(() => {
     localStorage.setItem('nur-mushaf-page', String(page));
     setLoaded(false);
-    // Preload the neighbouring pages for snappy paging.
-    [page - 1, page + 1].forEach((p) => {
+    // Preload AND pre-decode the neighbouring pages so the next turn paints
+    // instantly (decoding off the main thread is what kills the "lag").
+    [page - 1, page + 1, page + 2].forEach((p) => {
       if (p >= 1 && p <= TOTAL_PAGES) {
         const img = new Image();
         img.src = localPageUrl(p);
+        img.decoding = 'async';
+        img.decode?.().catch(() => {});
       }
     });
   }, [page]);
 
   // In the mushaf, the "next" page (higher number) sits to the LEFT (RTL).
   const slideDirRef = useRef(1); // 1 = forward, -1 = back (for the turn animation)
-  const goNext = () => { slideDirRef.current = 1; setPage((p) => Math.min(TOTAL_PAGES, p + 1)); };
-  const goPrev = () => { slideDirRef.current = -1; setPage((p) => Math.max(1, p - 1)); };
+  const pageRef = useRef(page);  // always-current page (so handlers aren't stale)
+  pageRef.current = page;
+  // The page that is sliding OUT during a turn (rendered as a brief overlay).
+  const [outgoing, setOutgoing] = useState<{ page: number; dir: number } | null>(null);
+  const turn = (dir: number) => {
+    const from = pageRef.current;
+    const to = Math.min(TOTAL_PAGES, Math.max(1, from + dir));
+    if (to === from) return;
+    slideDirRef.current = dir;
+    setOutgoing({ page: from, dir });
+    setZoom(1); // always turn at 1× so the new page lands full-screen
+    setPage(to);
+  };
+  const goNext = () => turn(1);
+  const goPrev = () => turn(-1);
+  // Drop the outgoing overlay once its slide-out finishes.
+  useEffect(() => {
+    if (!outgoing) return;
+    const id = window.setTimeout(() => setOutgoing(null), 340);
+    return () => window.clearTimeout(id);
+  }, [outgoing]);
 
   // Combined gesture handling: 1 finger = swipe pages (only at 1×), 2 fingers = pinch zoom.
   const touchDist = (t: React.TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
@@ -313,29 +335,32 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
 
   return (
     <div className="page-enter mushaf-stage" style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
-      {/* Slim title pill — slides away with the toolbar for full-screen reading */}
-      <div className="fixed top-0 inset-x-0 z-40 px-4 pt-3 transition-transform duration-300 ease-out pointer-events-none"
-        style={{ transform: chrome ? 'none' : 'translateY(-160%)' }}>
-        <div className="mx-auto w-max max-w-[90%] text-center px-4 py-1.5 rounded-full"
-          style={{ background: 'rgba(8,29,35,0.85)', border: '1px solid rgba(212,175,55,0.2)' }}>
-          <p className="text-xs font-semibold text-white arabic-text truncate">سورة {currentSurah?.name ?? ''} · ص {page}</p>
-        </div>
-      </div>
+      {/* Outgoing page — slides out the opposite way as the new page slides in,
+          giving a real "filmstrip" page-turn. Removed once the slide finishes. */}
+      {outgoing && (
+        <img
+          key={`out-${outgoing.page}-${outgoing.dir}`}
+          src={localPageUrl(outgoing.page)}
+          alt=""
+          aria-hidden="true"
+          className="mushaf-page-img absolute inset-0 z-30 pointer-events-none"
+          style={{ width: '100%', height: '100%', objectFit: 'fill', animation: `${outgoing.dir >= 0 ? 'mushaf-out-fwd' : 'mushaf-out-back'} 0.32s ease-out both` }}
+        />
+      )}
 
-      {/* Page image — fills the whole screen; the page's own border is the edge.
-          Centered vertically at 1×; pannable when zoomed; tap toggles the bars. */}
+      {/* Page image — STRETCHED to fill the entire screen, edge to edge (top &
+          sides included). Pinch to zoom; tap toggles the toolbar. */}
       <div
         ref={scrollRef}
         className={`absolute inset-0 overflow-auto select-none ${zoom === 1 ? 'flex items-center justify-center' : ''}`}
-        style={{ paddingTop: 6, paddingBottom: chrome ? 64 : 6, transition: 'padding 0.3s ease' }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         <div
           ref={pageElRef}
-          className="relative mx-auto flex-shrink-0"
-          style={{ width: `${Math.round(zoom * 100)}%` }}
+          className="relative flex-shrink-0"
+          style={{ width: `${Math.round(zoom * 100)}%`, height: `${Math.round(zoom * 100)}%` }}
         >
           {!loaded && (
             <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -346,7 +371,6 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
             key={page}
             src={localPageUrl(page)}
             alt={`صفحة ${page}`}
-            loading="lazy"
             decoding="async"
             onLoad={() => setLoaded(true)}
             onError={(e) => {
@@ -354,8 +378,8 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
               if (!t.dataset.fb) { t.dataset.fb = '1'; t.src = cdnPageUrl(page); }
             }}
             onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
-            className="mushaf-page-img transition-opacity duration-300"
-            style={{ opacity: loaded ? 1 : 0, animation: `${slideDirRef.current >= 0 ? 'mushaf-turn-fwd' : 'mushaf-turn-back'} 0.3s ease` }}
+            className="mushaf-page-img"
+            style={{ width: '100%', height: '100%', objectFit: 'fill', opacity: loaded ? 1 : 0, transition: 'opacity 0.15s ease', animation: `${slideDirRef.current >= 0 ? 'mushaf-in-fwd' : 'mushaf-in-back'} 0.32s ease-out both` }}
           />
         </div>
       </div>

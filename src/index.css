@@ -356,11 +356,15 @@ html.large-ui { font-size: 18.5px; }
   display: block;
   width: 100%;
   height: auto;
-  box-shadow: 0 8px 34px rgba(0,0,0,0.42);
 }
-/* Smooth slide when turning pages (direction set per turn). */
-@keyframes mushaf-turn-fwd { from { transform: translateX(-7%); } to { transform: translateX(0); } }
-@keyframes mushaf-turn-back { from { transform: translateX(7%); } to { transform: translateX(0); } }
+/* Page-turn slide-show: the incoming page slides in from one edge while the
+   outgoing page slides out the other way — a real "filmstrip" turn (direction
+   set per turn). RTL mushaf: the NEXT page (higher number) enters from the
+   LEFT. GPU transform only → smooth, no reflow. */
+@keyframes mushaf-in-fwd   { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes mushaf-out-fwd  { from { transform: translateX(0); }    to { transform: translateX(100%); } }
+@keyframes mushaf-in-back  { from { transform: translateX(100%); }  to { transform: translateX(0); } }
+@keyframes mushaf-out-back { from { transform: translateX(0); }     to { transform: translateX(-100%); } }
 /* Dim the bright page a touch at night for comfort (dark is the default theme;
    the app adds the `light` class for light mode). */
 html:not(.light) .mushaf-page-img { filter: brightness(0.95); }

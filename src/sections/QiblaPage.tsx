@@ -329,20 +329,30 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
                 </div>
               </div>
 
-              {/* Qibla Info */}
+              {/* Qibla Info — the big number is LIVE: it's how far you still need
+                  to turn, counting down to 0° as you rotate toward the Kaaba. */}
               <div className="mt-6 text-center space-y-1">
-                <p className="text-2xl font-light text-white">{Math.round(qiblaDirection)}°</p>
-                <p className="text-xs text-[color:var(--text-muted)]">{t('Qibla Direction', 'اتجاه القبلة')}</p>
                 {aligned ? (
-                  <div className="flex items-center justify-center gap-1.5 pt-1">
-                    <Navigation size={12} className="text-[#34d399]" />
-                    <span className="text-[11px] font-semibold text-[#34d399] arabic-text">{t('You are facing the Qibla ✓', 'أنت تواجه القبلة ✓')}</span>
-                  </div>
+                  <>
+                    <p className="text-3xl font-light text-[#34d399] tabular-nums">0°</p>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <Navigation size={12} className="text-[#34d399]" />
+                      <span className="text-[11px] font-semibold text-[#34d399] arabic-text">{t('You are facing the Qibla ✓', 'أنت تواجه القبلة ✓')}</span>
+                    </div>
+                  </>
                 ) : (
-                  <div className="flex items-center justify-center gap-1.5 pt-1">
-                    <span className="text-[10px] text-[#d4af37] arabic-text">{t('Turn until 🕋 meets the top pointer', 'أدِر هاتفك حتى تصل 🕋 إلى المؤشّر بالأعلى')}</span>
-                  </div>
+                  <>
+                    <p className="text-3xl font-light text-white tabular-nums">
+                      {signedDiff > 0 ? '↻ ' : '↺ '}{Math.round(Math.abs(signedDiff))}°
+                    </p>
+                    <p className="text-[11px] text-[#d4af37] arabic-text">
+                      {signedDiff > 0 ? t('Turn right toward the Qibla', 'لُفّ يمينًا نحو القبلة') : t('Turn left toward the Qibla', 'لُفّ يسارًا نحو القبلة')}
+                    </p>
+                  </>
                 )}
+                <p className="text-[10px] text-[color:var(--text-muted)] arabic-text pt-0.5" dir="rtl">
+                  {t('Qibla', 'القبلة')} {Math.round(qiblaDirection)}° · {t('Heading', 'اتجاهك')} {Math.round(((compassHeading % 360) + 360) % 360)}°
+                </p>
               </div>
             </div>
           </div>
