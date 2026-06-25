@@ -230,8 +230,9 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   }, [page]);
 
   // In the mushaf, the "next" page (higher number) sits to the LEFT (RTL).
-  const goNext = () => setPage((p) => Math.min(TOTAL_PAGES, p + 1)); // forward in reading
-  const goPrev = () => setPage((p) => Math.max(1, p - 1));
+  const slideDirRef = useRef(1); // 1 = forward, -1 = back (for the turn animation)
+  const goNext = () => { slideDirRef.current = 1; setPage((p) => Math.min(TOTAL_PAGES, p + 1)); };
+  const goPrev = () => { slideDirRef.current = -1; setPage((p) => Math.max(1, p - 1)); };
 
   // Combined gesture handling: 1 finger = swipe pages (only at 1×), 2 fingers = pinch zoom.
   const touchDist = (t: React.TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
@@ -348,7 +349,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
             }}
             onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
             className="mushaf-page-img transition-opacity duration-300"
-            style={{ opacity: loaded ? 1 : 0 }}
+            style={{ opacity: loaded ? 1 : 0, animation: `${slideDirRef.current >= 0 ? 'mushaf-turn-fwd' : 'mushaf-turn-back'} 0.3s ease` }}
           />
         </div>
       </div>

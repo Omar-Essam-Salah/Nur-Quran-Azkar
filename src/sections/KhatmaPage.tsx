@@ -44,6 +44,30 @@ export default function KhatmaPage({ onBack, onNavigate }: KhatmaPageProps) {
   const markDone = () => save({ ...k, currentPage: Math.min(TOTAL + 1, to + 1) });
   const reset = () => save({ targetDays: k.targetDays, currentPage: 1, startDate: new Date().toISOString() });
 
+  // Daily reading reminder — a repeating local notification at the chosen time.
+  const [reminder, setReminder] = useState(() => localStorage.getItem('nur-khatma-reminder') || '');
+  const setReminderTime = async (time: string) => {
+    setReminder(time);
+    try { localStorage.setItem('nur-khatma-reminder', time); } catch { /* ignore */ }
+    try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
+      await LocalNotifications.cancel({ notifications: [{ id: 2001 }] }).catch(() => {});
+      if (!time) return;
+      const perm = await LocalNotifications.requestPermissions();
+      if (perm.display !== 'granted') return;
+      const [h, m] = time.split(':').map(Number);
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: 2001,
+          title: 'نُور · وِرد اليوم',
+          body: 'حان وقت وِردك من القرآن — اجعل لقلبك نصيبًا اليوم 🤍',
+          schedule: { on: { hour: h, minute: m }, allowWhileIdle: true },
+          smallIcon: 'ic_stat_nur', largeIcon: 'nur_logo',
+        }],
+      });
+    } catch { /* not native */ }
+  };
+
   return (
     <div className="page-enter min-h-screen">
       <header className="sticky top-0 z-40 px-4 py-3">
@@ -108,6 +132,21 @@ export default function KhatmaPage({ onBack, onNavigate }: KhatmaPageProps) {
             })}
           </div>
           <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">≈ {daily} {t('pages/day', 'صفحة يوميًا')}</p>
+        </div>
+
+        {/* Daily reminder */}
+        <div className="glass-card-sm p-4 flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-xs text-white/90 arabic-text">{t('Daily reminder', 'تذكير يومي بالورد')}</h3>
+            <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{reminder ? `${t('Every day at', 'كل يوم الساعة')} ${reminder}` : t('Off', 'مُغلق')}</p>
+          </div>
+          <input type="time" value={reminder} onChange={(e) => setReminderTime(e.target.value)}
+            className="px-2 py-1.5 rounded-lg bg-white/5 text-sm text-white outline-none border border-transparent focus:border-[#14879c]/40" />
+          {reminder && (
+            <button onClick={() => setReminderTime('')} className="text-[10px] text-red-400/80 px-2 py-1 rounded-lg hover:bg-red-500/10">
+              {t('Off', 'إيقاف')}
+            </button>
+          )}
         </div>
 
         {/* Actions */}

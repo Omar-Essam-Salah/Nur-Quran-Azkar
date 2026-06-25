@@ -60,9 +60,17 @@ function Section({ section, open, setOpen }: { section: GuideSection; open: stri
         {section.topics.map((topic) => {
           const isOpen = open === topic.id;
           return (
-            <div key={topic.id} className="glass-card-sm overflow-hidden">
+            <div key={topic.id} className="glass-card-sm overflow-hidden" style={{ scrollMarginTop: '76px' }}>
               <button
-                onClick={() => setOpen(isOpen ? null : topic.id)}
+                onClick={(e) => {
+                  const willOpen = !isOpen;
+                  setOpen(willOpen ? topic.id : null);
+                  // Bring the opened topic to the top so it loads from its start.
+                  if (willOpen) {
+                    const card = e.currentTarget.parentElement;
+                    setTimeout(() => card?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+                  }
+                }}
                 className="w-full p-4 flex items-center gap-3 text-right"
               >
                 <div className="flex-1 min-w-0">

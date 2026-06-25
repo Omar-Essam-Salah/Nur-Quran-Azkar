@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Navigation, Locate } from 'lucide-react';
+import { ArrowLeft, Navigation, Locate, Compass } from 'lucide-react';
 import { calculateQibla } from '@/data/prayerTimes';
 import { getCachedGeo } from '@/lib/permissions';
 import { isLocationEnabled, openLocationSettings } from '@/lib/locationGate';
@@ -18,6 +18,8 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
   const [gpsOff, setGpsOff] = useState(false);
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [noSensor, setNoSensor] = useState(false);
+  const [showTip, setShowTip] = useState(() => !localStorage.getItem('nur-qibla-tip'));
+  const dismissTip = () => { setShowTip(false); try { localStorage.setItem('nur-qibla-tip', '1'); } catch { /* ignore */ } };
   const cardRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);
   const fgRef = useRef<HTMLDivElement>(null);
@@ -190,6 +192,21 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
 
   return (
     <div className="page-enter min-h-screen">
+      {/* First-time calibration tip */}
+      {showTip && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-6" style={{ background: 'rgba(4,12,16,0.7)' }} onClick={dismissTip}>
+          <div className="max-w-xs w-full rounded-2xl p-5 text-center space-y-3" onClick={(e) => e.stopPropagation()}
+            style={{ background: 'linear-gradient(135deg, rgb(16,34,29), rgb(12,27,23))', border: '1px solid rgba(212,175,55,0.25)' }}>
+            <Compass size={34} className="text-[#d4af37] mx-auto" />
+            <h2 className="text-base font-semibold text-white arabic-text">معايرة البوصلة</h2>
+            <p className="text-xs text-white/80 arabic-text leading-relaxed" dir="rtl">
+              {t('The compass needs a moment to find its bearing. Hold the phone flat and wave it in a figure-8 a few times to calibrate, away from metal and magnets.',
+                 'البوصلة بتحتاج لحظات تضبط اتجاهها. امسك الهاتف بشكل مسطّح وحرّكه على شكل رقم ٨ عدة مرات للمعايرة، بعيدًا عن المعادن والمغناطيس.')}
+            </p>
+            <button onClick={dismissTip} className="glass-btn w-full py-2.5 text-sm">{t('Got it', 'فهمت')}</button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="sticky top-0 z-40 px-4 py-3">
         <div 

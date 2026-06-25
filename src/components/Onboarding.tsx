@@ -13,6 +13,12 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   const [loc, setLoc] = useState<'idle' | 'ok' | 'no'>('idle');
   const [gpsOff, setGpsOff] = useState(false); // location SERVICE off (vs permission)
   const [notif, setNotif] = useState<'idle' | 'ok' | 'no'>('idle');
+  const [offline, setOffline] = useState(typeof navigator !== 'undefined' && navigator.onLine === false);
+  useEffect(() => {
+    const on = () => setOffline(false); const off = () => setOffline(true);
+    window.addEventListener('online', on); window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
 
   const askLocation = () => {
     if (!navigator.geolocation) { setLoc('no'); return; }
@@ -89,6 +95,16 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
         <p className="mt-1 text-xs text-[color:var(--text-muted)] arabic-text text-center" dir={isAr ? 'rtl' : 'ltr'}>
           {t('Quran & Azkar — free, ad-free, and works offline.', 'قرآن وأذكار — مجاني، بلا إعلانات، ويعمل بدون إنترنت.')}
         </p>
+
+        {offline && (
+          <div className="w-full mt-4 rounded-xl p-3 flex items-start gap-2.5" style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}>
+            <WifiOff size={16} className="text-[#f59e0b] flex-shrink-0 mt-0.5" />
+            <p className="text-[11px] text-[#f59e0b] arabic-text leading-relaxed" dir={isAr ? 'rtl' : 'ltr'}>
+              {t('You seem to be offline. Connect to the internet to download recitations & Mushaf pages. The Quran text, azkar & guide already work offline.',
+                 'يبدو أنك بدون إنترنت. اتّصل بالشبكة لتحميل التلاوات وصفحات المصحف. أمّا نص القرآن والأذكار والدليل فتعمل بدون إنترنت بالفعل.')}
+            </p>
+          </div>
+        )}
 
         <div className="w-full mt-6 space-y-2.5">
           <p className="text-[10px] uppercase tracking-wider text-[#d4af37] px-1">{t('Permissions', 'الصلاحيات')}</p>

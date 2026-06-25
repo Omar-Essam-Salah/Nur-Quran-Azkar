@@ -358,6 +358,9 @@ html.large-ui { font-size: 18.5px; }
   height: auto;
   box-shadow: 0 8px 34px rgba(0,0,0,0.42);
 }
+/* Smooth slide when turning pages (direction set per turn). */
+@keyframes mushaf-turn-fwd { from { transform: translateX(-7%); } to { transform: translateX(0); } }
+@keyframes mushaf-turn-back { from { transform: translateX(7%); } to { transform: translateX(0); } }
 /* Dim the bright page a touch at night for comfort (dark is the default theme;
    the app adds the `light` class for light mode). */
 html:not(.light) .mushaf-page-img { filter: brightness(0.95); }
