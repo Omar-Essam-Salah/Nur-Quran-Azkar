@@ -346,11 +346,10 @@ export default function QuranReader({
         <div
           className="mx-auto max-w-lg flex items-center gap-3 rounded-2xl px-4 py-3"
           style={{
-            background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.8), rgba(var(--glass-2), 0.9))',
+            // Opaque (no blur) so scrolling while reciting stays smooth.
+            background: 'linear-gradient(135deg, rgb(var(--glass-1)), rgb(var(--glass-2)))',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderTop: '1px solid rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
           }}
         >
           <button onClick={onBack} className="p-2 rounded-xl hover:bg-white/10 transition-all">

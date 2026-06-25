@@ -294,7 +294,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       <div className="fixed top-0 inset-x-0 z-40 px-4 pt-3 transition-transform duration-300 ease-out pointer-events-none"
         style={{ transform: chrome ? 'none' : 'translateY(-160%)' }}>
         <div className="mx-auto w-max max-w-[90%] text-center px-4 py-1.5 rounded-full"
-          style={{ background: 'rgba(8,29,35,0.6)', border: '1px solid rgba(212,175,55,0.2)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+          style={{ background: 'rgba(8,29,35,0.85)', border: '1px solid rgba(212,175,55,0.2)' }}>
           <p className="text-xs font-semibold text-white arabic-text truncate">سورة {currentSurah?.name ?? ''} · ص {page}</p>
         </div>
       </div>
@@ -304,6 +304,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       <div
         ref={scrollRef}
         className={`absolute inset-0 overflow-auto select-none ${zoom === 1 ? 'flex items-center justify-center' : ''}`}
+        style={{ paddingTop: chrome ? 40 : 6, paddingBottom: chrome ? 112 : 6, transition: 'padding 0.3s ease' }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -340,10 +341,11 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
         style={{ transform: chrome ? 'none' : 'translateY(145%)' }}>
         <div className="mx-auto max-w-md rounded-2xl overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.92), rgba(var(--glass-2), 0.96))',
-            border: '1px solid rgba(var(--hair), 0.12)',
-            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-            boxShadow: '0 -8px 30px rgba(0,0,0,0.4)',
+            // Opaque (no backdrop-blur) so the slide stays smooth — blur is the
+            // expensive bit to re-rasterise every frame on mobile.
+            background: 'linear-gradient(135deg, rgb(16,34,29), rgb(13,28,24))',
+            border: '1px solid rgba(212,175,55,0.14)',
+            boxShadow: '0 -8px 30px rgba(0,0,0,0.45)',
           }}>
           {/* Info row */}
           <div className="px-3 pt-2.5 pb-1.5 flex items-center gap-2">

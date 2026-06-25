@@ -116,11 +116,11 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, surahN
       <div
         className="mx-auto max-w-lg rounded-2xl overflow-hidden pointer-events-auto"
         style={{
-          background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.94), rgba(var(--glass-2), 0.97))',
+          // Opaque (no backdrop-blur): this bar is visible all through recitation,
+          // and blur re-rasterises every frame over the scrolling/snow behind it.
+          background: 'linear-gradient(135deg, rgb(var(--glass-1)), rgb(var(--glass-2)))',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           borderTop: '1px solid rgba(255, 255, 255, 0.18)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
           boxShadow: '0 -8px 30px rgba(0, 0, 0, 0.4)',
         }}
       >
