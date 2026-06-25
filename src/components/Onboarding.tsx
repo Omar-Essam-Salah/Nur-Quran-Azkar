@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MapPin, Bell, Check, WifiOff, ChevronLeft } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { isLocationEnabled, openLocationSettings } from '@/lib/locationGate';
 
 // First-launch welcome: explains the app and requests its runtime permissions
 // (location for Qibla/prayer times, notifications for adhan/reminders) with
@@ -10,6 +11,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   const { t, lang } = useI18n();
   const isAr = lang === 'ar';
   const [loc, setLoc] = useState<'idle' | 'ok' | 'no'>('idle');
+  const [gpsOff, setGpsOff] = useState(false); // location SERVICE off (vs permission)
   const [notif, setNotif] = useState<'idle' | 'ok' | 'no'>('idle');
 
   const askLocation = () => {
@@ -17,12 +19,33 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         try { localStorage.setItem('nur-geo', JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: Date.now() })); } catch { /* ignore */ }
-        setLoc('ok');
+        setLoc('ok'); setGpsOff(false);
       },
-      () => setLoc('no'),
+      async () => {
+        // Permission may be granted but the location SERVICE (GPS) switched off —
+        // detect that so we can send the user straight to the toggle.
+        setGpsOff(!(await isLocationEnabled()));
+        setLoc('no');
+      },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 },
     );
   };
+
+  // Open the GPS toggle; when the user returns, re-check automatically.
+  const enableLocation = async () => { await openLocationSettings(); setTimeout(askLocation, 1500); };
+
+  useEffect(() => {
+    let remove: (() => void) | undefined;
+    (async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        const h = await App.addListener('resume', () => { if (loc !== 'ok') askLocation(); });
+        remove = () => h.remove();
+      } catch { /* not native */ }
+    })();
+    return () => { remove?.(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loc]);
 
   const askNotif = async () => {
     try {
@@ -37,8 +60,8 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
     onDone();
   };
 
-  const PermRow = ({ icon: Icon, color, title, desc, state, onAsk }: {
-    icon: typeof MapPin; color: string; title: string; desc: string; state: 'idle' | 'ok' | 'no'; onAsk: () => void;
+  const PermRow = ({ icon: Icon, color, title, desc, state, onAsk, cta }: {
+    icon: typeof MapPin; color: string; title: string; desc: string; state: 'idle' | 'ok' | 'no'; onAsk: () => void; cta?: string;
   }) => (
     <div className="glass-card-sm p-4 flex items-center gap-3">
       <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}1f` }}>
@@ -51,8 +74,8 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
       {state === 'ok' ? (
         <span className="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center"><Check size={18} className="text-emerald-400" /></span>
       ) : (
-        <button onClick={onAsk} className="px-3 py-2 rounded-xl text-xs font-medium" style={{ background: `${color}22`, color }}>
-          {state === 'no' ? t('Retry', 'إعادة') : t('Allow', 'سماح')}
+        <button onClick={onAsk} className="px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap" style={{ background: `${color}22`, color }}>
+          {cta ?? (state === 'no' ? t('Retry', 'إعادة') : t('Allow', 'سماح'))}
         </button>
       )}
     </div>
@@ -69,9 +92,13 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
 
         <div className="w-full mt-6 space-y-2.5">
           <p className="text-[10px] uppercase tracking-wider text-[#d4af37] px-1">{t('Permissions', 'الصلاحيات')}</p>
-          <PermRow icon={MapPin} color="#f472b6" state={loc} onAsk={askLocation}
+          <PermRow icon={MapPin} color="#f472b6" state={loc}
+            onAsk={gpsOff ? enableLocation : askLocation}
+            cta={gpsOff ? t('Turn on GPS', 'تفعيل الموقع') : undefined}
             title={t('Location', 'الموقع')}
-            desc={t('For the Qibla compass & prayer times', 'لبوصلة القبلة ومواقيت الصلاة')} />
+            desc={gpsOff
+              ? t('Location service is off — tap to turn it on.', 'خدمة الموقع مقفولة — اضغط لتفعيلها.')
+              : t('For the Qibla compass & prayer times', 'لبوصلة القبلة ومواقيت الصلاة')} />
           <PermRow icon={Bell} color="#14879c" state={notif} onAsk={askNotif}
             title={t('Notifications', 'الإشعارات')}
             desc={t('For the adhan & gentle reminders', 'للأذان والتذكيرات اللطيفة')} />

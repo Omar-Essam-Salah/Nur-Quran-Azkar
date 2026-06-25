@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft, Navigation, Locate } from 'lucide-react';
 import { calculateQibla } from '@/data/prayerTimes';
 import { getCachedGeo } from '@/lib/permissions';
+import { isLocationEnabled, openLocationSettings } from '@/lib/locationGate';
 import { useI18n } from '@/i18n';
 
 interface QiblaPageProps {
@@ -14,6 +15,7 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
   const [qiblaDirection, setQiblaDirection] = useState<number>(45);
   const [compassHeading, setCompassHeading] = useState<number>(0);
   const [locationError, setLocationError] = useState('');
+  const [gpsOff, setGpsOff] = useState(false);
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [noSensor, setNoSensor] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -22,27 +24,55 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
   const headingRef = useRef(0);
 
   // Get location and calculate Qibla
+  const requestLocation = useCallback(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setLocation({ lat, lng });
+        setQiblaDirection(calculateQibla(lat, lng));
+        setLocationError('');
+        setGpsOff(false);
+      },
+      async () => {
+        const enabled = await isLocationEnabled();
+        setGpsOff(!enabled);
+        setLocationError(enabled
+          ? t('Location unavailable — Qibla shown from Makkah.', 'تعذّر تحديد الموقع — القبلة محسوبة من مكة.')
+          : t('Location (GPS) is off — turn it on for accurate Qibla.', 'خدمة الموقع (GPS) مقفولة — فعّلها لقبلة دقيقة.'));
+        if (!getCachedGeo()) setQiblaDirection(45);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  }, [t]);
+
+  const enableLocation = useCallback(async () => {
+    await openLocationSettings();
+    setTimeout(requestLocation, 1500);
+  }, [requestLocation]);
+
   useEffect(() => {
     const cached = getCachedGeo();
     if (cached) {
       setLocation(cached);
       setQiblaDirection(calculateQibla(cached.lat, cached.lng));
     }
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setLocation({ lat, lng });
-          setQiblaDirection(calculateQibla(lat, lng));
-        },
-        () => {
-          setLocationError('Location access denied. Qibla calculated from Makkah.');
-          setQiblaDirection(45); // Default
-        }
-      );
-    }
-  }, []);
+    requestLocation();
+  }, [requestLocation]);
+
+  // Re-try automatically when the user returns from the location settings page.
+  useEffect(() => {
+    let remove: (() => void) | undefined;
+    (async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        const h = await App.addListener('resume', () => { requestLocation(); });
+        remove = () => h.remove();
+      } catch { /* not native */ }
+    })();
+    return () => { remove?.(); };
+  }, [requestLocation]);
 
   // Device orientation for compass.
   //
@@ -186,7 +216,16 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
             {location ? `${t('From', 'من')}: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : t('Using default location', 'يُستخدم الموقع الافتراضي')}
           </p>
           {locationError && (
-            <p className="text-[10px] text-[#f59e0b]">{locationError}</p>
+            <div className="flex flex-col items-center gap-1.5">
+              <p className="text-[10px] text-[#f59e0b] arabic-text" dir={t('ltr', 'rtl')}>{locationError}</p>
+              {gpsOff && (
+                <button onClick={enableLocation}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1.5"
+                  style={{ background: 'rgba(212,175,55,0.2)', color: '#d4af37' }}>
+                  <Locate size={12} /> {t('Turn on Location', 'تفعيل خدمة الموقع')}
+                </button>
+              )}
+            </div>
           )}
           {noSensor ? (
             <p className="text-[11px] text-[#f59e0b] arabic-text leading-relaxed px-4" dir="rtl">

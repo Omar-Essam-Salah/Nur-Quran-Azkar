@@ -5,6 +5,7 @@ import { computePrayerTimes, getHijriDate } from '@/lib/prayer';
 import { getCachedGeo } from '@/lib/permissions';
 import { useI18n } from '@/i18n';
 import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
+import { isLocationEnabled, openLocationSettings } from '@/lib/locationGate';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
 interface PrayerTimesPageProps {
@@ -51,6 +52,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   const cachedGeo = useMemo(() => getCachedGeo(), []);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(cachedGeo);
   const [locationError, setLocationError] = useState('');
+  const [gpsOff, setGpsOff] = useState(false); // location SERVICE off (vs permission)
   const [locating, setLocating] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -93,22 +95,49 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setLocation(loc);
         setLocationError('');
+        setGpsOff(false);
         setLocating(false);
         try { localStorage.setItem('nur-geo', JSON.stringify({ ...loc, t: Date.now() })); } catch { /* ignore */ }
       },
-      () => {
-        // GPS / location services are off. We can't turn them on for the user,
-        // so explain it and offer a Retry; keep the cached/default meanwhile.
+      async () => {
         setLocating(false);
-        setLocationError(t('Turn on Location/GPS in your device, then tap Retry.', 'فعّل خدمة الموقع (GPS) من جهازك ثم اضغط إعادة المحاولة.'));
-        if (!getCachedGeo() && !location) setLocation({ lat: 21.3891, lng: 39.8579 });
+        // Distinguish "location service (GPS) is OFF" from "permission denied":
+        // if the service is off we can send the user straight to the toggle.
+        const enabled = await isLocationEnabled();
+        setGpsOff(!enabled);
+        setLocationError(enabled
+          ? t("Couldn't get your location. Tap Retry.", 'تعذّر تحديد موقعك. اضغط إعادة المحاولة.')
+          : t('Location (GPS) is off — turn it on for accurate times.', 'خدمة الموقع (GPS) مقفولة — فعّلها لمواقيت دقيقة.'));
+        if (!getCachedGeo()) setLocation((prev) => prev ?? { lat: 21.3891, lng: 39.8579 });
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
   };
 
+  // Open the system Location toggle, then auto-retry as soon as the user returns.
+  const enableLocation = async () => {
+    await openLocationSettings();
+    // resume listener below re-requests; this is a fast fallback too.
+    setTimeout(requestLocation, 1500);
+  };
+
   useEffect(() => {
     requestLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When the user comes back from the location settings page (or re-opens the
+  // app), try again automatically — no manual Retry needed.
+  useEffect(() => {
+    let remove: (() => void) | undefined;
+    (async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        const h = await App.addListener('resume', () => { requestLocation(); });
+        remove = () => h.remove();
+      } catch { /* not native */ }
+    })();
+    return () => { remove?.(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -330,13 +359,22 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
                 </span>
               </div>
               {locationError && (
-                <div className="flex flex-col items-center gap-1.5 pt-1">
+                <div className="flex flex-col items-center gap-2 pt-1">
                   <p className="text-[10px] text-[#f59e0b] arabic-text text-center px-4" dir={t('ltr', 'rtl')}>{locationError}</p>
-                  <button onClick={requestLocation} disabled={locating}
-                    className="px-3 py-1.5 rounded-lg text-[11px] font-medium flex items-center gap-1.5 disabled:opacity-50"
-                    style={{ background: 'rgba(20,135,156,0.18)', color: '#14879c' }}>
-                    <Navigation size={12} /> {t('Retry', 'إعادة المحاولة')}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {gpsOff && (
+                      <button onClick={enableLocation} disabled={locating}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 disabled:opacity-50"
+                        style={{ background: 'rgba(212,175,55,0.2)', color: '#d4af37' }}>
+                        <MapPin size={12} /> {t('Turn on Location', 'تفعيل خدمة الموقع')}
+                      </button>
+                    )}
+                    <button onClick={requestLocation} disabled={locating}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-medium flex items-center gap-1.5 disabled:opacity-50"
+                      style={{ background: 'rgba(20,135,156,0.18)', color: '#14879c' }}>
+                      <Navigation size={12} /> {t('Retry', 'إعادة المحاولة')}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
