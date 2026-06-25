@@ -67,6 +67,6 @@ export interface AppSettings {
   elderMode: boolean;
 }
 
-export type Page = 'home' | 'quran' | 'quran-reader' | 'azkar' | 'azkar-detail' | 'prayer' | 'qibla' | 'tasbih' | 'bookmarks' | 'settings' | 'search' | 'mushaf' | 'fasting' | 'prophets' | 'hadith' | 'asma' | 'khatma' | 'ramadan' | 'ledger' | 'guide' | 'zakat' | 'kids' | 'more';
+export type Page = 'home' | 'quran' | 'quran-reader' | 'azkar' | 'azkar-detail' | 'prayer' | 'qibla' | 'tasbih' | 'bookmarks' | 'settings' | 'search' | 'mushaf' | 'fasting' | 'prophets' | 'hadith' | 'asma' | 'khatma' | 'ramadan' | 'ledger' | 'guide' | 'zakat' | 'kids' | 'feedback' | 'more';
 
 export type BottomNavPage = 'home' | 'quran' | 'azkar' | 'prayer' | 'more';

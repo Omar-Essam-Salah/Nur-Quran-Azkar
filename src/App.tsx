@@ -19,6 +19,7 @@ import KhatmaPage from '@/sections/KhatmaPage';
 import RamadanPage from '@/sections/RamadanPage';
 import ZakatPage from '@/sections/ZakatPage';
 import KidsPage from '@/sections/KidsPage';
+import FeedbackPage from '@/sections/FeedbackPage';
 import MorePage from '@/sections/MorePage';
 import TasbihPage from '@/sections/TasbihPage';
 import BookmarksPage from '@/sections/BookmarksPage';
@@ -333,6 +334,11 @@ function App() {
         {/* Kids' corner */}
         {currentPage === 'kids' && (
           <KidsPage onBack={goBack} onOpenSurah={openSurah} onNavigate={navigateTo} />
+        )}
+
+        {/* Feedback / suggestions */}
+        {currentPage === 'feedback' && (
+          <FeedbackPage onBack={goBack} />
         )}
 
         {/* Ramadan mode */}
