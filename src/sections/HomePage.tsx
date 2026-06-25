@@ -154,7 +154,14 @@ export default function HomePage({
           />
           
           <div className="relative">
-            <img src="/assets/moon.svg" alt="Moon" className="w-16 h-16 mx-auto opacity-80" />
+            {/* Gold crescent (same shape as moon.svg) — stays visible in light mode too */}
+            <svg viewBox="0 0 120 120" className="w-16 h-16 mx-auto opacity-90" fill="none"
+              stroke="#d4af37" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-label="Moon">
+              <path d="M90 60C90 76.57 76.57 90 60 90C43.43 90 30 76.57 30 60C30 43.43 43.43 30 60 30C55 30 45 38 45 55C45 72 58 78 68 76C80 74 90 65 90 60Z"
+                fill="rgba(212,175,55,0.06)" stroke="#d4af37" strokeWidth={2} />
+              <circle cx="75" cy="35" r="2" fill="#d4af37" opacity={0.55} stroke="none" />
+              <circle cx="85" cy="50" r="1.5" fill="#d4af37" opacity={0.4} stroke="none" />
+            </svg>
             <h2 className="text-3xl font-bold mt-3 gradient-text">{t('Nur', 'نور')}</h2>
             <p className="text-xs text-[color:var(--text-muted)] mt-2 uppercase tracking-wider arabic-text">{t('Your Daily Devotion', 'عبادتك اليومية')}</p>
             <p className="text-xs text-[color:var(--text-muted)]/70 mt-1 arabic-text">{t('Ad-free, private, designed for peace', 'بلا إعلانات، خصوصيّة تامة، مصمّم للسكينة')}</p>

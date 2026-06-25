@@ -9,7 +9,7 @@ const SECTION_ICON: Record<string, typeof Droplets> = { droplets: Droplets, sun:
 
 export default function GuidePage({ onBack }: GuidePageProps) {
   const { t } = useI18n();
-  const [open, setOpen] = useState<string | null>('wudu');
+  const [open, setOpen] = useState<string | null>(null);
 
   return (
     <div className="page-enter min-h-screen">

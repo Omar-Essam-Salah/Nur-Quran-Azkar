@@ -45,6 +45,28 @@ const adhanOptions = [
   { id: 'shuaisha', name: 'أبو العينين شعيشع', local: '/adhan/shuaisha.mp3', fallback: '' },
 ];
 
+// Android locks a notification channel's sound at creation time, so we can't
+// "fix" a previously-silent channel — we must delete the old ones and create a
+// fresh id. Bump this whenever the adhan sound/behaviour needs to change.
+const ADHAN_CHANNEL = 'nur-adhan-v3';
+
+async function ensureAdhanChannel(): Promise<void> {
+  try {
+    for (const id of ['adhan', 'nur-adhan', 'nur-adhan-v2']) {
+      await LocalNotifications.deleteChannel({ id }).catch(() => {});
+    }
+    await LocalNotifications.createChannel({
+      id: ADHAN_CHANNEL,
+      name: 'Adhan · الأذان',
+      description: 'Prayer-time adhan',
+      sound: 'adhan.mp3',   // → res/raw/adhan.mp3 (extension stripped by Capacitor)
+      importance: 4,        // IMPORTANCE_HIGH — required for sound + heads-up
+      visibility: 1,
+      vibration: true,
+    });
+  } catch { /* not native */ }
+}
+
 export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageProps) {
   const { t } = useI18n();
   // Seed from the cached location so prayer times compute instantly on every
@@ -156,20 +178,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
       try {
         const perm = await LocalNotifications.requestPermissions();
         if (perm.display !== 'granted') return;
-        // Android 8+ ties the notification sound to its channel, so create a
-        // dedicated high-importance channel that plays the bundled adhan.
-        // NOTE: Android caches a channel's sound at creation time and ignores
-        // later changes, so we use a fresh channel id to guarantee the adhan
-        // sound actually plays (older installs had a soundless 'adhan' channel).
-        await LocalNotifications.createChannel({
-          id: 'nur-adhan-v2',
-          name: 'Adhan · الأذان',
-          description: 'Prayer-time adhan',
-          sound: 'adhan.mp3',
-          importance: 5,
-          visibility: 1,
-          vibration: true,
-        }).catch(() => {});
+        await ensureAdhanChannel();
         const ids = [1001, 1002, 1003, 1004, 1005];
         await LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) }).catch(() => {});
         const prayers: [string, string][] = [['Fajr', 'الفجر'], ['Dhuhr', 'الظهر'], ['Asr', 'العصر'], ['Maghrib', 'المغرب'], ['Isha', 'العشاء']];
@@ -184,7 +193,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
               title: t('Prayer Time', 'حان وقت الصلاة'),
               body: `${t('It is now time for', 'حان الآن وقت صلاة')} ${ar}`,
               schedule: { at },
-              channelId: 'nur-adhan-v2',
+              channelId: ADHAN_CHANNEL,
               sound: 'adhan.mp3',
               smallIcon: 'ic_stat_nur',
               largeIcon: 'nur_logo',
@@ -308,6 +317,31 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
     }
   };
 
+  // Fire a real adhan NOTIFICATION ~3s from now so the user can verify the
+  // actual prayer-time sound path (the preview above only plays in-app audio).
+  const testAdhanNotification = async () => {
+    try {
+      const perm = await LocalNotifications.requestPermissions();
+      if (perm.display !== 'granted') { alert(t('Enable notifications first.', 'فعّل إذن الإشعارات أولًا.')); return; }
+      await ensureAdhanChannel();
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: 1099,
+          title: t('Adhan test', 'اختبار الأذان'),
+          body: t('This is how the adhan will sound at prayer time.', 'هكذا سيُسمع الأذان عند دخول وقت الصلاة.'),
+          schedule: { at: new Date(Date.now() + 3000) },
+          channelId: ADHAN_CHANNEL,
+          sound: 'adhan.mp3',
+          smallIcon: 'ic_stat_nur',
+          largeIcon: 'nur_logo',
+        }],
+      });
+      alert(t('Lock your screen now — the adhan notification will arrive in a few seconds.', 'اقفل الشاشة الآن — إشعار الأذان سيصل خلال ثوانٍ.'));
+    } catch {
+      alert(t('Notifications are not available here.', 'الإشعارات غير متاحة هنا.'));
+    }
+  };
+
   return (
     <div className="page-enter min-h-screen">
       <header className="sticky top-0 z-40 px-4 py-3">
@@ -407,12 +441,20 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
                   <Volume2 size={16} className="text-[#14879c]" />
                   <span className="text-sm font-medium text-white">صوت المؤذن</span>
                 </div>
-                <button 
-                  onClick={previewAdhan}
-                  className="relative z-50 flex items-center gap-1 text-[10px] bg-[#14879c]/10 hover:bg-[#14879c]/30 px-3 py-1.5 rounded-lg text-[#14879c] transition-colors"
-                >
-                  <PlayCircle size={12} /> معاينة الصوت
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={testAdhanNotification}
+                    className="relative z-50 flex items-center gap-1 text-[10px] bg-[#d4af37]/15 hover:bg-[#d4af37]/30 px-2.5 py-1.5 rounded-lg text-[#d4af37] transition-colors"
+                  >
+                    <Bell size={12} /> {t('Test alert', 'اختبار الإشعار')}
+                  </button>
+                  <button
+                    onClick={previewAdhan}
+                    className="relative z-50 flex items-center gap-1 text-[10px] bg-[#14879c]/10 hover:bg-[#14879c]/30 px-2.5 py-1.5 rounded-lg text-[#14879c] transition-colors"
+                  >
+                    <PlayCircle size={12} /> {t('Preview', 'معاينة')}
+                  </button>
+                </div>
               </div>
               <div className="relative">
                 <button

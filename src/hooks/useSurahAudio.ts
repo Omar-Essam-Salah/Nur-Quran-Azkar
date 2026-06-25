@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAudioBlob } from '@/lib/contentCache';
 import { recordDeed } from '@/lib/ledger';
 import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
+import { surahList } from '@/data/surahList';
+import { RECITERS } from '@/data/reciters';
 
 // Re-exported for older importers. The reciter, the Settings preview, the
 // adhan and the Mushaf all share ONE audio element now (see lib/audioBus.ts) so
@@ -90,6 +92,33 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
   const verseFor = (ayah: number): PlayerVerse | undefined =>
     latest.current.verses.find((v) => v.ayah === ayah);
 
+  // Warm the NEXT ayah into the (CORS) cache while the current one plays, so it
+  // starts instantly with no mid-recitation "buffering" pause. fetch() defaults
+  // to CORS mode, so the service worker stores a real, replayable response.
+  const prefetchNext = (ayah: number) => {
+    const url = verseFor(ayah + 1)?.audioUrl;
+    if (url) { try { void fetch(url, { mode: 'cors' }).catch(() => {}); } catch { /* ignore */ } }
+  };
+
+  // Tell the OS we're an active media session: keeps recitation alive when the
+  // screen locks and shows play/pause/next on the lock screen & notification.
+  const updateMediaSession = (ayah: number) => {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      const { chapter, reciterApiId } = latest.current;
+      const surah = surahList.find((s) => s.number === chapter);
+      const reciter = RECITERS.find((r) => r.apiId === reciterApiId);
+      // eslint-disable-next-line no-undef
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: `${surah?.name ?? 'القرآن الكريم'} • آية ${ayah}`,
+        artist: reciter?.arabicName ?? 'نور',
+        album: 'نور — القرآن الكريم',
+        artwork: [{ src: `${import.meta.env.BASE_URL}icon-512.png`, sizes: '512x512', type: 'image/png' }],
+      });
+      navigator.mediaSession.playbackState = 'playing';
+    } catch { /* ignore */ }
+  };
+
   // The ACTUAL load+play for one ayah. Never call this directly from the UI —
   // go through playAyah(), which coalesces rapid taps so this runs once.
   const doPlayAyah = useCallback(async (ayah: number, token: number) => {
@@ -109,14 +138,20 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
       audio.src = src;
       audio.playbackRate = rate;
       audio.play()
-        .then(() => { audio.playbackRate = rate; if (token === loadTokenRef.current) setLoading(false); })
+        .then(() => {
+          audio.playbackRate = rate;
+          if (token === loadTokenRef.current) { setLoading(false); updateMediaSession(ayah); prefetchNext(ayah); }
+        })
         .catch(() => {
           // play() can be rejected before the element is "warm" — retry a few
           // times while it buffers, bailing if a newer tap took over.
           const retry = (n: number) => {
             if (token !== loadTokenRef.current) return;
             audio.play()
-              .then(() => { audio.playbackRate = rate; if (token === loadTokenRef.current) setLoading(false); })
+              .then(() => {
+                audio.playbackRate = rate;
+                if (token === loadTokenRef.current) { setLoading(false); updateMediaSession(ayah); prefetchNext(ayah); }
+              })
               .catch(() => {
                 if (token !== loadTokenRef.current) return;
                 if (n >= 3) { setIsPlaying(false); setLoading(false); return; }
@@ -248,8 +283,8 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
     if (!audio) return;
     // All handlers no-op unless we currently own the shared element, so audio
     // played by the adhan / preview / mushaf never drives the reciter's state.
-    const onPlay = () => { if (!isOwner(ownerRef.current)) return; setIsPlaying(true); document.body.classList.add('reciting'); };
-    const onPause = () => { if (!isOwner(ownerRef.current)) return; setIsPlaying(false); document.body.classList.remove('reciting'); };
+    const onPlay = () => { if (!isOwner(ownerRef.current)) return; setIsPlaying(true); document.body.classList.add('reciting'); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; };
+    const onPause = () => { if (!isOwner(ownerRef.current)) return; setIsPlaying(false); document.body.classList.remove('reciting'); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; };
     const onTime = () => {
       if (!isOwner(ownerRef.current)) return;
       if (audio.duration > 0) setProgress(audio.currentTime / audio.duration);
@@ -365,6 +400,22 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
       window.removeEventListener('touchstart', unlock, true);
     };
   }, []);
+
+  // Lock-screen / notification media controls (and they help the OS keep the
+  // recitation alive while the screen is off).
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    const ms = navigator.mediaSession;
+    const set = (a: MediaSessionAction, h: (() => void) | null) => { try { ms.setActionHandler(a, h); } catch { /* unsupported action */ } };
+    set('play', () => play());
+    set('pause', () => pause());
+    set('nexttrack', () => next());
+    set('previoustrack', () => prev());
+    set('stop', () => stop());
+    return () => {
+      (['play', 'pause', 'nexttrack', 'previoustrack', 'stop'] as MediaSessionAction[]).forEach((a) => set(a, null));
+    };
+  }, [play, pause, next, prev, stop]);
 
   useEffect(() => {
     return () => {
