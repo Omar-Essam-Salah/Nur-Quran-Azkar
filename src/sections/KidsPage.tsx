@@ -47,12 +47,13 @@ export default function KidsPage({ onBack, onOpenSurah, onNavigate }: KidsPagePr
             return (
               <button key={n} onClick={() => onOpenSurah(n)}
                 className="rounded-2xl p-4 flex flex-col items-center gap-2 text-center transition-transform active:scale-95"
-                style={{ background: `${color}1f`, border: `1px solid ${color}40` }}>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: `${color}2e` }}>
-                  <Play size={20} style={{ color }} fill="currentColor" className="ml-0.5" />
+                // Vibrant, opaque card so the white text stays readable in BOTH day & night.
+                style={{ background: `linear-gradient(135deg, ${color}f2, ${color}c4)`, border: `1px solid ${color}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.22)' }}>
+                  <Play size={20} className="text-white ml-0.5" fill="currentColor" />
                 </div>
-                <p className="text-base font-bold text-white arabic-text leading-tight">{s.name}</p>
-                <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{s.verses} {t('verses', 'آية')}</p>
+                <p className="text-base font-bold text-white arabic-text leading-tight" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{s.name}</p>
+                <p className="text-[10px] text-white/85 arabic-text">{s.verses} {t('verses', 'آية')}</p>
               </button>
             );
           })}

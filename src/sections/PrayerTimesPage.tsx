@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { ArrowLeft, Clock, Compass, MapPin, Sunrise, Sun, Sunset, Moon, Navigation, Bell, BellOff, Loader2, Volume2, PlayCircle, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Clock, Compass, MapPin, Sunrise, Sun, Sunset, Moon, Navigation, Bell, BellOff, Loader2, Volume2, PlayCircle, ChevronDown, Square } from 'lucide-react';
 import type { Page } from '@/types';
 import { computePrayerTimes, getHijriDate } from '@/lib/prayer';
 import { getCachedGeo } from '@/lib/permissions';
@@ -84,6 +84,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
 
   const [adhanEnabled, setAdhanEnabled] = useState(() => localStorage.getItem('nur-adhan-enabled') === '1');
   const [adhanOpen, setAdhanOpen] = useState(false);
+  const [previewing, setPreviewing] = useState(false); // adhan sound preview is playing
   const [selectedAdhan, setSelectedAdhan] = useState(() => {
     return localStorage.getItem('nur-adhan-voice') || 'makkah';
   });
@@ -257,26 +258,27 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
 
   const nextPrayerData = useMemo(() => {
     if (!prayerList.length) return null;
-    const nowMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
-    
+    const now = currentTime;
     for (const prayer of prayerList) {
-      if (prayer.name === 'Sunrise') continue; 
+      if (prayer.name === 'Sunrise') continue;
       const [h, m] = prayer.time.split(':').map(Number);
-      const prayerMinutes = h * 60 + m;
-      if (prayerMinutes > nowMinutes) {
-        const diff = prayerMinutes - nowMinutes;
-        const hrs = Math.floor(diff / 60);
-        const mins = diff % 60;
-        return { prayer, timeRemaining: `${hrs}h ${mins}m` };
+      const target = new Date(now); target.setHours(h, m, 0, 0);
+      if (target.getTime() > now.getTime()) {
+        return { prayer, secondsLeft: Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000)) };
       }
     }
-    
+    // All of today's prayers passed → wrap to Fajr tomorrow.
     const fajr = prayerList[0];
     const [fh, fm] = fajr.time.split(':').map(Number);
-    const fajrMinutes = (fh + 24) * 60 + fm;
-    const diff = fajrMinutes - nowMinutes;
-    return { prayer: fajr, timeRemaining: `${Math.floor(diff / 60)}h ${diff % 60}m` };
+    const target = new Date(now); target.setDate(now.getDate() + 1); target.setHours(fh, fm, 0, 0);
+    return { prayer: fajr, secondsLeft: Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000)) };
   }, [prayerList, currentTime]);
+
+  // HH:MM:SS for the live countdown (LTR digits so it renders cleanly in RTL).
+  const fmtCountdown = (s: number) => {
+    const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+    return `${hh}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  };
 
   const currentPrayerIndex = useMemo(() => {
     if (!prayerList.length) return -1;
@@ -298,6 +300,8 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   };
 
   const previewAdhan = async () => {
+    // Tap again while previewing → stop.
+    if (previewing) { try { audioEl().pause(); } catch { /* ignore */ } setPreviewing(false); return; }
     if (!audioSrc) {
       alert("جاري تحميل ملف الأذان، انتظر قليلاً...");
       return;
@@ -306,12 +310,14 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
       unlockAudio();
       ownerRef.current = claimAudio(); // take the shared element (frees any other sound)
       const a = audioEl();
-      a.onended = null;
-      a.onerror = null;
+      a.onended = () => setPreviewing(false);
+      a.onerror = () => setPreviewing(false);
       a.src = audioSrc;
       a.volume = 1;
       await a.play();
+      setPreviewing(true);
     } catch (err: any) {
+      setPreviewing(false);
       console.error("خطأ في معاينة الأذان:", err);
       alert(`حدث خطأ في تشغيل الأذان: ${err.message || "يرجى المحاولة مرة أخرى"}`);
     }
@@ -427,10 +433,13 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
                     <p className="text-xl font-semibold text-white mt-1">{nextPrayerData.prayer.name}</p>
                     <p className="text-xs text-[color:var(--text-muted)] arabic-text">{nextPrayerData.prayer.arabicName}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-light text-[#14879c]">{formatTime12Hour(nextPrayerData.prayer.time)}</p>
-                    <p className="text-[10px] text-[color:var(--text-muted)]">{t('in', 'خلال')} {nextPrayerData.timeRemaining}</p>
-                  </div>
+                  <p className="text-2xl font-light text-[#14879c]">{formatTime12Hour(nextPrayerData.prayer.time)}</p>
+                </div>
+                {/* Live countdown — ticks every second */}
+                <div className="relative z-10 mt-1 flex items-center justify-center gap-2 rounded-xl py-2"
+                  style={{ background: 'rgba(0,0,0,0.18)' }}>
+                  <span className="text-[10px] text-[color:var(--text-muted)] arabic-text">{t('Time left', 'المتبقّي')}</span>
+                  <span className="text-lg font-semibold text-white tabular-nums tracking-wider" dir="ltr">{fmtCountdown(nextPrayerData.secondsLeft)}</span>
                 </div>
               </div>
             )}
@@ -450,9 +459,10 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
                   </button>
                   <button
                     onClick={previewAdhan}
-                    className="relative z-50 flex items-center gap-1 text-[10px] bg-[#14879c]/10 hover:bg-[#14879c]/30 px-2.5 py-1.5 rounded-lg text-[#14879c] transition-colors"
+                    className="relative z-50 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-lg transition-colors"
+                    style={{ background: previewing ? 'rgba(239,68,68,0.18)' : 'rgba(20,135,156,0.12)', color: previewing ? '#f87171' : '#14879c' }}
                   >
-                    <PlayCircle size={12} /> {t('Preview', 'معاينة')}
+                    {previewing ? <Square size={11} fill="currentColor" /> : <PlayCircle size={12} />} {previewing ? t('Stop', 'إيقاف') : t('Preview', 'معاينة')}
                   </button>
                 </div>
               </div>

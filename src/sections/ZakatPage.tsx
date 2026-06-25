@@ -13,6 +13,19 @@ const num = (v: string) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+// Defined at module scope — NOT inside the page — so it keeps a stable identity
+// across renders. (Defining it inline remounted the <input> on every keystroke,
+// which is exactly what was closing the keyboard.)
+function ZField({ label, value, onChange, dir }: { label: string; value: string; onChange: (v: string) => void; dir: 'ltr' | 'rtl' }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <label className="text-xs text-white/80 arabic-text flex-1" dir={dir}>{label}</label>
+      <input type="number" inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0"
+        className="w-32 px-3 py-2 rounded-lg bg-white/5 text-sm text-white text-right outline-none border border-transparent focus:border-[#14879c]/40" />
+    </div>
+  );
+}
+
 export default function ZakatPage({ onBack }: ZakatPageProps) {
   const { t } = useI18n();
   const [cash, setCash] = useState('');
@@ -46,15 +59,7 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
   }, [cash, gold, silver, business, receivable, debts, goldPrice]);
 
   const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-
-  const Field = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
-    <div className="flex items-center justify-between gap-3">
-      <label className="text-xs text-white/80 arabic-text flex-1" dir={t('ltr', 'rtl')}>{label}</label>
-      <input type="number" inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)}
-        placeholder="0"
-        className="w-32 px-3 py-2 rounded-lg bg-white/5 text-sm text-white text-right outline-none border border-transparent focus:border-[#14879c]/40" />
-    </div>
-  );
+  const dir = t('ltr', 'rtl') as 'ltr' | 'rtl';
 
   return (
     <div className="page-enter min-h-screen">
@@ -93,17 +98,17 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
         {/* Assets */}
         <div className="glass-card-sm p-4 space-y-3">
           <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider arabic-text">{t('Assets', 'الأموال')}</h3>
-          <Field label={t('Cash & bank savings', 'النقود والمدّخرات')} value={cash} onChange={setCash} />
-          <Field label={t('Gold value', 'قيمة الذهب')} value={gold} onChange={setGold} />
-          <Field label={t('Silver value', 'قيمة الفضة')} value={silver} onChange={setSilver} />
-          <Field label={t('Trade goods', 'عروض التجارة')} value={business} onChange={setBusiness} />
-          <Field label={t('Money owed to you', 'ديون لك (مرجوّة السداد)')} value={receivable} onChange={setReceivable} />
+          <ZField dir={dir} label={t('Cash & bank savings', 'النقود والمدّخرات')} value={cash} onChange={setCash} />
+          <ZField dir={dir} label={t('Gold value', 'قيمة الذهب')} value={gold} onChange={setGold} />
+          <ZField dir={dir} label={t('Silver value', 'قيمة الفضة')} value={silver} onChange={setSilver} />
+          <ZField dir={dir} label={t('Trade goods', 'عروض التجارة')} value={business} onChange={setBusiness} />
+          <ZField dir={dir} label={t('Money owed to you', 'ديون لك (مرجوّة السداد)')} value={receivable} onChange={setReceivable} />
         </div>
 
         {/* Deductions */}
         <div className="glass-card-sm p-4 space-y-3">
           <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider arabic-text">{t('Deduct', 'يُخصم')}</h3>
-          <Field label={t('Debts you owe (due now)', 'ديون عليك حالّة')} value={debts} onChange={setDebts} />
+          <ZField dir={dir} label={t('Debts you owe (due now)', 'ديون عليك حالّة')} value={debts} onChange={setDebts} />
         </div>
 
         {/* Nisab basis — live gold price */}
@@ -122,7 +127,7 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
               </button>
             </div>
           </div>
-          <Field label={t('Gold price per gram (24k)', 'سعر جرام الذهب (عيار ٢٤)')} value={goldPrice} onChange={setGoldPrice} />
+          <ZField dir={dir} label={t('Gold price per gram (24k)', 'سعر جرام الذهب (عيار ٢٤)')} value={goldPrice} onChange={setGoldPrice} />
           <p className="text-[10px] arabic-text" dir={t('ltr', 'rtl')} style={{ color: liveAt ? '#10b981' : 'var(--text-muted)' }}>
             {liveAt ? t('Live market price — adjust if needed.', 'سعرٌ مباشر من السوق — عدّله لو لزم.') : t('Connect to the internet for the live price, or enter it.', 'اتّصل بالإنترنت للسعر المباشر، أو أدخله يدويًا.')}
           </p>

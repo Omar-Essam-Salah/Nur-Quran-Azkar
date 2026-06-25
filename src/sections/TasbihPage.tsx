@@ -18,7 +18,7 @@ const dhikrOptions = [
   { id: 'allahuakbar', arabic: 'اللَّهُ أَكْبَرُ', translation: 'Allah is the Greatest', color: '#f59e0b', target: 33 },
   { id: 'astaghfirullah', arabic: 'أَسْتَغْفِرُ اللَّهِ', translation: 'I seek forgiveness from Allah', color: '#8b5cf6', target: 100 },
   { id: 'lailahaillallah', arabic: 'لَا إِلَهَ إِلَّا اللَّهُ', translation: 'There is no god but Allah', color: '#ec4899', target: 100 },
-  { id: 'salawat', arabic: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ', translation: 'O Allah, bless Muhammad', color: '#f97316', target: 100 },
+  { id: 'salawat', arabic: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ', translation: 'O Allah, bless Muhammad and the family of Muhammad', color: '#f97316', target: 100 },
   // إضافة الذكر المفتوح (اللانهائي)
   { id: 'open_dhikr', arabic: 'ذِكْرٌ مُطْلَق', translation: 'Open Dhikr', color: '#3b82f6', target: 0 },
 ];

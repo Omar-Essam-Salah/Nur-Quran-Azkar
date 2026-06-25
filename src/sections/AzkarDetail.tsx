@@ -40,20 +40,24 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
     setItemCounts((prev) => { const n = { ...prev }; delete n[id]; return n; });
   }, []);
 
-  // Load saved counts from localStorage
+  // Load saved counts — but RESET them if they're from a previous day, so the
+  // morning/evening adhkar always start fresh each new day.
   useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
     const saved = localStorage.getItem(`azkar-counts-${categoryId}`);
-    if (saved) {
-      try {
-        setItemCounts(JSON.parse(saved));
-      } catch { /* ignore */ }
-    }
+    if (!saved) { setItemCounts({}); return; }
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.date === today && parsed.counts) setItemCounts(parsed.counts);
+      else { setItemCounts({}); localStorage.removeItem(`azkar-counts-${categoryId}`); }
+    } catch { setItemCounts({}); }
   }, [categoryId]);
 
-  // Save counts to localStorage
+  // Save counts (stamped with today's date) to localStorage.
   useEffect(() => {
     if (Object.keys(itemCounts).length > 0) {
-      localStorage.setItem(`azkar-counts-${categoryId}`, JSON.stringify(itemCounts));
+      const today = new Date().toISOString().slice(0, 10);
+      localStorage.setItem(`azkar-counts-${categoryId}`, JSON.stringify({ date: today, counts: itemCounts }));
     }
   }, [itemCounts, categoryId]);
 
