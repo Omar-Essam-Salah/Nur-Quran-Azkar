@@ -3,12 +3,17 @@ import {
   Bookmark, Settings as SettingsIcon, Languages, ChevronLeft, HeartHandshake, BookText,
   Coins, Star, MessageSquarePlus,
 } from 'lucide-react';
+import { useEffect } from 'react';
 import type { Page } from '@/types';
 import { useI18n } from '@/i18n';
 
 interface MorePageProps {
   onNavigate: (p: Page) => void;
 }
+
+// Remember where the user scrolled, so returning from a sub-page lands them
+// back at the same spot instead of jumping to the top.
+let savedScroll = 0;
 
 interface Item { page: Page; en: string; ar: string; icon: typeof Compass; color: string }
 
@@ -54,6 +59,14 @@ const GROUPS: { en: string; ar: string; items: Item[] }[] = [
 export default function MorePage({ onNavigate }: MorePageProps) {
   const { t, lang, toggle } = useI18n();
 
+  // Restore the saved scroll on mount; save it on the way out.
+  useEffect(() => {
+    if (savedScroll) requestAnimationFrame(() => window.scrollTo(0, savedScroll));
+    return () => { savedScroll = window.scrollY; };
+  }, []);
+
+  const open = (p: Page) => { savedScroll = window.scrollY; onNavigate(p); };
+
   return (
     <div className="page-enter min-h-screen">
       <header className="sticky top-0 z-40 px-4 py-3">
@@ -92,7 +105,7 @@ export default function MorePage({ onNavigate }: MorePageProps) {
                 return (
                   <button
                     key={it.page}
-                    onClick={() => onNavigate(it.page)}
+                    onClick={() => open(it.page)}
                     className="glass-card-sm w-full p-4 flex items-center gap-4 text-left"
                   >
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${it.color}1f` }}>

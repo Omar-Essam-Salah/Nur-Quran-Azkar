@@ -90,6 +90,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   });
   const [lastPlayedPrayer, setLastPlayedPrayer] = useState<string | null>(null);
   const ownerRef = useRef(0); // our claim on the shared audio element
+  const adhanSoundingRef = useRef(false); // true while the adhan itself is audible
   const [audioSrc, setAudioSrc] = useState<string>('');
   const [_useFallback, setUseFallback] = useState(false);
 
@@ -108,6 +109,20 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
 
   // Stop the adhan if it's still playing (e.g. a preview) when leaving the page.
   useEffect(() => () => { if (isOwner(ownerRef.current)) { try { audioEl().pause(); } catch { /* ignore */ } } }, []);
+
+  // A physical volume button silences a sounding adhan (the native side fires
+  // this). It only acts while the adhan itself is audible, so adjusting volume
+  // during recitation never interrupts the reciter.
+  useEffect(() => {
+    const stop = () => {
+      if (!adhanSoundingRef.current) return;
+      try { audioEl().pause(); } catch { /* ignore */ }
+      adhanSoundingRef.current = false;
+      setPreviewing(false);
+    };
+    window.addEventListener('nur-volume-key', stop);
+    return () => window.removeEventListener('nur-volume-key', stop);
+  }, []);
 
   const requestLocation = () => {
     if (!navigator.geolocation) { if (!getCachedGeo()) setLocation({ lat: 21.3891, lng: 39.8579 }); return; }
@@ -222,6 +237,8 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
             ownerRef.current = claimAudio();
             const a = audioEl();
             a.src = audioSrc; a.volume = 1;
+            adhanSoundingRef.current = true;
+            a.onended = () => { adhanSoundingRef.current = false; };
             a.play().catch(e => console.log("Autoplay blocked:", e));
             setLastPlayedPrayer(prayer);
             break;
@@ -301,7 +318,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
 
   const previewAdhan = async () => {
     // Tap again while previewing → stop.
-    if (previewing) { try { audioEl().pause(); } catch { /* ignore */ } setPreviewing(false); return; }
+    if (previewing) { try { audioEl().pause(); } catch { /* ignore */ } adhanSoundingRef.current = false; setPreviewing(false); return; }
     if (!audioSrc) {
       alert("جاري تحميل ملف الأذان، انتظر قليلاً...");
       return;
@@ -310,10 +327,11 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
       unlockAudio();
       ownerRef.current = claimAudio(); // take the shared element (frees any other sound)
       const a = audioEl();
-      a.onended = () => setPreviewing(false);
-      a.onerror = () => setPreviewing(false);
+      a.onended = () => { setPreviewing(false); adhanSoundingRef.current = false; };
+      a.onerror = () => { setPreviewing(false); adhanSoundingRef.current = false; };
       a.src = audioSrc;
       a.volume = 1;
+      adhanSoundingRef.current = true;
       await a.play();
       setPreviewing(true);
     } catch (err: any) {

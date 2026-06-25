@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck,
 import { getReciter, everyayahUrl } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
 import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
+import { pushBack } from '@/lib/backStack';
 import { loadAyahRange } from '@/lib/localQuran';
 import { surahList } from '@/data/surahList';
 import { startPageForSurah } from '@/data/mushafPages';
@@ -304,6 +305,11 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  // Hardware back closes an open overlay (index / tafsir) and stays on the
+  // Mushaf, instead of leaving to Home.
+  useEffect(() => { if (showIndex) return pushBack(() => { setShowIndex(false); return true; }); }, [showIndex]);
+  useEffect(() => { if (tafsirFollow) return pushBack(() => { setTafsirFollow(false); return true; }); }, [tafsirFollow]);
 
   return (
     <div className="page-enter mushaf-stage" style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>

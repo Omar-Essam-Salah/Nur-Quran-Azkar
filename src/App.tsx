@@ -34,6 +34,7 @@ import Onboarding from '@/components/Onboarding';
 import LedgerPage from '@/sections/LedgerPage';
 import GuidePage from '@/sections/GuidePage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
+import { runBack } from '@/lib/backStack';
 import { recordDeed } from '@/lib/ledger';
 import { requestStartupPermissions } from '@/lib/permissions';
 import { useI18n } from '@/i18n';
@@ -188,6 +189,7 @@ function App() {
   useEffect(() => {
     let remove: (() => void) | undefined;
     CapApp.addListener('backButton', () => {
+      if (runBack()) return; // an open overlay (mushaf index, tafsir…) handled it
       if (showSearch) { setShowSearch(false); return; }
       if (history.length > 1) {
         goBack();

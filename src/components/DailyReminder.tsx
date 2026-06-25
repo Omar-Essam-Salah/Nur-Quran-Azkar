@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { pickReminder, isPrayerTimeNow } from '@/lib/reminders';
 import { useI18n } from '@/i18n';
@@ -11,8 +11,22 @@ export default function DailyReminder() {
   const reminderRef = useRef(muted.current ? null : pickReminder());
   const [show, setShow] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [dragY, setDragY] = useState(0);     // live finger offset while swiping
+  const startY = useRef<number | null>(null);
 
   const close = () => { setLeaving(true); setTimeout(() => setShow(false), 350); };
+
+  // Swipe up to dismiss.
+  const onTouchStart = (e: ReactTouchEvent) => { startY.current = e.touches[0].clientY; };
+  const onTouchMove = (e: ReactTouchEvent) => {
+    if (startY.current == null) return;
+    const dy = e.touches[0].clientY - startY.current;
+    if (dy < 0) setDragY(dy); // only track upward drag
+  };
+  const onTouchEnd = () => {
+    if (dragY < -45) close(); else setDragY(0);
+    startY.current = null;
+  };
 
   useEffect(() => {
     if (muted.current) return;
@@ -30,6 +44,9 @@ export default function DailyReminder() {
       style={{ transition: 'transform 0.35s ease, opacity 0.35s ease', transform: leaving ? 'translateY(-120%)' : 'translateY(0)', opacity: leaving ? 0 : 1 }}
     >
       <div
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
         className="pointer-events-auto w-full max-w-lg rounded-2xl px-4 py-3 flex items-start gap-3"
         style={{
           background: 'linear-gradient(135deg, rgba(20,135,156,0.22), rgba(212,175,55,0.12))',
@@ -38,6 +55,9 @@ export default function DailyReminder() {
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
+          transform: dragY ? `translateY(${dragY}px)` : undefined,
+          transition: dragY ? 'none' : 'transform 0.2s ease',
+          touchAction: 'pan-x',
         }}
       >
         <div className="w-8 h-8 rounded-full bg-[#d4af37]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
