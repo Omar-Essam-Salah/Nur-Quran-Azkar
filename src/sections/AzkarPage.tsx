@@ -1,5 +1,6 @@
-import { ArrowLeft, Sunrise, Moon, Hand, Bed, Sun, Heart, Shield, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sunrise, Moon, Hand, Bed, Sun, Heart, Shield, Sparkles, Plus } from 'lucide-react';
 import { azkarCategories } from '@/data/azkarData';
+import { getCustomAdhkar, MY_ADHKAR_ID } from '@/lib/customAdhkar';
 import { useI18n } from '@/i18n';
 
 interface AzkarPageProps {
@@ -31,6 +32,7 @@ const colorMap: Record<string, string> = {
 export default function AzkarPage({ onOpenAzkar, onBack }: AzkarPageProps) {
   const { t, lang } = useI18n();
   const isAr = lang === 'ar';
+  const customCount = getCustomAdhkar().length;
   return (
     <div className="page-enter min-h-screen">
       {/* Header */}
@@ -65,6 +67,28 @@ export default function AzkarPage({ onOpenAzkar, onBack }: AzkarPageProps) {
 
         {/* Categories Grid */}
         <div className="grid grid-cols-1 gap-3">
+          {/* My Adhkar — user-created dhikr */}
+          <button
+            onClick={() => onOpenAzkar(MY_ADHKAR_ID)}
+            className="glass-card-sm w-full p-4 flex items-center gap-4 text-left group"
+            style={{ border: '1px dashed rgba(212,175,55,0.4)' }}
+          >
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: 'rgba(212,175,55,0.12)' }}>
+              <Plus size={26} style={{ color: '#d4af37' }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm font-semibold text-white ${isAr ? 'arabic-text' : ''}`}>{t('My Adhkar', 'أذكاري')}</p>
+                  <p className="text-xs text-white/50 mt-0.5 arabic-text">{t('Add your own remembrances', 'أضِف أذكارك الخاصة')}</p>
+                </div>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.1)' }}>
+                  <span className="text-xs font-medium" style={{ color: '#d4af37' }}>{customCount}</span>
+                </div>
+              </div>
+            </div>
+          </button>
+
           {azkarCategories.map((category, index) => {
             const Icon = iconMap[category.icon] || Sparkles;
             const color = colorMap[category.id] || '#14879c';

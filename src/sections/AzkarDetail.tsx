@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ArrowLeft, Bookmark, BookmarkCheck, RotateCcw, ChevronRight, Volume2, Info } from 'lucide-react';
+import { ArrowLeft, Bookmark, BookmarkCheck, RotateCcw, ChevronRight, Volume2, Info, Plus, Trash2 } from 'lucide-react';
 import { getAzkarCategoryById } from '@/data/azkarData';
+import { getCustomAdhkar, addCustomDhikr, removeCustomDhikr, MY_ADHKAR_ID } from '@/lib/customAdhkar';
+import type { AzkarItem } from '@/types';
 import { useI18n } from '@/i18n';
 
 interface AzkarDetailProps {
@@ -13,10 +15,30 @@ interface AzkarDetailProps {
 export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmarked }: AzkarDetailProps) {
   const { t, lang } = useI18n();
   const isAr = lang === 'ar';
-  const category = getAzkarCategoryById(categoryId);
+  const isCustom = categoryId === MY_ADHKAR_ID;
+  const [customItems, setCustomItems] = useState<AzkarItem[]>(() => (isCustom ? getCustomAdhkar() : []));
+  const category = isCustom
+    ? { id: MY_ADHKAR_ID, name: 'My Adhkar', arabicName: 'أذكاري', icon: 'heart', items: customItems }
+    : getAzkarCategoryById(categoryId);
   const [itemCounts, setItemCounts] = useState<Record<string, number>>({});
   const [showTransliteration, setShowTransliteration] = useState(true);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+
+  // ── My-Adhkar add form ──
+  const [newArabic, setNewArabic] = useState('');
+  const [newCount, setNewCount] = useState(33);
+  const addDhikr = useCallback(() => {
+    if (!newArabic.trim()) return;
+    addCustomDhikr(newArabic, newCount);
+    setCustomItems(getCustomAdhkar());
+    setNewArabic('');
+    setNewCount(33);
+  }, [newArabic, newCount]);
+  const deleteDhikr = useCallback((id: string) => {
+    removeCustomDhikr(id);
+    setCustomItems(getCustomAdhkar());
+    setItemCounts((prev) => { const n = { ...prev }; delete n[id]; return n; });
+  }, []);
 
   // Load saved counts from localStorage
   useEffect(() => {
@@ -131,6 +153,45 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
       </header>
 
       <div className="px-4 pt-4 pb-8 max-w-lg mx-auto space-y-4">
+        {/* My-Adhkar: add form */}
+        {isCustom && (
+          <div className="glass-card-sm p-4 space-y-3">
+            <p className="text-xs text-[#d4af37] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Add a dhikr', 'أضِف ذِكرًا')}</p>
+            <textarea
+              value={newArabic}
+              onChange={(e) => setNewArabic(e.target.value)}
+              placeholder={t('Type the dhikr…', 'اكتب الذِّكر…')}
+              dir="rtl"
+              rows={2}
+              className="w-full p-3 rounded-xl bg-white/5 text-base text-white arabic-text outline-none border border-transparent focus:border-[#d4af37]/40 resize-none placeholder:text-[color:var(--text-muted)]/50"
+            />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-[color:var(--text-muted)] arabic-text">{t('Count', 'العدد')}</span>
+                <input
+                  type="number" min={1} max={1000} value={newCount}
+                  onChange={(e) => setNewCount(Number(e.target.value))}
+                  className="w-16 p-2 rounded-lg bg-white/5 text-sm text-white text-center outline-none border border-transparent focus:border-[#d4af37]/40"
+                />
+              </div>
+              <button
+                onClick={addDhikr}
+                disabled={!newArabic.trim()}
+                className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold disabled:opacity-40"
+                style={{ background: 'rgba(212,175,55,0.2)', color: '#d4af37' }}
+              >
+                <Plus size={14} /> {t('Add', 'إضافة')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isCustom && customItems.length === 0 && (
+          <p className="text-center text-xs text-[color:var(--text-muted)] arabic-text py-6" dir={isAr ? 'rtl' : 'ltr'}>
+            {t('No personal adhkar yet — add your first above.', 'لا أذكار خاصة بعد — أضِف أوّل ذِكر بالأعلى.')}
+          </p>
+        )}
+
         {/* Completion Message */}
         {allCompleted && totalTarget > 0 && (
           <div 
@@ -176,27 +237,39 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
                       {index + 1} {t('of', 'من')} {category.items.length}
                     </span>
                     <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => onBookmark({
-                          type: 'azkar',
-                          azkarId: categoryId,
-                          azkarItemId: item.id,
-                          text: item.arabic,
-                          translation: item.translation,
-                        })}
-                        className="p-1.5 rounded-lg hover:bg-white/10 transition-all"
-                      >
-                        {bookmarked ? 
-                          <BookmarkCheck size={14} className="text-[#d4af37]" /> : 
-                          <Bookmark size={14} className="text-[color:var(--text-muted)]" />
-                        }
-                      </button>
-                      <button
-                        onClick={() => setExpandedItem(isExpanded ? null : item.id)}
-                        className="p-1.5 rounded-lg hover:bg-white/10 transition-all"
-                      >
-                        <Info size={14} className="text-[color:var(--text-muted)]" />
-                      </button>
+                      {isCustom ? (
+                        <button
+                          onClick={() => deleteDhikr(item.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-500/15 transition-all"
+                          title={t('Delete', 'حذف')}
+                        >
+                          <Trash2 size={14} className="text-red-400/80" />
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => onBookmark({
+                              type: 'azkar',
+                              azkarId: categoryId,
+                              azkarItemId: item.id,
+                              text: item.arabic,
+                              translation: item.translation,
+                            })}
+                            className="p-1.5 rounded-lg hover:bg-white/10 transition-all"
+                          >
+                            {bookmarked ?
+                              <BookmarkCheck size={14} className="text-[#d4af37]" /> :
+                              <Bookmark size={14} className="text-[color:var(--text-muted)]" />
+                            }
+                          </button>
+                          <button
+                            onClick={() => setExpandedItem(isExpanded ? null : item.id)}
+                            className="p-1.5 rounded-lg hover:bg-white/10 transition-all"
+                          >
+                            <Info size={14} className="text-[color:var(--text-muted)]" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
