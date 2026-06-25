@@ -291,7 +291,13 @@ export default function QuranReader({
       translation: verse.translations[0]?.text ?? '',
     });
   }, [onBookmark, surahNumber]);
-  const handleTogglePlay = useCallback((ayah: number) => audio.toggle(ayah), [audio]);
+  // Keep this callback STABLE: `audio` is a fresh object every render (it carries
+  // progress/word state that ticks during playback). If the callback changed
+  // each render, every memo'd AyahView would re-render ~4×/sec while reciting —
+  // the stutter you'd see in the snow and the word highlight. Route through a ref.
+  const audioApiRef = useRef(audio);
+  audioApiRef.current = audio;
+  const handleTogglePlay = useCallback((ayah: number) => audioApiRef.current.toggle(ayah), []);
   const handleOpenTafsir = useCallback((verse: NormVerse) => setTafsirVerse(verse), []);
 
   if (!surah) return null;
