@@ -364,3 +364,11 @@ html.large-ui { font-size: 18.5px; }
 /* Dim the bright page a touch at night for comfort (dark is the default theme;
    the app adds the `light` class for light mode). */
 html:not(.light) .mushaf-page-img { filter: brightness(0.95); }
+
+/* The app is edge-to-edge (viewport-fit=cover + a translucent status bar), so
+   without this the sticky page headers slide UNDER the status bar / notch and
+   the back button ends up half-hidden and hard to reach. Push every header down
+   by the status-bar inset. env() is 0 on devices with no inset → no change. */
+@supports (padding-top: env(safe-area-inset-top)) {
+  header.sticky.top-0 { padding-top: calc(0.75rem + env(safe-area-inset-top)); }
+}

@@ -35,6 +35,7 @@ import LedgerPage from '@/sections/LedgerPage';
 import GuidePage from '@/sections/GuidePage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
 import { runBack } from '@/lib/backStack';
+import { initDailySync } from '@/lib/dailySync';
 import { recordDeed } from '@/lib/ledger';
 import { requestStartupPermissions } from '@/lib/permissions';
 import { useI18n } from '@/i18n';
@@ -135,6 +136,7 @@ function App() {
     // later launches re-check permissions silently.
     if (onboarded) void requestStartupPermissions();
     void scheduleSpiritualNudges();
+    initDailySync(); // once-a-day refresh on (re)connect
     recordDeed('open');
   }, [onboarded]);
 

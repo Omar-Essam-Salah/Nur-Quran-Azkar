@@ -18,7 +18,7 @@ const navItems: { page: BottomNavPage; en: string; ar: string; icon: typeof Home
 export default function BottomNav({ activePage, onNavigate }: BottomNavProps) {
   const { t } = useI18n();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 px-4 pt-2" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
       <div 
         className="mx-auto max-w-md flex items-center justify-around rounded-2xl py-2 px-2"
         style={{

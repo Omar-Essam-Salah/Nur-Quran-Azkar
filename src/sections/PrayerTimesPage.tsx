@@ -179,6 +179,14 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The once-a-day reconnect sync (lib/dailySync) → refresh location & times.
+  useEffect(() => {
+    const onSync = () => requestLocation();
+    window.addEventListener('nur-sync', onSync);
+    return () => window.removeEventListener('nur-sync', onSync);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!location) return;
     setTimings(computePrayerTimes(location.lat, location.lng));

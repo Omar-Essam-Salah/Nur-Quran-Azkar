@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { BookOpen, Sparkles, Clock, Compass, Heart, Search, Settings, Bookmark, Book, ChevronLeft, ScrollText, Languages, Moon, Target, GraduationCap } from 'lucide-react';
+import { BookOpen, Sparkles, Clock, Compass, Heart, Search, Settings, Bookmark, Book, ChevronLeft, Languages, GraduationCap } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { surahList } from '@/data/surahList';
 import { azkarCategories } from '@/data/azkarData';
@@ -220,55 +220,6 @@ export default function HomePage({
           </div>
         </button>
 
-        {/* Islamic content */}
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => onNavigate('prophets')} className="glass-card-sm p-4 flex flex-col items-start gap-2 text-left">
-            <div className="w-10 h-10 rounded-xl bg-[#14879c]/15 flex items-center justify-center">
-              <BookOpen size={18} className="text-[#14879c]" />
-            </div>
-            <div>
-              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('Stories of the Prophets', 'قصص الأنبياء')}</p>
-              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary('Stories of the Prophets', 'قصص الأنبياء')}</p>
-            </div>
-          </button>
-          <button onClick={() => onNavigate('hadith')} className="glass-card-sm p-4 flex flex-col items-start gap-2 text-left">
-            <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 flex items-center justify-center">
-              <ScrollText size={18} className="text-[#d4af37]" />
-            </div>
-            <div>
-              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('40 Hadith', 'الأربعون النووية')}</p>
-              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary('40 Hadith', 'الأربعون النووية')}</p>
-            </div>
-          </button>
-          <button onClick={() => onNavigate('asma')} className="glass-card-sm p-4 flex flex-col items-start gap-2 text-left">
-            <div className="w-10 h-10 rounded-xl bg-[#14879c]/15 flex items-center justify-center">
-              <Sparkles size={18} className="text-[#14879c]" />
-            </div>
-            <div>
-              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('99 Names', 'الأسماء الحسنى')}</p>
-              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary('99 Names', 'الأسماء الحسنى')}</p>
-            </div>
-          </button>
-          <button onClick={() => onNavigate('khatma')} className="glass-card-sm p-4 flex flex-col items-start gap-2 text-left">
-            <div className="w-10 h-10 rounded-xl bg-[#14879c]/15 flex items-center justify-center">
-              <Target size={18} className="text-[#14879c]" />
-            </div>
-            <div>
-              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('Khatma Plan', 'خطة الختمة')}</p>
-              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary('Khatma Plan', 'خطة الختمة')}</p>
-            </div>
-          </button>
-          <button onClick={() => onNavigate('ramadan')} className="glass-card-sm p-4 flex flex-col items-start gap-2 text-left">
-            <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 flex items-center justify-center">
-              <Moon size={18} className="text-[#d4af37]" />
-            </div>
-            <div>
-              <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('Ramadan', 'وضع رمضان')}</p>
-              <p className={`text-[10px] text-[color:var(--text-muted)] ${isAr ? '' : 'arabic-text'}`}>{secondary('Ramadan', 'وضع رمضان')}</p>
-            </div>
-          </button>
-        </div>
-
         {/* Last Read */}
         {lastRead && lastReadSurah && (
           <div>
@@ -381,36 +332,15 @@ export default function HomePage({
           </button>
         )}
 
-        {/* Extra Tools */}
-        <div>
-          <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider mb-3 px-1">{t('More Tools', 'أدوات أخرى')}</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => onNavigate('tasbih')}
-              className="glass-card-sm p-4 flex flex-col items-center gap-2 text-center"
-            >
-              <div className="w-12 h-12 rounded-xl bg-[#10b981]/15 flex items-center justify-center">
-                <span className="text-xl text-[#10b981] font-bold">33</span>
-              </div>
-              <div>
-                <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{t('Tasbih', 'السبحة')}</p>
-                <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Digital Counter', 'عدّاد رقمي')}</p>
-              </div>
-            </button>
-            <button
-              onClick={() => onNavigate('bookmarks')}
-              className="glass-card-sm p-4 flex flex-col items-center gap-2 text-center"
-            >
-              <div className="w-12 h-12 rounded-xl bg-[#f472b6]/15 flex items-center justify-center">
-                <Bookmark size={20} className="text-[#f472b6]" />
-              </div>
-              <div>
-                <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{t('Bookmarks', 'المحفوظات')}</p>
-                <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Saved Verses', 'آيات محفوظة')}</p>
-              </div>
-            </button>
-          </div>
-        </div>
+        {/* All other tools (Tasbih, Khatma, Ramadan, Stories, 99 Names, Zakat…)
+            live in the "More" tab — keeping the home calm and uncluttered. */}
+        <button
+          onClick={() => onNavigate('more')}
+          className="glass-card-sm w-full p-4 flex items-center justify-center gap-2 text-center"
+        >
+          <span className={`text-sm font-medium text-[#14879c] ${isAr ? 'arabic-text' : ''}`}>{t('Explore all features', 'كل المزايا والأدوات')}</span>
+          <ChevronLeft size={16} className="text-[#14879c]" />
+        </button>
 
         {/* Spacer for bottom nav */}
         <div className="h-8" />

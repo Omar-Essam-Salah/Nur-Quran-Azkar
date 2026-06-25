@@ -107,14 +107,17 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, surahN
     const from = Math.min(Math.max(1, fromVal), maxAyah || 1);
     const to = Math.min(Math.max(from, toVal), maxAyah || 1);
     audio.setRepeat({ from, to, times });
-    if (!audio.isPlaying) audio.play(from);
+    // Always jump to the start of the range so the repeat begins on the chosen
+    // ayah immediately — otherwise picking an ayah while another is playing set
+    // the range but never actually looped it.
+    audio.play(from);
   };
 
   const pct = dlProgress.total > 0 ? Math.round((dlProgress.done / dlProgress.total) * 100) : 0;
   const rpt = audio.repeat;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-50 px-3 pb-3 pointer-events-none">
+    <div className="fixed bottom-0 inset-x-0 z-50 px-3 pointer-events-none" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
       <div
         className="mx-auto max-w-lg rounded-2xl overflow-hidden pointer-events-auto"
         style={{

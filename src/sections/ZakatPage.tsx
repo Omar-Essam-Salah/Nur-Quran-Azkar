@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Coins, Info, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, Coins, Info, RefreshCw, Loader2, CalendarClock } from 'lucide-react';
 import { fetchGoldPricePerGram, getCachedGold, ZAKAT_CURRENCIES } from '@/lib/goldPrice';
 import { useI18n } from '@/i18n';
 
@@ -60,6 +60,32 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
 
   const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
   const dir = t('ltr', 'rtl') as 'ltr' | 'rtl';
+
+  // Hawl reminder — a local notification on the date the user's wealth completes
+  // a full lunar year, nudging them to recalculate and pay their zakat.
+  const [zReminder, setZReminder] = useState(() => localStorage.getItem('nur-zakat-reminder') || '');
+  const setZakatReminder = async (date: string) => {
+    setZReminder(date);
+    try { localStorage.setItem('nur-zakat-reminder', date); } catch { /* ignore */ }
+    try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
+      await LocalNotifications.cancel({ notifications: [{ id: 2003 }] }).catch(() => {});
+      if (!date) return;
+      const perm = await LocalNotifications.requestPermissions();
+      if (perm.display !== 'granted') return;
+      const at = new Date(`${date}T10:00:00`);
+      if (at.getTime() <= Date.now()) return; // only schedule future reminders
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: 2003,
+          title: 'نُور · موعد زكاتك',
+          body: 'حال الحول على مالك — احسب زكاتك وأخرِجها، طُهرةً لمالك ونماءً 🤍',
+          schedule: { at, allowWhileIdle: true },
+          smallIcon: 'ic_stat_nur', largeIcon: 'nur_logo',
+        }],
+      });
+    } catch { /* not native */ }
+  };
 
   return (
     <div className="page-enter min-h-screen">
@@ -135,6 +161,29 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
             {t('Nisab = 85 g of gold. Zakat is 2.5% of wealth held for a full lunar year (hawl).',
                'النِّصاب = ٨٥ جرامًا من الذهب. ومقدار الزكاة ٢٫٥٪ مما حال عليه الحول (سنة هجرية).')}
           </p>
+        </div>
+
+        {/* Hawl (lunar-year) reminder */}
+        <div className="glass-card-sm p-4 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs text-white/90 arabic-text flex items-center gap-1.5">
+                <CalendarClock size={13} className="text-[#d4af37]" /> {t('Hawl reminder', 'تذكير بحلول الحَوْل')}
+              </h3>
+              <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir={dir}>
+                {zReminder
+                  ? `${t('Reminder set for', 'تذكير يوم')} ${zReminder}`
+                  : t('Get reminded when a lunar year passes on your wealth.', 'ذكّرني عند مرور سنة هجرية على مالك.')}
+              </p>
+            </div>
+            <input type="date" value={zReminder} onChange={(e) => setZakatReminder(e.target.value)}
+              className="px-2 py-1.5 rounded-lg bg-white/5 text-xs text-white outline-none border border-transparent focus:border-[#14879c]/40" />
+          </div>
+          {zReminder && (
+            <button onClick={() => setZakatReminder('')} className="text-[10px] text-red-400/80 px-2 py-1 rounded-lg hover:bg-red-500/10">
+              {t('Cancel reminder', 'إلغاء التذكير')}
+            </button>
+          )}
         </div>
 
         <div className="glass-card-sm p-4 flex items-start gap-2.5">

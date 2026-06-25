@@ -41,7 +41,7 @@ export default function DailyReminder() {
   return (
     <div
       className="fixed top-0 inset-x-0 z-[90] flex justify-center px-3 pt-3 pointer-events-none"
-      style={{ transition: 'transform 0.35s ease, opacity 0.35s ease', transform: leaving ? 'translateY(-120%)' : 'translateY(0)', opacity: leaving ? 0 : 1 }}
+      style={{ transition: 'transform 0.35s ease, opacity 0.35s ease', transform: leaving ? 'translateY(-120%)' : 'translateY(0)', opacity: leaving ? 0 : 1, paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
     >
       <div
         onTouchStart={onTouchStart}
