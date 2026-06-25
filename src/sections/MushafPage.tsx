@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, ZoomIn, ZoomOut, BookOpen, Search } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, BookOpen, Search } from 'lucide-react';
 import { getReciter, everyayahUrl } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
 import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
@@ -11,8 +11,6 @@ interface MushafPageProps {
   onBack: () => void;
   initialPage?: number;
 }
-
-const ZOOM_LEVELS = [1, 1.5, 2, 2.5, 3];
 
 const TOTAL_PAGES = 604;
 
@@ -55,6 +53,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const [showIndex, setShowIndex] = useState(false);
   const [indexQuery, setIndexQuery] = useState('');
   const [zoom, setZoom] = useState(1);
+  const [chrome, setChrome] = useState(true); // top/bottom bars visible (tap page to hide)
 
   // Which surah the current page belongs to (for highlighting in the index).
   const currentSurahNumber = useMemo(() => {
@@ -181,7 +180,9 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   }, [tafsirFollow, page]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+  // Pinch state incl. the focal point (content fraction fx/fy) so zoom anchors
+  // under the fingers instead of jumping to a corner.
+  const pinchRef = useRef<{ dist: number; zoom: number; fx: number; fy: number } | null>(null);
 
   const centerScroll = () => {
     const el = scrollRef.current;
@@ -191,11 +192,8 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       el.scrollTop = Math.max(0, (el.scrollHeight - el.clientHeight) / 2);
     });
   };
-  // Work from the current (possibly pinch-set) zoom to the next/previous level.
-  const zoomIn = () => setZoom((z) => ZOOM_LEVELS.find((l) => l > z + 0.05) ?? ZOOM_LEVELS[ZOOM_LEVELS.length - 1]);
-  const zoomOut = () => setZoom((z) => [...ZOOM_LEVELS].reverse().find((l) => l < z - 0.05) ?? ZOOM_LEVELS[0]);
 
-  // Keep the page centred when zooming (buttons / double-tap). Skip during a
+  // Keep the page centred when zooming (pinch / double-tap). Skip during a
   // pinch so it doesn't fight the user's fingers.
   useEffect(() => {
     if (pinchRef.current) return;
@@ -235,15 +233,36 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
 
   // Combined gesture handling: 1 finger = swipe pages (only at 1×), 2 fingers = pinch zoom.
   const touchDist = (t: React.TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const midpoint = (t: React.TouchList) => {
+    const el = scrollRef.current; const r = el?.getBoundingClientRect();
+    return { x: (t[0].clientX + t[1].clientX) / 2 - (r?.left ?? 0), y: (t[0].clientY + t[1].clientY) / 2 - (r?.top ?? 0) };
+  };
   const onTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) { pinchRef.current = { dist: touchDist(e.touches), zoom }; touchStartX.current = null; }
-    else if (zoom === 1) { touchStartX.current = e.touches[0].clientX; }
+    if (e.touches.length === 2) {
+      const el = scrollRef.current;
+      const m = midpoint(e.touches);
+      const sw = el?.scrollWidth || 1, sh = el?.scrollHeight || 1;
+      // Remember the content point under the fingers so we can keep it there.
+      pinchRef.current = {
+        dist: touchDist(e.touches), zoom,
+        fx: ((el?.scrollLeft ?? 0) + m.x) / sw,
+        fy: ((el?.scrollTop ?? 0) + m.y) / sh,
+      };
+      touchStartX.current = null;
+    } else if (zoom === 1) { touchStartX.current = e.touches[0].clientX; }
   };
   const onTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 2 && pinchRef.current) {
-      const ratio = touchDist(e.touches) / pinchRef.current.dist;
-      const nz = Math.min(3, Math.max(1, pinchRef.current.zoom * ratio));
-      setZoom(Math.round(nz * 20) / 20);
+      const p = pinchRef.current;
+      const ratio = touchDist(e.touches) / p.dist;
+      setZoom(Math.round(Math.min(3, Math.max(1, p.zoom * ratio)) * 100) / 100); // fine steps = smooth
+      const m = midpoint(e.touches);
+      // After the width updates, scroll so the focal point stays under the fingers.
+      requestAnimationFrame(() => {
+        const el = scrollRef.current; if (!el) return;
+        el.scrollLeft = p.fx * el.scrollWidth - m.x;
+        el.scrollTop = p.fy * el.scrollHeight - m.y;
+      });
     }
   };
   const onTouchEnd = (e: React.TouchEvent) => {
@@ -254,6 +273,8 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       // RTL mushaf: swipe left→right turns FORWARD (next page); right→left goes back.
       if (dx > 0) goNext();
       else goPrev();
+    } else if (Math.abs(dx) < 10) {
+      setChrome((c) => !c); // a tap → toggle the bars for full-screen reading
     }
     touchStartX.current = null;
   };
@@ -268,87 +289,28 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   }, []);
 
   return (
-    <div className="page-enter min-h-screen flex flex-col mushaf-stage">
-      {/* Header */}
-      <header className="sticky top-0 z-40 px-4 py-3">
-        <div
-          className="mx-auto max-w-lg flex items-center gap-3 rounded-2xl px-4 py-3"
-          style={{
-            background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.7), rgba(var(--glass-2), 0.8))',
-            border: '1px solid rgba(var(--hair), 0.08)',
-            borderTop: '1px solid rgba(var(--hair), 0.15)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-          }}
-        >
-          <button onClick={onBack} className="p-2 rounded-xl hover:bg-white/10 transition-all">
-            <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base font-semibold text-white arabic-text truncate">سورة {currentSurah?.name ?? ''}</h1>
-            <p className="text-[10px] text-[#d4af37] arabic-text">مصحف المدينة · الجزء {juzForPage(page)}</p>
-          </div>
-          <button
-            onClick={toggleAudio}
-            className="p-2 rounded-xl hover:bg-white/10 transition-all"
-            title={audioPlaying ? 'إيقاف التلاوة' : 'تلاوة الصفحة'}
-            aria-label="Play page recitation"
-          >
-            {audioLoading
-              ? <Loader2 size={18} className="text-[#14879c] animate-spin" />
-              : audioPlaying
-                ? <Pause size={18} className="text-[#14879c]" fill="currentColor" />
-                : <Play size={18} className="text-[#14879c]" fill="currentColor" />}
-          </button>
-          <button
-            onClick={toggleBookmark}
-            className="p-2 rounded-xl hover:bg-white/10 transition-all"
-            title={isBookmarked ? 'إزالة العلامة' : 'حفظ الصفحة'}
-            aria-label="Bookmark page"
-          >
-            {isBookmarked
-              ? <BookmarkCheck size={18} className="text-[#d4af37]" />
-              : <Bookmark size={18} className="text-[color:var(--text-muted)]" />}
-          </button>
-          <div className="text-right">
-            <p className="text-xs text-[#14879c]">الجزء {juzForPage(page)}</p>
-            <p className="text-[10px] text-[color:var(--text-muted)]">صفحة {page} / {TOTAL_PAGES}</p>
-          </div>
+    <div className="page-enter mushaf-stage" style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
+      {/* Slim title pill — slides away with the toolbar for full-screen reading */}
+      <div className="fixed top-0 inset-x-0 z-40 px-4 pt-3 transition-transform duration-300 ease-out pointer-events-none"
+        style={{ transform: chrome ? 'none' : 'translateY(-160%)' }}>
+        <div className="mx-auto w-max max-w-[90%] text-center px-4 py-1.5 rounded-full"
+          style={{ background: 'rgba(8,29,35,0.6)', border: '1px solid rgba(212,175,55,0.2)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+          <p className="text-xs font-semibold text-white arabic-text truncate">سورة {currentSurah?.name ?? ''} · ص {page}</p>
         </div>
+      </div>
 
-        {/* Saved pages — quick jump */}
-        {bookmarks.length > 0 && (
-          <div className="mx-auto max-w-lg mt-2 flex gap-1.5 overflow-x-auto pb-1">
-            {bookmarks.map((b) => (
-              <button
-                key={b}
-                onClick={() => setPage(b)}
-                className="flex-shrink-0 px-2.5 py-1 rounded-lg text-[10px] transition-all"
-                style={{
-                  background: b === page ? 'rgba(212,175,55,0.2)' : 'rgba(var(--glass-1), 0.5)',
-                  color: b === page ? '#d4af37' : 'var(--text-muted)',
-                  border: '1px solid rgba(var(--hair), 0.08)',
-                }}
-              >
-                ص {b}
-              </button>
-            ))}
-          </div>
-        )}
-      </header>
-
-      {/* Page image — fills the screen; the page's own border is the edge.
-          (Pannable when zoomed; swipe pages only at 1×.) */}
+      {/* Page image — fills the whole screen; the page's own border is the edge.
+          Centered vertically at 1×; pannable when zoomed; tap toggles the bars. */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-auto select-none"
+        className={`absolute inset-0 overflow-auto select-none ${zoom === 1 ? 'flex items-center justify-center' : ''}`}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         <div
-          className="relative mx-auto"
-          style={{ width: `${Math.round(zoom * 100)}%`, transition: 'width 0.2s ease' }}
+          className="relative mx-auto flex-shrink-0"
+          style={{ width: `${Math.round(zoom * 100)}%`, transition: pinchRef.current ? 'none' : 'width 0.2s ease' }}
         >
           {!loaded && (
             <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -373,72 +335,65 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
         </div>
       </div>
 
-      {/* Floating zoom controls — affect only the page image, not the UI */}
-      <div className="fixed right-3 bottom-28 z-30 flex flex-col items-center gap-2">
-        <button onClick={zoomIn} disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
-          className="w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
-          style={{ background: 'rgba(var(--glass-2), 0.92)', border: '1px solid rgba(var(--hair), 0.15)', backdropFilter: 'blur(6px)' }}
-          aria-label="Zoom in">
-          <ZoomIn size={18} className="text-white" />
-        </button>
-        {zoom > 1 && <span className="text-[10px] font-bold text-[#d4af37]">{zoom}×</span>}
-        <button onClick={zoomOut} disabled={zoom <= ZOOM_LEVELS[0]}
-          className="w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
-          style={{ background: 'rgba(var(--glass-2), 0.92)', border: '1px solid rgba(var(--hair), 0.15)', backdropFilter: 'blur(6px)' }}
-          aria-label="Zoom out">
-          <ZoomOut size={18} className="text-white" />
-        </button>
-      </div>
-
-      {/* Pager */}
-      <div className="sticky bottom-0 px-4 pb-4">
-        <p className="mx-auto max-w-md text-center text-[10px] text-[color:var(--text-muted)] mb-1.5 arabic-text">
-          الجزء {juzForPage(page)} · الحزب {hizbForPage(page)} · الصفحة {page} من {TOTAL_PAGES}
-        </p>
-        <div
-          className="mx-auto max-w-md flex items-center gap-3 rounded-2xl px-3 py-2"
+      {/* One smooth slide toolbar with every control — tap the page to toggle */}
+      <div className="fixed bottom-0 inset-x-0 z-40 px-3 pb-3 transition-transform duration-300 ease-out"
+        style={{ transform: chrome ? 'none' : 'translateY(145%)' }}>
+        <div className="mx-auto max-w-md rounded-2xl overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.8), rgba(var(--glass-2), 0.9))',
-            border: '1px solid rgba(var(--hair), 0.1)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-          }}
-        >
-          {/* Forward (next page, to the left in RTL) */}
-          <button onClick={goNext} disabled={page >= TOTAL_PAGES}
-            className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Next page">
-            <ChevronLeft size={20} className="text-white" />
-          </button>
+            background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.92), rgba(var(--glass-2), 0.96))',
+            border: '1px solid rgba(var(--hair), 0.12)',
+            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            boxShadow: '0 -8px 30px rgba(0,0,0,0.4)',
+          }}>
+          {/* Info row */}
+          <div className="px-3 pt-2.5 pb-1.5 flex items-center gap-2">
+            <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Back">
+              <ArrowLeft size={17} className="text-[color:var(--text-muted)]" />
+            </button>
+            <div className="flex-1 min-w-0 text-center">
+              <p className="text-xs font-semibold text-white arabic-text truncate">سورة {currentSurah?.name ?? ''}</p>
+              <p className="text-[9px] text-[#d4af37] arabic-text">الجزء {juzForPage(page)} · الحزب {hizbForPage(page)} · صفحة {page}/{TOTAL_PAGES}</p>
+            </div>
+            <button onClick={toggleBookmark} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Bookmark page">
+              {isBookmarked ? <BookmarkCheck size={17} className="text-[#d4af37]" /> : <Bookmark size={17} className="text-[color:var(--text-muted)]" />}
+            </button>
+          </div>
 
-          {/* Surah index — the main way to jump around */}
-          <button onClick={() => setShowIndex(true)}
-            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
-            <ListTree size={16} className="text-[#14879c]" />
-            <span className="text-xs text-white arabic-text">فهرس السور</span>
-          </button>
+          {/* Saved pages */}
+          {bookmarks.length > 0 && (
+            <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto">
+              {bookmarks.map((b) => (
+                <button key={b} onClick={() => setPage(b)} className="flex-shrink-0 px-2.5 py-0.5 rounded-lg text-[10px] transition-all"
+                  style={{ background: b === page ? 'rgba(212,175,55,0.2)' : 'rgba(var(--glass-1), 0.5)', color: b === page ? '#d4af37' : 'var(--text-muted)', border: '1px solid rgba(var(--hair), 0.08)' }}>
+                  ص {b}
+                </button>
+              ))}
+            </div>
+          )}
 
-          <button onClick={goPrev} disabled={page <= 1}
-            className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Previous page">
-            <ChevronRight size={20} className="text-white" />
-          </button>
-
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={TOTAL_PAGES}
-            value={pageStr}
-            onChange={(e) => setPageStr(e.target.value)}
-            onBlur={commitPage}
-            onKeyDown={(e) => { if (e.key === 'Enter') { commitPage(); (e.currentTarget as HTMLInputElement).blur(); } }}
-            className="w-12 px-1.5 py-1.5 rounded-lg bg-white/5 text-center text-xs text-white outline-none"
-            title="رقم الصفحة"
-          />
-
-          <button onClick={() => setTafsirFollow((v) => !v)}
-            className="p-2 rounded-xl hover:bg-white/10 transition-all" aria-label="Tafsir window" title="نافذة التفسير مع التلاوة">
-            <BookOpen size={18} className={tafsirFollow ? 'text-[#d4af37]' : 'text-white'} />
-          </button>
+          {/* Action row */}
+          <div className="px-3 pb-2.5 pt-1 flex items-center gap-1.5">
+            <button onClick={goNext} disabled={page >= TOTAL_PAGES} className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Next page">
+              <ChevronLeft size={20} className="text-white" />
+            </button>
+            <button onClick={() => setShowIndex(true)} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
+              <ListTree size={15} className="text-[#14879c]" /><span className="text-[11px] text-white arabic-text">الفهرس</span>
+            </button>
+            <button onClick={() => setTafsirFollow((v) => !v)} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
+              <BookOpen size={15} className={tafsirFollow ? 'text-[#d4af37]' : 'text-[#14879c]'} /><span className="text-[11px] text-white arabic-text">التفسير</span>
+            </button>
+            <button onClick={toggleAudio} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
+              {audioLoading ? <Loader2 size={15} className="text-[#14879c] animate-spin" /> : audioPlaying ? <Pause size={15} className="text-[#14879c]" fill="currentColor" /> : <Play size={15} className="text-[#14879c]" fill="currentColor" />}
+              <span className="text-[11px] text-white arabic-text">تلاوة</span>
+            </button>
+            <input type="number" inputMode="numeric" min={1} max={TOTAL_PAGES} value={pageStr}
+              onChange={(e) => setPageStr(e.target.value)} onBlur={commitPage}
+              onKeyDown={(e) => { if (e.key === 'Enter') { commitPage(); (e.currentTarget as HTMLInputElement).blur(); } }}
+              className="w-11 px-1 py-1.5 rounded-lg bg-white/5 text-center text-xs text-white outline-none" title="رقم الصفحة" />
+            <button onClick={goPrev} disabled={page <= 1} className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Previous page">
+              <ChevronRight size={20} className="text-white" />
+            </button>
+          </div>
         </div>
       </div>
 

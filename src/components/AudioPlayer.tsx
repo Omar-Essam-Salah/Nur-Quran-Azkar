@@ -63,7 +63,14 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, surahN
   };
 
   const handleDownload = async () => {
-    if (!downloadable.length) return;
+    if (!downloadable.length) {
+      // No per-ayah URLs yet (audio not loaded for this reciter) — tell the user
+      // instead of silently doing nothing, and start playback to fetch the URLs.
+      toast(t('Play the surah once, then download', 'شغّل السورة مرّة ثم حمّلها'), {
+        description: t('Tap an ayah to load this reciter’s audio, then the download will work.', 'اضغط آية لتحميل صوت هذا القارئ، ثم سيعمل التحميل.'),
+      });
+      return;
+    }
     const controller = new AbortController();
     abortRef.current = controller;
     setDownloading(true);

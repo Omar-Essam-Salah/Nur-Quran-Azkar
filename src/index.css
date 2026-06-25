@@ -340,6 +340,10 @@ tajweed.idgham_mutaqaribayn { color: #1697AE; }
 tajweed.iqlab { color: #26BFFD; }
 tajweed.ghunnah { color: #FF7E1E; }
 
+/* ─── Elderly mode — enlarge the whole interface. Tailwind sizes/spacing are
+       rem-based, so bumping the root font-size scales text AND layout together. */
+html.large-ui { font-size: 18.5px; }
+
 /* ─── Paper Mushaf — the illuminated page fills the screen, its own ornate
        border IS the edge (white margins trimmed off the source images). ─── */
 .mushaf-stage {

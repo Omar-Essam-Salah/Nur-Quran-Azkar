@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { ArrowLeft, ChevronDown, Droplets, Sun, Building2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Droplets, Sun, Building2, Heart } from 'lucide-react';
 import { GUIDE, type GuideSection } from '@/data/guide';
 import { useI18n } from '@/i18n';
 
 interface GuidePageProps { onBack: () => void }
 
-const SECTION_ICON: Record<string, typeof Droplets> = { droplets: Droplets, sun: Sun, kaaba: Building2 };
+const SECTION_ICON: Record<string, typeof Droplets> = { droplets: Droplets, sun: Sun, kaaba: Building2, heart: Heart };
 
 export default function GuidePage({ onBack }: GuidePageProps) {
   const { t } = useI18n();

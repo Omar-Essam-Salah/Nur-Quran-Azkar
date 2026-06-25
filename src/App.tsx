@@ -17,6 +17,8 @@ import HadithPage from '@/sections/HadithPage';
 import AsmaPage from '@/sections/AsmaPage';
 import KhatmaPage from '@/sections/KhatmaPage';
 import RamadanPage from '@/sections/RamadanPage';
+import ZakatPage from '@/sections/ZakatPage';
+import KidsPage from '@/sections/KidsPage';
 import MorePage from '@/sections/MorePage';
 import TasbihPage from '@/sections/TasbihPage';
 import BookmarksPage from '@/sections/BookmarksPage';
@@ -176,6 +178,11 @@ function App() {
     }
   }, [settings.theme]);
 
+  // Elderly mode — enlarge the whole UI.
+  useEffect(() => {
+    document.documentElement.classList.toggle('large-ui', !!settings.elderMode);
+  }, [settings.elderMode]);
+
   // Android hardware back button → navigate within the app, don't close it.
   useEffect(() => {
     let remove: (() => void) | undefined;
@@ -316,6 +323,16 @@ function App() {
             onBack={goBack}
             onNavigate={navigateTo}
           />
+        )}
+
+        {/* Zakat calculator */}
+        {currentPage === 'zakat' && (
+          <ZakatPage onBack={goBack} />
+        )}
+
+        {/* Kids' corner */}
+        {currentPage === 'kids' && (
+          <KidsPage onBack={goBack} onOpenSurah={openSurah} onNavigate={navigateTo} />
         )}
 
         {/* Ramadan mode */}

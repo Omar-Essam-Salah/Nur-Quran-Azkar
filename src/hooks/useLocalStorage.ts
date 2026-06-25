@@ -89,6 +89,7 @@ export function useSettings() {
     reciter: 'minshawi_murattal',
     translationIds: [131] as number[], // Dr. Mustafa Khattab — The Clear Quran
     language: 'en',
+    elderMode: false,
   });
 
   return { settings, setSettings };

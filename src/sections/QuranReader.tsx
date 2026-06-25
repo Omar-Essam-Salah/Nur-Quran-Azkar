@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import {
   ArrowLeft, Bookmark, BookmarkCheck, Share2, ChevronLeft, ChevronRight,
-  Type, Languages, Play, Pause, Loader2, RefreshCw, WifiOff, BookOpen, X
+  Type, Languages, Play, Pause, Loader2, RefreshCw, WifiOff, BookOpen, X, Brain
 } from 'lucide-react';
+import { shareVerseCard } from '@/lib/shareVerse';
 import { surahList } from '@/data/surahList';
 import { getReciter, everyayahUrl } from '@/data/reciters';
 import { DEFAULT_TRANSLATION_IDS, translationLabel } from '@/data/translations';
@@ -34,17 +35,23 @@ interface AyahViewProps {
   isPlaying: boolean;
   activeWord: number;
   bookmarked: boolean;
+  memorize: boolean;
   labelFor: (id: number) => string;
   onToggleBookmark: (verse: NormVerse) => void;
   onTogglePlay: (ayah: number) => void;
   onOpenTafsir: (verse: NormVerse) => void;
+  onShare: (verse: NormVerse) => void;
 }
 
 const AyahView = memo(function AyahView({
-  verse, fontSize, showTranslation, isActive, isPlaying, activeWord, bookmarked, labelFor, onToggleBookmark, onTogglePlay, onOpenTafsir
+  verse, fontSize, showTranslation, isActive, isPlaying, activeWord, bookmarked, memorize, labelFor, onToggleBookmark, onTogglePlay, onOpenTafsir, onShare
 }: AyahViewProps) {
   const words = verse.words.filter((w) => w.charType === 'word');
   const [activeWordPopup, setActiveWordPopup] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  // When memorization mode is toggled, re-hide every ayah so you test fresh.
+  useEffect(() => { setRevealed(false); }, [memorize]);
+  const hidden = memorize && !revealed;
 
   return (
     <div id={`ayah-${verse.ayah}`} className="group relative">
@@ -91,17 +98,31 @@ const AyahView = memo(function AyahView({
                 : <Bookmark size={14} className="text-[color:var(--text-muted)]" />}
             </button>
             <button
-              onClick={() => navigator.clipboard?.writeText(`${verse.textUthmani}\n\n${verse.translations[0]?.text ?? ''}`)}
+              onClick={() => onShare(verse)}
               className="p-1.5 rounded-lg hover:bg-white/10 transition-all"
-              aria-label="Copy"
+              aria-label="Share"
+              title="Share as image"
             >
               <Share2 size={14} className="text-[color:var(--text-muted)]" />
             </button>
           </div>
         </div>
 
-        {/* Arabic, word by word with Tafsir Popup and Tajweed Support */}
-        <p dir="rtl" className="arabic-text text-white leading-loose flex flex-wrap gap-x-1.5 gap-y-1" style={{ fontSize: `${fontSize}px` }}>
+        {/* Arabic, word by word with Tafsir Popup and Tajweed Support.
+            In memorization mode the text is blurred until you tap to reveal. */}
+        <div className="relative">
+        {hidden && (
+          <button onClick={() => setRevealed(true)}
+            className="absolute inset-0 z-20 flex items-center justify-center rounded-lg"
+            style={{ background: 'rgba(8,29,35,0.25)' }}>
+            <span className="text-[11px] text-[#d4af37] arabic-text px-3 py-1.5 rounded-full"
+              style={{ background: 'rgba(212,175,55,0.16)', border: '1px solid rgba(212,175,55,0.35)' }}>
+              {'اضغط للكشف · اختبر حفظك'}
+            </span>
+          </button>
+        )}
+        <p dir="rtl" className="arabic-text text-white leading-loose flex flex-wrap gap-x-1.5 gap-y-1 transition-all"
+          style={{ fontSize: `${fontSize}px`, filter: hidden ? 'blur(9px)' : undefined, opacity: hidden ? 0.55 : 1 }}>
           {words.map((w) => {
             const lit = isActive && activeWord === w.position;
             const wordTranslation = (w as any).translation?.text;
@@ -128,6 +149,7 @@ const AyahView = memo(function AyahView({
             );
           })}
         </p>
+        </div>
 
         {showTranslation && verse.translations.map((t) => (
           <div key={t.id} className="border-t border-white/5 pt-3">
@@ -147,6 +169,7 @@ export default function QuranReader({
   const [showTranslation, setShowTranslation] = useState(settings.showTranslation);
   const [fontSize, setFontSize] = useState(settings.arabicFontSize);
   const [showControls, setShowControls] = useState(false);
+  const [memorize, setMemorize] = useState(false); // hide-to-test memorization
   const [content, setContent] = useState<SurahContent | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const contentRef = useRef<HTMLDivElement>(null);
@@ -299,6 +322,14 @@ export default function QuranReader({
   audioApiRef.current = audio;
   const handleTogglePlay = useCallback((ayah: number) => audioApiRef.current.toggle(ayah), []);
   const handleOpenTafsir = useCallback((verse: NormVerse) => setTafsirVerse(verse), []);
+  const handleShare = useCallback((verse: NormVerse) => {
+    const sName = surahList.find((s) => s.number === surahNumber)?.name ?? '';
+    void shareVerseCard({
+      arabic: verse.textUthmani,
+      translation: verse.translations[0]?.text ?? '',
+      reference: `${sName} · ${t('Ayah', 'آية')} ${verse.ayah}`,
+    });
+  }, [surahNumber, t]);
 
   if (!surah) return null;
   const bismillah = surah.number !== 9 && surah.number !== 1;
@@ -330,6 +361,10 @@ export default function QuranReader({
             <p className={`text-[10px] text-[color:var(--text-muted)] ${lang === 'ar' ? '' : 'arabic-text'}`}>{lang === 'ar' ? surah.englishName : surah.name} · {surah.verses} {t('verses', 'آية')}</p>
           </div>
           <div className="flex items-center gap-1">
+            <button onClick={() => setMemorize((m) => !m)} className="p-2 rounded-xl hover:bg-white/10 transition-all"
+              title={t('Memorization mode (hide to test yourself)', 'وضع الحفظ (إخفاء النص لاختبار نفسك)')}>
+              <Brain size={16} className={memorize ? 'text-[#d4af37]' : 'text-[color:var(--text-muted)]'} />
+            </button>
             <button onClick={() => setShowControls(!showControls)} className="p-2 rounded-xl hover:bg-white/10 transition-all">
               <Type size={16} className="text-[color:var(--text-muted)]" />
             </button>
@@ -445,10 +480,12 @@ export default function QuranReader({
                   isPlaying={isActive && audio.isPlaying}
                   activeWord={isActive ? audio.currentWord : 0}
                   bookmarked={isBookmarked('ayah', surah.number, v.ayah)}
+                  memorize={memorize}
                   labelFor={labelFor}
                   onToggleBookmark={handleToggleBookmark}
                   onTogglePlay={handleTogglePlay}
                   onOpenTafsir={handleOpenTafsir}
+                  onShare={handleShare}
                 />
               );
             })}

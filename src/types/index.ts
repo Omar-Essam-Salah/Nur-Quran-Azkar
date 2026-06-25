@@ -63,8 +63,10 @@ export interface AppSettings {
   /** Selected translation resource ids (api.quran.com). */
   translationIds: number[];
   language: string;
+  /** Elderly mode — enlarges the whole interface for easier reading. */
+  elderMode: boolean;
 }
 
-export type Page = 'home' | 'quran' | 'quran-reader' | 'azkar' | 'azkar-detail' | 'prayer' | 'qibla' | 'tasbih' | 'bookmarks' | 'settings' | 'search' | 'mushaf' | 'fasting' | 'prophets' | 'hadith' | 'asma' | 'khatma' | 'ramadan' | 'ledger' | 'guide' | 'more';
+export type Page = 'home' | 'quran' | 'quran-reader' | 'azkar' | 'azkar-detail' | 'prayer' | 'qibla' | 'tasbih' | 'bookmarks' | 'settings' | 'search' | 'mushaf' | 'fasting' | 'prophets' | 'hadith' | 'asma' | 'khatma' | 'ramadan' | 'ledger' | 'guide' | 'zakat' | 'kids' | 'more';
 
 export type BottomNavPage = 'home' | 'quran' | 'azkar' | 'prayer' | 'more';

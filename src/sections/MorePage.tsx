@@ -1,6 +1,7 @@
 import {
   Compass, Hash, BookMarked, Moon, Target, CalendarDays, Sparkles, BookOpen, ScrollText,
   Bookmark, Settings as SettingsIcon, Languages, ChevronLeft, HeartHandshake, BookText,
+  Coins, Star,
 } from 'lucide-react';
 import type { Page } from '@/types';
 import { useI18n } from '@/i18n';
@@ -20,6 +21,7 @@ const GROUPS: { en: string; ar: string; items: Item[] }[] = [
       { page: 'qibla', en: 'Qibla', ar: 'القبلة', icon: Compass, color: '#f472b6' },
       { page: 'fasting', en: 'Fasting', ar: 'صيام التطوّع', icon: CalendarDays, color: '#10b981' },
       { page: 'ramadan', en: 'Ramadan', ar: 'وضع رمضان', icon: Moon, color: '#d4af37' },
+      { page: 'zakat', en: 'Zakat Calculator', ar: 'حاسبة الزكاة', icon: Coins, color: '#d4af37' },
     ],
   },
   {
@@ -27,6 +29,7 @@ const GROUPS: { en: string; ar: string; items: Item[] }[] = [
     items: [
       { page: 'mushaf', en: 'Paper Mushaf', ar: 'المصحف الورقي', icon: BookMarked, color: '#14879c' },
       { page: 'khatma', en: 'Khatma Plan', ar: 'خطة الختمة', icon: Target, color: '#14879c' },
+      { page: 'kids', en: "Kids' Corner", ar: 'ركن الأطفال', icon: Star, color: '#f59e0b' },
     ],
   },
   {

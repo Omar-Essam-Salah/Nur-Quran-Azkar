@@ -283,12 +283,27 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
                 background: settings.showTransliteration ? 'rgba(20, 135, 156, 0.4)' : 'rgba(255, 255, 255, 0.1)',
               }}
             >
-              <div 
+              <div
                 className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all"
                 style={{
                   left: settings.showTransliteration ? '22px' : '4px',
                 }}
               />
+            </button>
+          </div>
+
+          {/* Elderly mode — enlarge the whole interface */}
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-white/80 flex items-center gap-1.5 arabic-text" dir={tr('ltr', 'rtl')}>
+              <Type size={12} className="text-[color:var(--text-muted)]" />
+              {tr('Larger interface (elderly mode)', 'تكبير الواجهة (وضع كبار السن)')}
+            </label>
+            <button
+              onClick={() => setSettings(prev => ({ ...prev, elderMode: !prev.elderMode }))}
+              className="w-10 h-6 rounded-full transition-all relative flex-shrink-0"
+              style={{ background: settings.elderMode ? 'rgba(20, 135, 156, 0.4)' : 'rgba(255, 255, 255, 0.1)' }}
+            >
+              <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: settings.elderMode ? '22px' : '4px' }} />
             </button>
           </div>
         </div>
