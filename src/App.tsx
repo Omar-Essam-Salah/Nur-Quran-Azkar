@@ -108,15 +108,17 @@ function App() {
 
   // Handle bottom nav
   const handleBottomNav = useCallback((page: BottomNavPage) => {
-    // تصفير الذاكرة وبدء سلسلة جديدة عند استخدام القائمة السفلية
-    setHistory([page as Page]);
+    // The "Quran" tab opens the paper Mushaf — the primary way to read the
+    // Quran. (The verse-by-verse reader with audio/translation is "تعلّم".)
+    const target: Page = page === 'quran' ? 'mushaf' : (page as Page);
+    setHistory([target]); // تصفير الذاكرة وبدء سلسلة جديدة عند استخدام القائمة السفلية
     window.scrollTo(0, 0);
   }, []);
 
   // Get active bottom nav page — secondary pages live under "More".
   const getActiveNavPage = (): BottomNavPage => {
     if (currentPage === 'home') return 'home';
-    if (currentPage === 'quran' || currentPage === 'quran-reader') return 'quran';
+    if (currentPage === 'mushaf' || currentPage === 'quran' || currentPage === 'quran-reader') return 'quran';
     if (currentPage === 'azkar' || currentPage === 'azkar-detail') return 'azkar';
     if (currentPage === 'prayer') return 'prayer';
     return 'more';

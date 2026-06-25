@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { BookOpen, Sparkles, Clock, Compass, Heart, Search, Settings, Bookmark, Book, ChevronLeft, ScrollText, Languages, Moon, Target } from 'lucide-react';
+import { BookOpen, Sparkles, Clock, Compass, Heart, Search, Settings, Bookmark, Book, ChevronLeft, ScrollText, Languages, Moon, Target, GraduationCap } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { surahList } from '@/data/surahList';
 import { azkarCategories } from '@/data/azkarData';
@@ -50,12 +50,12 @@ export default function HomePage({
 
   // Quick access items
   const quickAccess = [
-    { 
-      label: 'Quran', 
-      arabic: 'القرآن', 
-      icon: BookOpen, 
+    {
+      label: 'Quran',
+      arabic: 'القرآن',
+      icon: Book,
       color: '#14879c',
-      onClick: () => onNavigate('quran')
+      onClick: () => onNavigate('mushaf')
     },
     { 
       label: 'Azkar', 
@@ -202,21 +202,21 @@ export default function HomePage({
           </div>
         </div>
 
-        {/* Paper Mushaf */}
+        {/* Learn the Quran — verse-by-verse reader with audio, translation & tafsir */}
         <button
-          onClick={() => onNavigate('mushaf')}
+          onClick={() => onNavigate('quran')}
           className="glass-card w-full p-4 flex items-center gap-4 text-left group"
-          style={{ background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(20, 135, 156, 0.06))' }}
+          style={{ background: 'linear-gradient(135deg, rgba(20, 135, 156, 0.12), rgba(212, 175, 55, 0.06))' }}
         >
-          <div className="w-12 h-12 rounded-xl bg-[#d4af37]/20 flex items-center justify-center flex-shrink-0">
-            <Book size={22} className="text-[#d4af37]" />
+          <div className="w-12 h-12 rounded-xl bg-[#14879c]/20 flex items-center justify-center flex-shrink-0">
+            <GraduationCap size={22} className="text-[#14879c]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('Paper Mushaf', 'المصحف الشريف')}</p>
-            <p className="text-xs text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Read the printed Madani Mushaf, page by page', 'اقرأ المصحف المدني المطبوع صفحة بصفحة')}</p>
+            <p className={`text-sm font-medium text-white ${isAr ? 'arabic-text' : ''}`}>{primary('Learn the Quran', 'تعلّم القرآن')}</p>
+            <p className="text-xs text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Verse-by-verse with audio, translation & tafsir', 'آية بآية مع التلاوة والترجمة والتفسير')}</p>
           </div>
-          <div className="w-8 h-8 rounded-full bg-[#d4af37]/15 flex items-center justify-center group-hover:bg-[#d4af37]/25 transition-all">
-            <ChevronLeft size={16} className="text-[#d4af37]" />
+          <div className="w-8 h-8 rounded-full bg-[#14879c]/15 flex items-center justify-center group-hover:bg-[#14879c]/25 transition-all">
+            <ChevronLeft size={16} className="text-[#14879c]" />
           </div>
         </button>
 

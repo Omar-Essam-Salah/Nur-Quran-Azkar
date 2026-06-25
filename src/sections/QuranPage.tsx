@@ -60,7 +60,7 @@ export default function QuranPage({ onOpenSurah, onBack, onToggleSearch }: Quran
           <button onClick={onBack} className="p-2 rounded-xl hover:bg-white/10 transition-all">
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
-          <h1 className="text-lg font-semibold text-white flex-1">{t('The Quran', 'القرآن الكريم')}</h1>
+          <h1 className="text-lg font-semibold text-white flex-1 arabic-text">{t('Learn the Quran', 'تعلّم القرآن')}</h1>
           <button 
             onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
             className="p-2 rounded-xl hover:bg-white/10 transition-all"
