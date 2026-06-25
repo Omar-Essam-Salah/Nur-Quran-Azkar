@@ -2,6 +2,11 @@
 // when the user first opens Qibla / Prayer Times. Safe no-op on web.
 
 export async function requestStartupPermissions(): Promise<void> {
+  // 0) Persistent storage — stop the WebView from evicting our offline data
+  //    (downloaded surah audio, IndexedDB) and grant a larger quota. This is
+  //    the "memory permission" downloads need; no user prompt is shown.
+  try { await (navigator as any).storage?.persist?.(); } catch { /* ignore */ }
+
   // 1) Notifications (prayer alerts + gentle reminders).
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications');

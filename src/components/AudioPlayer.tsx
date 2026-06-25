@@ -78,7 +78,9 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, surahN
     toast(t('Downloading…', 'جارٍ التحميل…'), { description: `${surahLabel} — ${reciterName}` });
     try {
       const r = await downloadSurahAudio(reciter.apiId, chapter, downloadable, setDlProgress, controller.signal);
-      if (r.saved === 0) {
+      if (r.quotaExceeded) {
+        toast(t('Storage is full', 'مساحة التخزين ممتلئة'), { description: t('Free up space or remove some downloaded surahs, then try again.', 'فرّغ بعض المساحة أو احذف سورًا محمّلة ثم حاول مجددًا.') });
+      } else if (r.saved === 0) {
         toast(t('Download failed', 'فشل التحميل'), { description: t('Couldn’t reach the audio server for this reciter. Try another reciter or check your connection.', 'تعذّر الوصول لخادم الصوت لهذا القارئ. جرّب قارئًا آخر أو تحقّق من اتصالك.') });
       } else if (r.failed > 0) {
         setDownloaded(false); // partial — let the user tap again to fill the gaps

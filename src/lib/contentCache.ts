@@ -101,6 +101,7 @@ export interface DownloadResult {
   saved: number;  // ayat now stored (incl. already-cached)
   failed: number; // ayat that couldn't be fetched (CORS / HTTP / network)
   total: number;
+  quotaExceeded?: boolean; // device storage is full
 }
 
 /**
@@ -123,6 +124,7 @@ export async function downloadSurahAudio(
   let done = 0;
   let saved = 0;
   let failed = 0;
+  let quotaExceeded = false;
 
   const worker = async (): Promise<void> => {
     // eslint-disable-next-line no-constant-condition
@@ -140,9 +142,10 @@ export async function downloadSurahAudio(
           await tx(AUDIO, 'readwrite', (s) => s.put(new Blob([buf], { type: 'audio/mpeg' }), key));
         }
         saved++;
-      } catch {
+      } catch (e) {
         // Distinguish a real user-cancel from a per-ayah timeout/CORS/404:
         if (signal?.aborted) throw new DOMException('Download cancelled', 'AbortError');
+        if ((e as Error)?.name === 'QuotaExceededError') quotaExceeded = true;
         failed++; // skip this ayah, keep going
       }
       done++;
@@ -154,7 +157,7 @@ export async function downloadSurahAudio(
   if (saved === total && failed === 0) {
     await tx(AUDIO, 'readwrite', (s) => s.put(new Blob(['1']), audioDoneKey(reciterId, chapter)));
   }
-  return { saved, failed, total };
+  return { saved, failed, total, quotaExceeded };
 }
 
 export async function deleteSurahAudio(reciterId: number, chapter: number, ayahNumbers: number[]): Promise<void> {
