@@ -18,7 +18,7 @@ interface AudioPlayerProps {
   audio: SurahPlayer;
 }
 
-const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
+const SPEEDS = [0.5, 0.75, 1]; // slow-down only (no speed-up) — gentler for learning
 const TIMES = [
   { label: '3×', value: 3 },
   { label: '5×', value: 5 },

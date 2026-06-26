@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { Celebration } from '@/components/Celebration';
 import { ArrowLeft, Bookmark, BookmarkCheck, RotateCcw, ChevronRight, Volume2, Info, Plus, Trash2 } from 'lucide-react';
 import { getAzkarCategoryById } from '@/data/azkarData';
 import { getCustomAdhkar, addCustomDhikr, removeCustomDhikr, MY_ADHKAR_ID } from '@/lib/customAdhkar';
@@ -105,11 +106,19 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
   // Check if all items are completed
   const allCompleted = category.items.every(item => (itemCounts[item.id] || 0) >= item.count);
   const totalTarget = category.items.reduce((sum, item) => sum + item.count, 0);
+  // Celebrate the moment the whole set is finished.
+  const [celebrate, setCelebrate] = useState(false);
+  const wasComplete = useRef(false);
+  useEffect(() => {
+    if (allCompleted && totalTarget > 0 && !wasComplete.current) setCelebrate(true);
+    wasComplete.current = allCompleted && totalTarget > 0;
+  }, [allCompleted, totalTarget]);
   const totalCurrent = category.items.reduce((sum, item) => sum + Math.min(itemCounts[item.id] || 0, item.count), 0);
   const progressPercent = totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0;
 
   return (
     <div className="page-enter min-h-screen">
+      {celebrate && <Celebration onDone={() => setCelebrate(false)} />}
       {/* Header */}
       <header className="sticky top-0 z-40 px-4 py-3">
         <div 

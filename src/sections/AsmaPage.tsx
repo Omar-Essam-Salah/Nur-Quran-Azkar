@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { pushBack } from '@/lib/backStack';
+import { SkeletonCards } from '@/components/Skeleton';
 
 interface AsmaPageProps {
   onBack: () => void;
@@ -51,9 +52,7 @@ export default function AsmaPage({ onBack }: AsmaPageProps) {
       </header>
 
       <div className="px-4 pt-2 pb-8 max-w-lg mx-auto">
-        {!names && !error && (
-          <div className="glass-card p-10 flex justify-center"><Loader2 size={26} className="text-[#14879c] animate-spin" /></div>
-        )}
+        {!names && !error && <SkeletonCards count={9} grid />}
         {error && <div className="glass-card p-8 text-center text-sm text-[color:var(--text-muted)]">{t('Could not load.', 'تعذّر التحميل.')}</div>}
 
         <div className="grid grid-cols-3 gap-2.5">

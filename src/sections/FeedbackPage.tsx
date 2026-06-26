@@ -1,29 +1,46 @@
 import { useState } from 'react';
-import { ArrowLeft, Mail, Github, MessageSquarePlus, Check } from 'lucide-react';
+import { ArrowLeft, Send, Github, MessageSquarePlus, Check, Loader2 } from 'lucide-react';
 import { useI18n } from '@/i18n';
 
 interface FeedbackPageProps { onBack: () => void }
 
-const EMAIL = 'omar.essam.salahh@gmail.com';
 const REPO = 'Omar-Essam-Salah/Nur-Quran-Azkar';
+// In-app submissions (for users with NO GitHub account, and with NO email
+// exposed): create a FREE form endpoint at https://formspree.io (or similar),
+// then paste it here. Messages are recorded to your form dashboard. Leave empty
+// to fall back to GitHub issues only.
+const FEEDBACK_ENDPOINT = '';
 
 export default function FeedbackPage({ onBack }: FeedbackPageProps) {
   const { t } = useI18n();
   const [kind, setKind] = useState<'suggestion' | 'complaint'>('suggestion');
   const [msg, setMsg] = useState('');
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const subject = `Nur — ${kind === 'complaint' ? t('Complaint', 'شكوى') : t('Suggestion', 'اقتراح')}`;
 
-  const sendEmail = () => {
-    if (!msg.trim()) return;
-    setSent(true);
-    window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
-  };
   const openGithub = () => {
     if (!msg.trim()) return;
     setSent(true);
     window.open(`https://github.com/${REPO}/issues/new?title=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`, '_blank');
+  };
+  // No-account submit: posts to the form endpoint if configured; otherwise GitHub.
+  const submit = async () => {
+    if (!msg.trim()) return;
+    if (FEEDBACK_ENDPOINT) {
+      setSending(true);
+      try {
+        const res = await fetch(FEEDBACK_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ type: kind, message: msg }),
+        });
+        setSending(false);
+        if (res.ok) { setSent(true); setMsg(''); return; }
+      } catch { setSending(false); }
+    }
+    openGithub();
   };
 
   return (
@@ -64,9 +81,10 @@ export default function FeedbackPage({ onBack }: FeedbackPageProps) {
             className="w-full p-3 rounded-xl bg-white/5 text-sm text-white arabic-text outline-none border border-transparent focus:border-[#14879c]/40 resize-none placeholder:text-[color:var(--text-muted)]/50"
           />
 
-          <button onClick={sendEmail} disabled={!msg.trim()}
+          <button onClick={submit} disabled={!msg.trim() || sending}
             className="glass-btn w-full py-3 flex items-center justify-center gap-2 text-sm disabled:opacity-40">
-            {sent ? <Check size={16} className="text-emerald-400" /> : <Mail size={16} />} {t('Send by email', 'إرسال بالبريد')}
+            {sending ? <Loader2 size={16} className="animate-spin" /> : sent ? <Check size={16} className="text-emerald-400" /> : <Send size={16} />}
+            {sent ? t('Sent ✓', 'تم الإرسال ✓') : t('Send', 'إرسال')}
           </button>
           <button onClick={openGithub} disabled={!msg.trim()}
             className="w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs disabled:opacity-40"
@@ -75,7 +93,7 @@ export default function FeedbackPage({ onBack }: FeedbackPageProps) {
           </button>
 
           <p className="text-[10px] text-[color:var(--text-muted)] arabic-text leading-relaxed text-center" dir={t('ltr', 'rtl')}>
-            {t('Your message goes straight to the developer. Jazak Allahu khayran 🤍', 'رسالتك بتوصل للمطوّر مباشرةً. جزاك الله خيرًا 🤍')}
+            {t('Your message reaches the developer directly — no account or email needed. Jazak Allahu khayran 🤍', 'رسالتك بتوصل للمطوّر مباشرةً — من غير حساب ولا إيميل. جزاك الله خيرًا 🤍')}
           </p>
         </div>
       </div>

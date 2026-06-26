@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Loader2, Quote } from 'lucide-react';
+import { ArrowLeft, Quote } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { SkeletonCards } from '@/components/Skeleton';
 
 interface HadithPageProps {
   onBack: () => void;
@@ -47,9 +48,7 @@ export default function HadithPage({ onBack }: HadithPageProps) {
       </header>
 
       <div className="px-4 pt-2 pb-8 max-w-lg mx-auto space-y-3">
-        {!book && !error && (
-          <div className="glass-card p-10 flex justify-center"><Loader2 size={26} className="text-[#14879c] animate-spin" /></div>
-        )}
+        {!book && !error && <SkeletonCards count={6} />}
         {error && <div className="glass-card p-8 text-center text-sm text-[color:var(--text-muted)]">{t('Could not load the hadiths.', 'تعذّر تحميل الأحاديث.')}</div>}
 
         {book?.hadiths.map((h) => (

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, Search, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, Search, BookOpen, GripHorizontal } from 'lucide-react';
 import { getReciter, everyayahUrl } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
 import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
@@ -42,7 +42,7 @@ function wordAt(segments: number[][], ms: number): number {
   return 0;
 }
 
-export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
+export default function MushafPage({ initialPage }: MushafPageProps) {
   const { t } = useI18n();
   const [page, setPage] = useState(() => {
     if (initialPage) return Math.min(Math.max(1, initialPage), TOTAL_PAGES);
@@ -265,6 +265,17 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     setPageVerseKeys((prev) => (prev.length ? prev : keysFromTokens(tokens)));
     void loadAndPlayPage(page, key);
   };
+
+  // The side bar can be dragged up/down (by its grip) so it's never in the way.
+  const [sideY, setSideY] = useState(0);
+  const sideDragRef = useRef<{ y: number; oy: number } | null>(null);
+  const onSideDown = (e: React.PointerEvent) => { sideDragRef.current = { y: e.clientY, oy: sideY }; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); };
+  const onSideMove = (e: React.PointerEvent) => {
+    if (!sideDragRef.current) return;
+    const limit = window.innerHeight / 2 - 130;
+    setSideY(Math.max(-limit, Math.min(limit, sideDragRef.current.oy + (e.clientY - sideDragRef.current.y))));
+  };
+  const onSideUp = () => { sideDragRef.current = null; };
   // Two-finger pinch zooms the text. We preview with a GPU transform during the
   // gesture, then commit the new font size on release (so it reflows crisply).
   const dist2 = (tl: React.TouchList) => Math.hypot(tl[0].clientX - tl[1].clientX, tl[0].clientY - tl[1].clientY);
@@ -396,19 +407,27 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
         </div>
       </div>
 
-      {/* Compact vertical SIDE BAR — slides off the left edge so it never sits on
-          top of the text. Tap a blank area of the page to show/hide it. */}
-      <div className="fixed left-0 z-40 transition-transform duration-300 ease-out"
-        style={{ top: '50%', transform: (chrome && !tafsirFollow) ? 'translateY(-50%)' : 'translate(-130%, -50%)' }}>
-        <div className="flex flex-col items-center gap-1 py-2 px-1 rounded-r-2xl"
+      {/* Draggable vertical SIDE BAR — grab the grip to move it up/down so it's
+          never in the way. Slides off-screen while tafsir is open / chrome hidden. */}
+      <div className="fixed left-0 z-40"
+        style={{
+          top: `calc(50% + ${sideY}px)`,
+          transform: (chrome && !tafsirFollow) ? 'translateY(-50%)' : 'translateY(-50%) translateX(-130%)',
+          transition: 'transform 0.3s ease',
+        }}>
+        <div className="flex flex-col items-center gap-1 pb-2 px-1 rounded-r-2xl"
           style={{
             background: 'linear-gradient(135deg, rgba(16,34,29,0.94), rgba(13,28,24,0.94))',
             border: '1px solid rgba(212,175,55,0.18)', borderLeft: 'none',
             boxShadow: '4px 0 22px rgba(0,0,0,0.45)',
             backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
           }}>
-          {/* Minimal: recite + save place + index + back. (Pages turn by swipe;
-              tafsir opens by tapping a word.) */}
+          {/* Drag grip */}
+          <div onPointerDown={onSideDown} onPointerMove={onSideMove} onPointerUp={onSideUp} onPointerCancel={onSideUp}
+            className="w-full flex justify-center pt-1.5 pb-1 cursor-grab active:cursor-grabbing"
+            style={{ touchAction: 'none' }} title={t('Drag to move', 'اسحب لتحريكه')}>
+            <GripHorizontal size={15} className="text-[color:var(--text-muted)]" />
+          </div>
           <button onClick={toggleAudio} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Recite" title={t('Recite the verses', 'تلاوة الآيات')}>
             {audioLoading ? <Loader2 size={17} className="text-[#14879c] animate-spin" /> : audioPlaying ? <Pause size={17} className="text-[#14879c]" fill="currentColor" /> : <Play size={17} className="text-[#14879c]" fill="currentColor" />}
           </button>
@@ -418,12 +437,8 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
           <button onClick={openTafsir} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Tafsir" title={t('Tafsir', 'التفسير')}>
             <BookOpen size={16} className={tafsirFollow ? 'text-[#d4af37]' : 'text-[#14879c]'} />
           </button>
-          <div className="w-5 h-px bg-white/10" />
           <button onClick={() => setShowIndex(true)} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Index" title={t('Index', 'الفهرس')}>
             <ListTree size={16} className="text-[#14879c]" />
-          </button>
-          <button onClick={onBack} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Back" title={t('Back', 'رجوع')}>
-            <ArrowLeft size={16} className="text-[color:var(--text-muted)]" />
           </button>
         </div>
       </div>

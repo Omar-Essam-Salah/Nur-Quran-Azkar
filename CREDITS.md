@@ -43,4 +43,5 @@ each under its own terms. No ownership over this content is claimed.
 ---
 
 If you are a rights holder and would like attribution adjusted or content
-removed, please contact: `omar.essam.salahh@gmail.com`.
+removed, please open an issue at:
+`https://github.com/Omar-Essam-Salah/Nur-Quran-Azkar`.

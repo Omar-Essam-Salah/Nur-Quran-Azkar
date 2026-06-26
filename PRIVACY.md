@@ -21,7 +21,8 @@ The app is suitable for all ages and collects no personal information from anyon
 Quran text, recitations and translations are obtained from sources published freely for the sake of Allah; all rights to that content belong to their respective owners.
 
 ## Contact
-For any question about this policy: **omar.essam.salahh@gmail.com**
+For any question about this policy, open an issue at:
+**https://github.com/Omar-Essam-Salah/Nur-Quran-Azkar**
 
 ---
 
@@ -48,4 +49,5 @@ _آخر تحديث: ٢٠٢٦/٦/٢٥_
 نصوص القرآن والتلاوات والترجمات من مصادر نشرها أصحابها مجانًا لوجه الله، وكل الحقوق فيها لأصحابها.
 
 ## التواصل
-لأي استفسار حول هذه السياسة: **omar.essam.salahh@gmail.com**
+لأي استفسار حول هذه السياسة، افتح Issue على:
+**https://github.com/Omar-Essam-Salah/Nur-Quran-Azkar**

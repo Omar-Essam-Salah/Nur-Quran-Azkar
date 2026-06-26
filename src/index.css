@@ -288,11 +288,45 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(var(--hair), 0.2); }
 
   /* Page transitions */
-  .page-enter { animation: page-enter 0.4s ease-out; }
+  /* iOS-style push: slide in from the side with a soft spring + subtle depth. */
+  .page-enter { animation: page-enter 0.42s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
   @keyframes page-enter {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateX(26px) scale(0.985); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
   }
+
+  /* One-shot confetti celebration. */
+  .celebration-layer {
+    position: fixed; inset: 0; z-index: 95;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .confetti {
+    position: absolute;
+    border-radius: 2px;
+    animation: confetti-burst 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes confetti-burst {
+    0%   { transform: translate(0, 0) scale(0.3) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(1) rotate(var(--rot)); opacity: 0; }
+  }
+
+  /* Shimmering skeleton placeholders. */
+  .nur-skeleton {
+    position: relative;
+    overflow: hidden;
+    background: rgba(var(--hair), 0.06);
+    border-radius: 10px;
+  }
+  .nur-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(var(--hair), 0.11), transparent);
+    animation: nur-shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes nur-shimmer { 100% { transform: translateX(100%); } }
 
   /* Glow effects */
   .text-glow { text-shadow: 0 0 20px rgba(20, 135, 156, 0.5), 0 0 40px rgba(20, 135, 156, 0.2); }

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft, RotateCcw, Trophy, TrendingUp } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { haptic } from '@/lib/haptics';
+import { Celebration, CountUp } from '@/components/Celebration';
 
 interface TasbihPageProps {
   onBack: () => void;
@@ -36,6 +37,7 @@ export default function TasbihPage({
   const [ripplePosition, setRipplePosition] = useState<{ x: number; y: number } | null>(null);
   const [showRipple, setShowRipple] = useState(false);
   const [sessionCount, setSessionCount] = useState(0);
+  const [celebrate, setCelebrate] = useState(false);
 
   const currentDhikr = dhikrOptions.find(d => d.id === activeDhikr) || dhikrOptions[0];
   const currentCount = getCount(activeDhikr);
@@ -61,7 +63,7 @@ export default function TasbihPage({
     setShowRipple(true);
     setTimeout(() => setShowRipple(false), 600);
     increment(activeDhikr);
-    if (!isInfinite && currentCount + 1 >= currentDhikr.target) haptic.success();
+    if (!isInfinite && currentCount + 1 === currentDhikr.target) { haptic.success(); setCelebrate(true); }
     else haptic.tick();
   }, [activeDhikr, increment, isInfinite, currentCount, currentDhikr.target]);
 
@@ -71,6 +73,7 @@ export default function TasbihPage({
 
   return (
     <div className="page-enter min-h-screen">
+      {celebrate && <Celebration onDone={() => setCelebrate(false)} />}
       {/* Header */}
       <header className="sticky top-0 z-40 px-4 py-3">
         <div 
@@ -152,7 +155,7 @@ export default function TasbihPage({
                 </p>
                 
                 {/* Count */}
-                <p className="text-5xl font-light text-white">{currentCount}</p>
+                <CountUp value={currentCount} className="block text-5xl font-light text-white tabular-nums" />
                 
                 {/* Target */}
                 <p className="text-xs text-[color:var(--text-muted)] mt-1">
