@@ -20,6 +20,7 @@ import RamadanPage from '@/sections/RamadanPage';
 import ZakatPage from '@/sections/ZakatPage';
 import KidsPage from '@/sections/KidsPage';
 import FeedbackPage from '@/sections/FeedbackPage';
+import AuthenticityPage from '@/sections/AuthenticityPage';
 import MorePage from '@/sections/MorePage';
 import TasbihPage from '@/sections/TasbihPage';
 import BookmarksPage from '@/sections/BookmarksPage';
@@ -343,6 +344,11 @@ function App() {
         {/* Feedback / suggestions */}
         {currentPage === 'feedback' && (
           <FeedbackPage onBack={goBack} />
+        )}
+
+        {/* Authenticity / verify */}
+        {currentPage === 'authenticity' && (
+          <AuthenticityPage onBack={goBack} />
         )}
 
         {/* Ramadan mode */}

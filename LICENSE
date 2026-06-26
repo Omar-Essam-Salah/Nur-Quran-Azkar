@@ -1,33 +1,89 @@
-MIT License
+Nur (نُور) — Quran & Azkar
+Copyright (c) 2026 Omar Essam Salah. All rights reserved.
 
-Copyright (c) 2026 Omar Essam Salah
+This repository is made publicly VISIBLE for transparency, study, and to
+establish authorship. It is NOT "open source" in the permissive sense — it is
+"source-available" under the restrictive terms below. (This replaces the earlier
+MIT license, which no longer applies.)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+================================================================================
+ENGLISH
+================================================================================
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. THE CODE — NO REDISTRIBUTION OR MODIFICATION
+   The original source code, design, and assets of this application are the
+   property of the copyright holder. You may view and study them. You may NOT
+   copy, modify, fork for redistribution, republish, sublicense, sell, or
+   distribute this software or any derivative of it — in whole or in part —
+   without prior WRITTEN permission from the copyright holder.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. THE RELIGIOUS CONTENT — MUST REMAIN UNALTERED
+   The Qur'anic text, recitations, adhkar, supplications, the Muslim guide, and
+   the other Islamic content are NOT owned by the copyright holder; they are
+   taken from authentic, published sources (see CREDITS.md) and belong to their
+   respective owners / to the Ummah. They are included here ONLY in their
+   authentic, unaltered form. Producing, distributing, or publishing any copy in
+   which this religious content has been changed — edited, reworded, reordered,
+   added to, removed from, or made to serve a particular sect or ideology — is
+   strictly forbidden, both under the terms of those sources and as a matter of
+   religious trust (amanah). The protection of the Qur'an from alteration is a
+   duty upon every Muslim.
 
----------------------------------------------------------------------------
-NOTE ON SCOPE
----------------------------------------------------------------------------
-This MIT license covers ONLY the original source code of this project authored
-by the copyright holder.
+3. NAME & LOGO ARE NOT LICENSED
+   The name "Nur" / "نُور", the application icon, the logo, and all branding are
+   trademarks of the copyright holder, expressly EXCLUDED from any permission
+   above. You may not use them — or any confusingly similar name or mark — for
+   any product or distribution.
 
-It does NOT cover, and no ownership is claimed over, third-party Qur'anic and
-Islamic content that the application displays or streams — including Qur'an
-translations, reciter audio recordings, mushaf page images, and tafsir texts.
-Each of those remains the property of its respective owners and is used under
-their own terms. See CREDITS.md for attribution.
+4. AUTHENTICITY OF OFFICIAL BUILDS
+   The only authentic builds are those published by the copyright holder and
+   signed with his official certificate:
+   SHA-256: 46:34:0a:2c:8c:ce:9c:a5:dc:22:e2:12:7e:81:8c:c8:97:ed:3e:0f:
+            d1:46:0e:ff:8a:fa:eb:fd:40:a6:d5:f4
+   Any copy not signed with this certificate, or distributed from an unofficial
+   source, is NOT endorsed and may contain alterations — do not trust it.
+
+5. NO WARRANTY
+   The software is provided "as is", without warranty of any kind. The author is
+   not liable for any claim or damages arising from its use or misuse.
+
+For permissions or inquiries: omar.essam.salahh@gmail.com
+
+================================================================================
+العربية
+================================================================================
+
+هذا المستودع متاحٌ للاطّلاع علنًا بغرض الشفافية والدراسة وإثبات النسبة، وهو ليس
+«مفتوح المصدر» بالمعنى المتساهل، بل «متاح المصدر» وفق الشروط المقيِّدة الآتية
+(وهي تُلغي رخصة MIT السابقة):
+
+١) الكود — منع إعادة النشر والتعديل
+   الكود الأصلي والتصميم وأصول التطبيق ملكٌ لصاحب الحقوق. يجوز لك الاطّلاع
+   والدراسة، ولا يجوز نسخه أو تعديله أو عمل fork له لإعادة النشر، أو إعادة نشره
+   أو ترخيصه أو بيعه أو توزيعه — كلًّا أو جزءًا — دون إذنٍ كتابيٍّ مسبق.
+
+٢) المحتوى الديني — يجب أن يبقى بلا تحريف
+   النصُّ القرآني وتلاواته، والأذكار والأدعية، ودليل المسلم، وسائر المحتوى
+   الإسلامي ليست مِلكًا لصاحب الحقوق، بل مأخوذة من مصادر موثوقة منشورة (انظر
+   CREDITS.md) وهي مِلكٌ لأصحابها وللأمّة، ومُدرَجة هنا بصورتها الصحيحة دون تغيير.
+   ويُمنَع منعًا باتًّا إنتاج أو توزيع أو نشر أي نسخة جرى فيها تغيير هذا المحتوى
+   الديني — تحريرًا أو إعادة صياغة أو ترتيبًا أو زيادةً أو حذفًا أو توجيهًا لخدمة
+   مذهبٍ أو فكر — وذلك بمقتضى شروط تلك المصادر وبمقتضى الأمانة الشرعية. وحفظُ
+   القرآن من التحريف واجبٌ على كل مسلم.
+
+٣) الاسم والشعار غير مرخَّصين
+   اسم «نُور» والأيقونة والشعار وكل الهوية البصرية علاماتٌ خاصة بصاحب الحقوق،
+   مستثناةٌ صراحةً من أي إذن. لا يجوز استخدامها أو استخدام اسمٍ أو علامةٍ مشابهة.
+
+٤) أصالة النسخ الرسمية
+   النسخ الأصلية الوحيدة هي المنشورة من صاحب الحقوق والموقَّعة بشهادته الرسمية:
+   SHA-256: 46:34:0a:2c:8c:ce:9c:a5:dc:22:e2:12:7e:81:8c:c8:97:ed:3e:0f:
+            d1:46:0e:ff:8a:fa:eb:fd:40:a6:d5:f4
+   وأي نسخة غير موقَّعة بهذه الشهادة، أو من مصدرٍ غير رسمي، فهي غير معتمدة وقد
+   تحتوي على تحريف — فلا تثق بها.
+
+٥) إخلاء المسؤولية
+   البرنامج مُقدَّم «كما هو» دون أي ضمان. ولا يتحمّل المؤلف أي مسؤولية عن سوء
+   الاستخدام.
+
+للأذونات والاستفسارات: omar.essam.salahh@gmail.com

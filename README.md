@@ -9,7 +9,7 @@ Built as a digital *Waqf* (صدقة جارية) — free, forever, *fi sabililla
 ![platform](https://img.shields.io/badge/platform-Android-3ddc84)
 ![offline](https://img.shields.io/badge/offline--first-yes-14879c)
 ![ads](https://img.shields.io/badge/ads-none-d4af37)
-![license](https://img.shields.io/badge/code-MIT-blue)
+![license](https://img.shields.io/badge/license-source--available%20(no%20derivatives)-important)
 
 </div>
 
@@ -74,21 +74,35 @@ cd android && ./gradlew assembleDebug
 # → android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## A note on content & licensing
+## Authenticity & content integrity
 
-The **source code** is MIT-licensed © 2026 Omar Essam Salah.
+The protection of the Qur'an from alteration is a sacred trust. To guard it:
+
+- **Verifiable text** — the bundled Qur'an is the authentic *Hafs ‘an ‘Asim*
+  narration (Madani, Uthmani script). The app embeds a SHA-256 **fingerprint**
+  of the 114 surah files and can re-check it at runtime
+  (More → **Authenticity / التوثيق**). A match proves the text is byte-for-byte
+  unaltered; a mismatch warns the user the copy may be tampered with.
+- **Signed builds** — official releases are signed with one certificate
+  (SHA-256 `46:34:0a:2c:…:d5:f4`). A copy with any other signature is not ours.
+- **Official sources only** — download only from this repo's
+  **[Releases](https://github.com/Omar-Essam-Salah/Nur-Quran-Azkar/releases)**.
+  Any modified redistribution is unauthorized (see License) and must not be
+  trusted.
 
 This repository intentionally **does not** ship third-party Islamic media
-(specific Qur'an translations, reciter/adhan recordings, mushaf images). Those
-belong to their respective owners and are streamed/generated at runtime under
-their own terms. The Qur'an Arabic text is public domain. See **[CREDITS.md](CREDITS.md)**
-for full attribution. `public/data` and `public/adhan` are git-ignored; run
-`npm run setup:content` to regenerate the data locally.
+(specific translations, reciter/adhan recordings). Those belong to their owners
+and stream at runtime under their own terms. See **[CREDITS.md](CREDITS.md)**.
 
 ## License
 
-[MIT](LICENSE) — © 2026 Omar Essam Salah. The license covers the original code
-only; bundled/streamed Islamic content remains the property of its sources.
+**Source-available — NOT open source.** See **[LICENSE](LICENSE)**.
+© 2026 Omar Essam Salah. All rights reserved.
+
+You may **view and study** the code. You may **not** copy, modify, fork for
+redistribution, or republish it without written permission. The **religious
+content must never be altered** in any redistributed copy. The name **"Nur" /
+"نُور"** and the logo are trademarks and are **not** licensed for reuse.
 
 <div align="center">
 

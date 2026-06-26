@@ -1,7 +1,7 @@
 import {
   Compass, Hash, BookMarked, Moon, Target, CalendarDays, Sparkles, BookOpen, ScrollText,
   Bookmark, Settings as SettingsIcon, Languages, ChevronLeft, HeartHandshake, BookText,
-  Coins, Star, MessageSquarePlus,
+  Coins, Star, MessageSquarePlus, ShieldCheck,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import type { Page } from '@/types';
@@ -51,6 +51,7 @@ const GROUPS: { en: string; ar: string; items: Item[] }[] = [
       { page: 'ledger', en: 'Soul Ledger', ar: 'سجل الخيرات', icon: HeartHandshake, color: '#10b981' },
       { page: 'bookmarks', en: 'Bookmarks', ar: 'المفضّلة', icon: Bookmark, color: '#d4af37' },
       { page: 'feedback', en: 'Feedback', ar: 'الشكاوى والمقترحات', icon: MessageSquarePlus, color: '#14879c' },
+      { page: 'authenticity', en: 'Authenticity', ar: 'التوثيق والأصالة', icon: ShieldCheck, color: '#10b981' },
       { page: 'settings', en: 'Settings', ar: 'الإعدادات', icon: SettingsIcon, color: '#94a3b8' },
     ],
   },
