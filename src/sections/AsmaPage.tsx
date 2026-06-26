@@ -9,10 +9,13 @@ interface AsmaPageProps {
 }
 
 interface AsmaName { n: number; name: string; translit: string; meaning: string }
+interface AsmaExtra { ar: string; exp: string; expEn: string }
 
 export default function AsmaPage({ onBack }: AsmaPageProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const isAr = lang === 'ar';
   const [names, setNames] = useState<AsmaName[] | null>(null);
+  const [extra, setExtra] = useState<Record<string, AsmaExtra>>({});
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<AsmaName | null>(null);
 
@@ -22,6 +25,10 @@ export default function AsmaPage({ onBack }: AsmaPageProps) {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d) => active && setNames(d.names))
       .catch(() => active && setError(true));
+    fetch(`${import.meta.env.BASE_URL}data/asma-extra.json`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((d) => active && setExtra(d))
+      .catch(() => {});
     return () => { active = false; };
   }, []);
 
@@ -86,7 +93,18 @@ export default function AsmaPage({ onBack }: AsmaPageProps) {
             <span className="text-[10px] text-[color:var(--text-muted)]">{selected.n} / 99</span>
             <p className="arabic-text text-4xl text-[#d4af37] gold-glow leading-tight">{selected.name}</p>
             <p className="text-xs text-[#14879c] uppercase tracking-wider">{selected.translit}</p>
-            <p className="text-sm text-white/90 leading-relaxed pt-1">{selected.meaning}</p>
+            {/* Meaning (Arabic gloss + English) */}
+            <p className="text-sm text-white/90 leading-relaxed pt-1">
+              {extra[selected.n]?.ar && <span className="arabic-text text-[#d4af37]">{extra[selected.n].ar}</span>}
+              {extra[selected.n]?.ar && <span className="text-white/40"> · </span>}
+              {selected.meaning}
+            </p>
+            {/* Explanation */}
+            {extra[selected.n] && (
+              <p className={`text-[12.5px] text-white/70 leading-relaxed border-t border-white/10 pt-3 ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>
+                {isAr ? extra[selected.n].exp : extra[selected.n].expEn}
+              </p>
+            )}
             <button onClick={() => setSelected(null)} className="glass-btn w-full py-2.5 text-sm mt-2">{t('Close', 'إغلاق')}</button>
           </div>
         </div>

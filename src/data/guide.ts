@@ -144,9 +144,16 @@ export const GUIDE: GuideSection[] = [
         intro: 'إذا همّ المسلم بأمرٍ يصلّي ركعتين من غير الفريضة ثم يدعو بدعاء الاستخارة.',
         introEn: 'When a Muslim intends a matter, he prays two non-obligatory units then makes the istikhara supplication.',
         steps: [
-          { text: 'يصلّي ركعتين بنيّة الاستخارة.', en: 'Pray two units with the intention of istikhara.' },
-          { text: 'ثم يدعو: «اللهم إني أستخيرك بعلمك، وأستقدرك بقدرتك، وأسألك من فضلك العظيم… اللهم إن كنت تعلم أنّ هذا الأمر خيرٌ لي… فاقدره لي ويسّره لي ثم بارك لي فيه…».', en: 'Then supplicate: "O Allah, I seek Your guidance by Your knowledge, and Your power by Your might, and I ask of Your great bounty… O Allah, if You know this matter is good for me… then decree it for me, make it easy for me, and bless it for me…"' },
+          { text: 'يصلّي ركعتين من غير الفريضة بنيّة الاستخارة، ثم يدعو بعد السلام.', en: 'Pray two non-obligatory units with the intention of istikhara, then supplicate after the salam.' },
+          {
+            text: '«اللَّهُمَّ إِنِّي أَسْتَخِيرُكَ بِعِلْمِكَ، وَأَسْتَقْدِرُكَ بِقُدْرَتِكَ، وَأَسْأَلُكَ مِنْ فَضْلِكَ الْعَظِيمِ، فَإِنَّكَ تَقْدِرُ وَلَا أَقْدِرُ، وَتَعْلَمُ وَلَا أَعْلَمُ، وَأَنْتَ عَلَّامُ الْغُيُوبِ. اللَّهُمَّ إِنْ كُنْتَ تَعْلَمُ أَنَّ هَذَا الْأَمْرَ خَيْرٌ لِي فِي دِينِي وَمَعَاشِي وَعَاقِبَةِ أَمْرِي — عَاجِلِهِ وَآجِلِهِ — فَاقْدُرْهُ لِي وَيَسِّرْهُ لِي ثُمَّ بَارِكْ لِي فِيهِ. وَإِنْ كُنْتَ تَعْلَمُ أَنَّ هَذَا الْأَمْرَ شَرٌّ لِي فِي دِينِي وَمَعَاشِي وَعَاقِبَةِ أَمْرِي — عَاجِلِهِ وَآجِلِهِ — فَاصْرِفْهُ عَنِّي وَاصْرِفْنِي عَنْهُ، وَاقْدُرْ لِيَ الْخَيْرَ حَيْثُ كَانَ ثُمَّ أَرْضِنِي بِهِ».',
+            note: 'وعند قوله «هذا الأمر» يُسمّي حاجته أو يستحضرها بقلبه. رواه البخاري.',
+            en: '"O Allah, I seek Your guidance by Your knowledge, and Your power by Your might, and I ask of Your great bounty; for You are able while I am not, You know while I know not, and You are the Knower of all that is hidden. O Allah, if You know this matter to be good for me in my religion, my livelihood and the outcome of my affairs — in the near term and the far — then decree it for me, make it easy for me, and bless it for me. But if You know this matter to be bad for me in my religion, my livelihood and the outcome of my affairs — in the near term and the far — then turn it away from me and turn me away from it, and decree for me what is good wherever it may be, then make me content with it."',
+            noteEn: 'When saying "this matter," name your specific need or bring it to mind. Reported by al-Bukhari.',
+          },
         ],
+        ref: 'تُستحبّ الاستخارة في الأمور المباحة التي يتردّد فيها الإنسان، ولا استخارة في واجبٍ أو محرّم. وبعدها يمضي لما انشرح له صدره متوكّلًا على الله.',
+        refEn: 'Istikhara is recommended for permissible matters one is hesitant about; there is no istikhara in an obligation or a prohibition. Afterwards, proceed with what your heart inclines to, trusting in Allah.',
       },
       {
         id: 'janaza', title: 'صلاة الجنازة', en: 'Funeral Prayer',
