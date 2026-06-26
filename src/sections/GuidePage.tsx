@@ -45,6 +45,8 @@ export default function GuidePage({ onBack }: GuidePageProps) {
 }
 
 function Section({ section, open, setOpen }: { section: GuideSection; open: string | null; setOpen: (id: string | null) => void }) {
+  const { lang } = useI18n();
+  const isAr = lang === 'ar';
   const Icon = SECTION_ICON[section.icon] ?? Droplets;
   return (
     <div>
@@ -52,8 +54,8 @@ function Section({ section, open, setOpen }: { section: GuideSection; open: stri
         <div className="w-7 h-7 rounded-lg bg-[#14879c]/15 flex items-center justify-center">
           <Icon size={15} className="text-[#14879c]" />
         </div>
-        <h2 className="text-sm font-semibold text-white arabic-text">{section.title}</h2>
-        <span className="text-[10px] text-[color:var(--text-muted)]">{section.en}</span>
+        <h2 className="text-sm font-semibold text-white arabic-text">{isAr ? section.title : section.en}</h2>
+        <span className="text-[10px] text-[color:var(--text-muted)]">{isAr ? section.en : section.title}</span>
       </div>
 
       <div className="space-y-2">
@@ -74,17 +76,17 @@ function Section({ section, open, setOpen }: { section: GuideSection; open: stri
                 className="w-full p-4 flex items-center gap-3 text-right"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white arabic-text">{topic.title}</p>
-                  <p className="text-[10px] text-[color:var(--text-muted)]">{topic.en}</p>
+                  <p className="text-sm font-semibold text-white arabic-text">{isAr ? topic.title : topic.en}</p>
+                  <p className="text-[10px] text-[color:var(--text-muted)]">{isAr ? topic.en : topic.title}</p>
                 </div>
                 <ChevronDown size={16} className={`text-[color:var(--text-muted)] transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isOpen && (
-                <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3" dir="rtl">
-                  {topic.intro && (
-                    <p className="text-[13px] arabic-text leading-loose" style={{ color: 'rgba(var(--text-strong-rgb), 0.85)' }}>
-                      {topic.intro}
+                <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3" dir={isAr ? 'rtl' : 'ltr'}>
+                  {(isAr ? topic.intro : (topic.introEn ?? topic.intro)) && (
+                    <p className={`text-[13px] leading-loose ${isAr ? 'arabic-text' : ''}`} style={{ color: 'rgba(var(--text-strong-rgb), 0.85)' }}>
+                      {isAr ? topic.intro : (topic.introEn ?? topic.intro)}
                     </p>
                   )}
                   <ol className="space-y-2.5">
@@ -94,15 +96,15 @@ function Section({ section, open, setOpen }: { section: GuideSection; open: stri
                           {i + 1}
                         </span>
                         <div className="flex-1">
-                          <p className="text-[14px] arabic-text leading-loose" style={{ color: 'rgba(var(--text-strong-rgb), 0.92)' }}>{s.text}</p>
-                          {s.note && <p className="text-[11px] text-[color:var(--text-muted)] arabic-text mt-0.5">{s.note}</p>}
+                          <p className={`text-[14px] leading-loose ${isAr ? 'arabic-text' : ''}`} style={{ color: 'rgba(var(--text-strong-rgb), 0.92)' }}>{isAr ? s.text : (s.en ?? s.text)}</p>
+                          {(isAr ? s.note : (s.noteEn ?? s.note)) && <p className={`text-[11px] text-[color:var(--text-muted)] mt-0.5 ${isAr ? 'arabic-text' : ''}`}>{isAr ? s.note : (s.noteEn ?? s.note)}</p>}
                         </div>
                       </li>
                     ))}
                   </ol>
-                  {topic.ref && (
-                    <p className="text-[11px] text-[#d4af37] arabic-text leading-relaxed border-t border-white/5 pt-2 mt-1">
-                      ⚑ {topic.ref}
+                  {(isAr ? topic.ref : (topic.refEn ?? topic.ref)) && (
+                    <p className={`text-[11px] text-[#d4af37] leading-relaxed border-t border-white/5 pt-2 mt-1 ${isAr ? 'arabic-text' : ''}`}>
+                      ⚑ {isAr ? topic.ref : (topic.refEn ?? topic.ref)}
                     </p>
                   )}
                 </div>

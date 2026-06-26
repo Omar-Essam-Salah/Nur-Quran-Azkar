@@ -18,6 +18,7 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
   const [gpsOff, setGpsOff] = useState(false);
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [noSensor, setNoSensor] = useState(false);
+  const [compassReady, setCompassReady] = useState(false); // first heading received
   const [showTip, setShowTip] = useState(() => !localStorage.getItem('nur-qibla-tip'));
   const dismissTip = () => { setShowTip(false); try { localStorage.setItem('nur-qibla-tip', '1'); } catch { /* ignore */ } };
   const cardRef = useRef<HTMLDivElement>(null);
@@ -104,6 +105,7 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
       if (!Number.isFinite(heading)) return;
       everReceived = true;
       setNoSensor(false);
+      setCompassReady(true); // a real reading arrived → compass is working
       const rad = (heading * Math.PI) / 180;
       const k = 0.2; // smoothing strength
       if (!primed) {
@@ -149,7 +151,9 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
     window.addEventListener('deviceorientation', onRelative as any, true);
 
     // If nothing ever arrives, tell the user instead of showing a frozen dial.
-    const t = window.setTimeout(() => { if (!everReceived) setNoSensor(true); }, 3000);
+    // Give the magnetometer extra time on a cold first launch so we don't wrongly
+    // report "no sensor" before it has warmed up / calibrated.
+    const t = window.setTimeout(() => { if (!everReceived) setNoSensor(true); }, 6000);
 
     return () => {
       window.clearTimeout(t);
@@ -249,10 +253,18 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
               {t('Compass sensor not detected. Your device may lack a magnetometer, or the browser blocked it — use the Qibla angle below and a separate compass.',
                  'لم يتمّ العثور على حسّاس البوصلة. قد لا يحتوي جهازك على مِقياس مغناطيسي — استعن بزاوية القبلة بالأسفل أو ببوصلة منفصلة.')}
             </p>
+          ) : !compassReady ? (
+            <div className="flex items-center justify-center gap-2 px-4">
+              <Locate size={13} className="text-[#14879c] animate-pulse" />
+              <p className="text-[11px] text-[#14879c] arabic-text leading-relaxed" dir="rtl">
+                {t('Starting the compass… hold the phone flat and wave it in a figure-8.',
+                   'جارٍ تشغيل البوصلة… امسك الهاتف مسطّحًا وحرّكه على شكل رقم ٨.')}
+              </p>
+            </div>
           ) : (
-            <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir="rtl">
-              {t('If the needle drifts, wave the phone in a figure-8 to calibrate.',
-                 'لو المؤشر غير مستقر، حرّك الهاتف على شكل رقم ٨ لمعايرة البوصلة.')}
+            <p className="text-[10px] text-[#34d399] arabic-text" dir="rtl">
+              {t('Compass active ✓ — if the needle drifts, wave the phone in a figure-8.',
+                 'البوصلة تعمل ✓ — لو المؤشر غير مستقر، حرّكه على شكل رقم ٨.')}
             </p>
           )}
         </div>
