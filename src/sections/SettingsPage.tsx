@@ -125,6 +125,22 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
     window.location.reload();
   };
 
+  // Free the cached downloads (recitation audio, mushaf/tafsir, API responses)
+  // WITHOUT touching settings/bookmarks — this is the ~20 MB that accumulates.
+  const [clearingCache, setClearingCache] = useState(false);
+  const clearCache = async () => {
+    setClearingCache(true);
+    try {
+      if ('caches' in window) { const keys = await caches.keys(); await Promise.all(keys.map((k) => caches.delete(k))); }
+      await new Promise<void>((resolve) => {
+        const req = indexedDB.deleteDatabase('nur-quran');
+        req.onsuccess = req.onerror = req.onblocked = () => resolve();
+      });
+      toast(tr('Cache cleared ✓', 'تم تفريغ الكاش ✓'), { description: tr('Freed downloaded audio & pages. Settings & bookmarks kept.', 'تم تفريغ الصوت والصفحات المحمّلة. إعداداتك ومحفوظاتك محفوظة.') });
+    } catch { /* ignore */ }
+    setClearingCache(false);
+  };
+
   return (
     <div className="page-enter min-h-screen">
       {/* Header */}
@@ -508,6 +524,17 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
             <button onClick={doImport} disabled={!importText.trim()}
               className="w-full py-2 rounded-lg text-xs bg-[#d4af37]/20 text-[#d4af37] flex items-center justify-center gap-2 disabled:opacity-30">
               <Upload size={13} /> {tr('Restore data', 'استرجاع البيانات')}
+            </button>
+          </div>
+
+          <div className="pt-2 border-t border-white/5 space-y-1.5">
+            <p className="text-[11px] text-white/70 arabic-text" dir={tr('ltr', 'rtl')}>{tr('Free up storage', 'تفريغ المساحة')}</p>
+            <p className="text-[10px] text-[color:var(--text-muted)] arabic-text leading-relaxed" dir={tr('ltr', 'rtl')}>
+              {tr('Deletes downloaded recitations & mushaf/tafsir cache (re-downloads on use). Keeps your settings & bookmarks.', 'يحذف التلاوات المحمّلة وكاش المصحف/التفسير (يُعاد تحميلها عند الاستخدام). ويُبقي إعداداتك ومحفوظاتك.')}
+            </p>
+            <button onClick={clearCache} disabled={clearingCache}
+              className="w-full py-2 rounded-lg text-xs bg-white/5 text-white/80 flex items-center justify-center gap-2 disabled:opacity-40">
+              {clearingCache ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} {tr('Clear cache / downloads', 'تفريغ الكاش / التحميلات')}
             </button>
           </div>
         </div>
