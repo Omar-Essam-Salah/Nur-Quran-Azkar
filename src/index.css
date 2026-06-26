@@ -360,22 +360,70 @@ html.large-ui { font-size: 18.5px; }
     radial-gradient(ellipse at 50% 100%, rgba(20,135,156,0.08), transparent 60%),
     linear-gradient(165deg, #0a1c18 0%, #11241d 45%, #1c140b 100%);
 }
-.mushaf-page-img {
-  display: block;
-  width: 100%;
-  height: auto;
+/* Ivory page with a gold ornamental double-frame (text Mushaf, tap-a-word). */
+.mushaf-paper {
+  background: linear-gradient(180deg, #fdf8ec 0%, #f6efda 100%);
+  border-radius: 12px;
+  border: 1.5px solid #b8901f;
+  box-shadow:
+    0 0 0 4px #fdf8ec,
+    0 0 0 5.5px #d4af37,
+    0 0 0 7px rgba(184,144,31,0.6),
+    0 18px 50px rgba(0,0,0,0.5);
+  padding: clamp(20px, 5.5vw, 34px) clamp(16px, 4.5vw, 26px);
+  margin-top: 6px;
+  margin-bottom: 6px;
 }
-/* Page-turn slide-show: the incoming page slides in from one edge while the
-   outgoing page slides out the other way — a real "filmstrip" turn (direction
-   set per turn). RTL mushaf: the NEXT page (higher number) enters from the
-   LEFT. GPU transform only → smooth, no reflow. */
-@keyframes mushaf-in-fwd   { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-@keyframes mushaf-out-fwd  { from { transform: translateX(0); }    to { transform: translateX(100%); } }
-@keyframes mushaf-in-back  { from { transform: translateX(100%); }  to { transform: translateX(0); } }
-@keyframes mushaf-out-back { from { transform: translateX(0); }     to { transform: translateX(-100%); } }
-/* Dim the bright page a touch at night for comfort (dark is the default theme;
-   the app adds the `light` class for light mode). */
-html:not(.light) .mushaf-page-img { filter: brightness(0.95); }
+.mushaf-paper-inner {
+  font-family: 'Amiri Quran', 'Amiri', 'Scheherazade New', 'Scheherazade', 'Noto Naskh Arabic', serif;
+  color: #1a130a;            /* dark-brown ink */
+  text-align: justify;
+  text-align-last: center;
+  line-height: 2.35;
+  word-spacing: 0.04em;
+}
+.mushaf-word {
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mushaf-word:active { color: #14879c; }
+.mushaf-word[data-active='true'] {
+  background: rgba(212,175,55,0.32);
+  box-shadow: 0 0 0 1px rgba(184,144,31,0.5);
+}
+/* End-of-ayah medallion with the ayah number inside. */
+.mushaf-ayah-end {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35em;
+  height: 1.35em;
+  margin: 0 0.12em;
+  font-size: 0.62em;
+  font-weight: 700;
+  color: #9a7611;
+  background: radial-gradient(circle, #f7eccb 55%, #eadfb6 100%);
+  border: 1.4px solid #c9a227;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.mushaf-surah-block { display: block; text-align: center; margin: 0.5em 0 0.7em; }
+.mushaf-surah-name {
+  display: block;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: #8a6a0e;
+  padding: 0.18em 0;
+  border-top: 1.5px solid #d4af37;
+  border-bottom: 1.5px solid #d4af37;
+  background: linear-gradient(180deg, rgba(212,175,55,0.14), rgba(212,175,55,0.04));
+}
+.mushaf-bismillah { display: block; font-size: 0.78em; color: #1a130a; margin-top: 0.4em; }
+/* Page-turn slide animation (direction set per turn). RTL: NEXT enters from the LEFT. */
+@keyframes mushaf-in-fwd   { from { transform: translateX(-22%); opacity: 0.3; } to { transform: translateX(0); opacity: 1; } }
+@keyframes mushaf-in-back  { from { transform: translateX(22%);  opacity: 0.3; } to { transform: translateX(0); opacity: 1; } }
 
 /* The app is edge-to-edge (viewport-fit=cover + a translucent status bar), so
    without this the sticky page headers slide UNDER the status bar / notch and

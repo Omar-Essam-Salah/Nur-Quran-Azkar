@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, BookOpen, Search, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, BookOpen, Search, Type } from 'lucide-react';
 import { getReciter, everyayahUrl } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
 import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
@@ -7,6 +7,7 @@ import { pushBack } from '@/lib/backStack';
 import { loadAyahRange } from '@/lib/localQuran';
 import { surahList } from '@/data/surahList';
 import { startPageForSurah } from '@/data/mushafPages';
+import { loadPageTokens, keysFromTokens, type PageToken } from '@/lib/mushafText';
 import { useI18n } from '@/i18n';
 
 interface MushafPageProps {
@@ -21,12 +22,6 @@ const JUZ_START_PAGES = [
   1, 22, 42, 62, 82, 102, 121, 142, 162, 182, 201, 222, 242, 262, 282,
   302, 322, 342, 362, 382, 402, 422, 442, 462, 482, 502, 522, 542, 562, 582,
 ];
-
-const pad3 = (n: number) => String(n).padStart(3, '0');
-// The illuminated "Mushaf al-Wasat" pages are bundled locally (offline, in
-// public/mushaf). Falls back to the plain CDN render if a page is ever missing.
-const localPageUrl = (page: number) => `${import.meta.env.BASE_URL}mushaf/${pad3(page)}.webp`;
-const cdnPageUrl = (page: number) => `https://files.quran.app/hafs/madani/width_1024/page${pad3(page)}.png`;
 const juzForPage = (page: number) => {
   let juz = 1;
   for (let i = 0; i < JUZ_START_PAGES.length; i++) if (page >= JUZ_START_PAGES[i]) juz = i + 1;
@@ -40,6 +35,9 @@ const hizbForPage = (page: number) => {
   return (juz - 1) * 2 + (page >= start + (end - start) / 2 ? 2 : 1);
 };
 
+const FONT_SIZES = [1.35, 1.6, 1.9, 2.2]; // rem
+const toArabicDigits = (n: number) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[+d]);
+
 export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const { t } = useI18n();
   const [page, setPage] = useState(() => {
@@ -47,7 +45,8 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     const saved = Number(localStorage.getItem('nur-mushaf-page'));
     return saved >= 1 && saved <= TOTAL_PAGES ? saved : 1;
   });
-  const [loaded, setLoaded] = useState(false);
+  const [tokens, setTokens] = useState<PageToken[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const [bookmarks, setBookmarks] = useState<number[]>(() => {
     try { return JSON.parse(localStorage.getItem('nur-mushaf-bookmarks') || '[]'); } catch { return []; }
   });
@@ -55,14 +54,16 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const [pageStr, setPageStr] = useState(String(page));
   const [showIndex, setShowIndex] = useState(false);
   const [indexQuery, setIndexQuery] = useState('');
-  const [zoom, setZoom] = useState(1);
   const [chrome, setChrome] = useState(true); // top/bottom bars visible (tap page to hide)
-  // How the page fits: 'contain' (DEFAULT) = the whole page, nothing cropped and
-  // no stretch — so no side text is ever cut off; 'cover' = edge-to-edge but a
-  // sliver of the margins is cropped. Default to contain so the text is always
-  // complete; the toolbar button lets the user switch to fill-screen.
-  const [fitMode, setFitMode] = useState<'cover' | 'contain'>(() => (localStorage.getItem('nur-mushaf-fit') as 'cover' | 'contain') || 'contain');
-  const toggleFit = () => setFitMode((f) => { const n = f === 'cover' ? 'contain' : 'cover'; try { localStorage.setItem('nur-mushaf-fit', n); } catch { /* ignore */ } return n; });
+  const [fontSize, setFontSize] = useState<number>(() => {
+    const v = Number(localStorage.getItem('nur-mushaf-font'));
+    return FONT_SIZES.includes(v) ? v : 1.6;
+  });
+  const cycleFont = () => setFontSize((f) => {
+    const next = FONT_SIZES[(FONT_SIZES.indexOf(f) + 1) % FONT_SIZES.length];
+    try { localStorage.setItem('nur-mushaf-font', String(next)); } catch { /* ignore */ }
+    return next;
+  });
 
   // Which surah the current page belongs to (for highlighting in the index).
   const currentSurahNumber = useMemo(() => {
@@ -74,7 +75,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   useEffect(() => { setPageStr(String(page)); }, [page]);
 
   // ── Page recitation audio (plays the current page's verses in sequence,
-  //    then auto-advances to the next page). Online feature; mushaf is online. ──
+  //    then auto-advances to the next page). Online feature. ──
   const reciter = useMemo(() => {
     try { return getReciter(JSON.parse(localStorage.getItem('nur-settings') || '{}').reciter); }
     catch { return getReciter(undefined); }
@@ -99,7 +100,6 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       ownerRef.current = claimAudio(); // take the shared element (frees adhan/preview)
       let items: { url: string; key?: string }[];
       if (reciter.everyayah) {
-        // everyayah reciters: get the page's verse keys and build per-ayah URLs.
         const res = await fetch(`https://api.quran.com/api/v4/verses/by_page/${p}?per_page=50&fields=verse_key`);
         const data = await res.json();
         items = ((data?.verses ?? []) as { verse_key: string }[]).map((v) => {
@@ -125,9 +125,6 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     } catch { setAudioLoading(false); setAudioPlaying(false); }
   };
 
-  // (Re)install our handlers on the shared element and return it. Handlers
-  // no-op unless we still own the element, so the adhan / reciter / preview
-  // never drive the mushaf's state (and vice-versa).
   const ensureAudioEl = (): HTMLAudioElement => {
     const a = audioEl();
     a.onplay = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.add('reciting'); };
@@ -143,7 +140,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
         void a.play().catch(() => {});
       } else {
         const np = playingPageRef.current + 1; // page finished → continue reading
-        if (np <= TOTAL_PAGES) { setPage(np); void loadAndPlayPage(np); }
+        if (np <= TOTAL_PAGES) { slideDirRef.current = 1; setPage(np); void loadAndPlayPage(np); }
         else setAudioPlaying(false);
       }
     };
@@ -154,7 +151,6 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const toggleAudio = () => {
     const a = audioEl();
     if (audioPlaying) { a.pause(); setAudioPlaying(false); return; }
-    // Resume only if we still hold the shared element from this same page.
     if (isOwner(ownerRef.current) && a.src && a.paused && playingPageRef.current === page && playlistRef.current.length) {
       ensureAudioEl();
       void a.play(); setAudioPlaying(true); return;
@@ -171,49 +167,30 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   // Stop audio on unmount (only if we still own the shared element).
   useEffect(() => () => { if (isOwner(ownerRef.current)) { try { audioEl().pause(); } catch { /* ignore */ } document.body.classList.remove('reciting'); } }, []);
 
-  // Tafsir works WITHOUT recitation: when the window is open, load the current
-  // page's ayat so the user can read tafsir and step through ayat manually.
-  useEffect(() => {
-    if (!tafsirFollow) return;
-    let active = true;
-    fetch(`https://api.quran.com/api/v4/verses/by_page/${page}?per_page=50&fields=verse_key`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!active) return;
-        const keys = ((d?.verses ?? []) as { verse_key: string }[]).map((v) => v.verse_key);
-        setPageVerseKeys(keys);
-        if (!audioPlayingRef.current) setCurrentVerseKey(keys[0] ?? null); // default to first ayah
-      })
-      .catch(() => {});
-    return () => { active = false; };
-  }, [tafsirFollow, page]);
-
+  // Load the page's text tokens (offline) and keep the tafsir ayah-keys in sync.
   const scrollRef = useRef<HTMLDivElement>(null);
-  const pageElRef = useRef<HTMLDivElement>(null);
-  const skipCenterRef = useRef(false); // after a pinch we set the scroll ourselves
-  // Pinch state: scaled smoothly via CSS transform (GPU, no reflow) during the
-  // gesture, then committed to a real width once. fx/fy = focal content point.
-  const pinchRef = useRef<{ startDist: number; startZoom: number; midX: number; midY: number; fx: number; fy: number } | null>(null);
-
-  const centerScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    requestAnimationFrame(() => {
-      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-      el.scrollTop = Math.max(0, (el.scrollHeight - el.clientHeight) / 2);
-    });
-  };
-
-  // Keep the page centred when zooming (pinch / double-tap). Skip during a
-  // pinch so it doesn't fight the user's fingers.
+  const slideDirRef = useRef(1);
+  const pageRef = useRef(page);
+  pageRef.current = page;
   useEffect(() => {
-    if (skipCenterRef.current) { skipCenterRef.current = false; return; } // pinch sets its own scroll
-    if (zoom > 1) centerScroll();
-    else scrollRef.current?.scrollTo({ left: 0, top: 0 });
-  }, [zoom]);
+    let active = true;
+    setPageLoading(true);
+    loadPageTokens(page).then((tk) => {
+      if (!active) return;
+      setTokens(tk);
+      const keys = keysFromTokens(tk);
+      setPageVerseKeys(keys);
+      if (tafsirFollow && !audioPlayingRef.current) setCurrentVerseKey(keys[0] ?? null);
+      setPageLoading(false);
+      scrollRef.current?.scrollTo({ top: 0 });
+    });
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
   const commitPage = () => {
     const n = Number(pageStr);
-    if (n >= 1 && n <= TOTAL_PAGES) setPage(n);
+    if (n >= 1 && n <= TOTAL_PAGES) { slideDirRef.current = n >= page ? 1 : -1; setPage(n); }
     else setPageStr(String(page));
   };
 
@@ -226,109 +203,37 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     });
   };
 
-  useEffect(() => {
-    localStorage.setItem('nur-mushaf-page', String(page));
-    setLoaded(false);
-    // Preload AND pre-decode the neighbouring pages so the next turn paints
-    // instantly (decoding off the main thread is what kills the "lag").
-    [page - 1, page + 1, page + 2].forEach((p) => {
-      if (p >= 1 && p <= TOTAL_PAGES) {
-        const img = new Image();
-        img.src = localPageUrl(p);
-        img.decoding = 'async';
-        img.decode?.().catch(() => {});
-      }
-    });
-  }, [page]);
+  useEffect(() => { localStorage.setItem('nur-mushaf-page', String(page)); }, [page]);
 
-  // In the mushaf, the "next" page (higher number) sits to the LEFT (RTL).
-  const slideDirRef = useRef(1); // 1 = forward, -1 = back (for the turn animation)
-  const pageRef = useRef(page);  // always-current page (so handlers aren't stale)
-  pageRef.current = page;
-  // The page that is sliding OUT during a turn (rendered as a brief overlay).
-  const [outgoing, setOutgoing] = useState<{ page: number; dir: number } | null>(null);
   const turn = (dir: number) => {
     const from = pageRef.current;
     const to = Math.min(TOTAL_PAGES, Math.max(1, from + dir));
     if (to === from) return;
     slideDirRef.current = dir;
-    setOutgoing({ page: from, dir });
-    setZoom(1); // always turn at 1× so the new page lands full-screen
     setPage(to);
   };
   const goNext = () => turn(1);
   const goPrev = () => turn(-1);
-  // Drop the outgoing overlay once its slide-out finishes.
-  useEffect(() => {
-    if (!outgoing) return;
-    const id = window.setTimeout(() => setOutgoing(null), 340);
-    return () => window.clearTimeout(id);
-  }, [outgoing]);
 
-  // Combined gesture handling: 1 finger = swipe pages (only at 1×), 2 fingers = pinch zoom.
-  const touchDist = (t: React.TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-  const midpoint = (t: React.TouchList) => {
-    const el = scrollRef.current; const r = el?.getBoundingClientRect();
-    return { x: (t[0].clientX + t[1].clientX) / 2 - (r?.left ?? 0), y: (t[0].clientY + t[1].clientY) / 2 - (r?.top ?? 0) };
+  // Tap a word → show its ayah's tafsir; swipe → turn the page; tap blank → bars.
+  const onWord = (key: string) => {
+    setCurrentVerseKey(key);
+    setPageVerseKeys((prev) => (prev.length ? prev : keysFromTokens(tokens)));
+    setTafsirFollow(true);
+    setChrome(true);
   };
   const onTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      const el = scrollRef.current;
-      const m = midpoint(e.touches);
-      const sw = el?.scrollWidth || 1, sh = el?.scrollHeight || 1;
-      const originX = (el?.scrollLeft ?? 0) + m.x;
-      const originY = (el?.scrollTop ?? 0) + m.y;
-      pinchRef.current = { startDist: touchDist(e.touches), startZoom: zoom, midX: m.x, midY: m.y, fx: originX / sw, fy: originY / sh };
-      // Stop the browser from doing its OWN pan/zoom on the same two fingers —
-      // that contention is what made the pinch stutter. We drive it ourselves.
-      if (el) el.style.touchAction = 'none';
-      // Scale around the point under the fingers — that point stays put.
-      if (pageElRef.current) {
-        pageElRef.current.style.transformOrigin = `${originX}px ${originY}px`;
-        pageElRef.current.style.willChange = 'transform';
-        pageElRef.current.style.backfaceVisibility = 'hidden'; // own compositor layer → GPU-smooth
-      }
-      touchStartX.current = null;
-    } else if (zoom === 1) { touchStartX.current = e.touches[0].clientX; }
-  };
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && pinchRef.current && pageElRef.current) {
-      const p = pinchRef.current;
-      const target = Math.min(4, Math.max(1, p.startZoom * (touchDist(e.touches) / p.startDist)));
-      // Pure GPU transform — no React, no layout reflow → buttery smooth.
-      pageElRef.current.style.transform = `scale(${target / p.startZoom})`;
-    }
+    touchStartX.current = e.touches.length === 1 ? e.touches[0].clientX : null;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
-    if (pinchRef.current && pageElRef.current) {
-      const p = pinchRef.current;
-      const match = /scale\(([\d.]+)\)/.exec(pageElRef.current.style.transform);
-      const newZoom = Math.round(Math.min(4, Math.max(1, p.startZoom * (match ? parseFloat(match[1]) : 1))) * 100) / 100;
-      // Drop the temporary transform and commit the real width once.
-      pageElRef.current.style.transform = '';
-      pageElRef.current.style.transformOrigin = '';
-      pageElRef.current.style.willChange = '';
-      pageElRef.current.style.backfaceVisibility = '';
-      if (scrollRef.current) scrollRef.current.style.touchAction = ''; // hand panning back to the browser
-      const { fx, fy, midX, midY } = p;
-      pinchRef.current = null;
-      skipCenterRef.current = true;
-      setZoom(newZoom);
-      requestAnimationFrame(() => {
-        const el = scrollRef.current; if (!el) return;
-        el.scrollLeft = fx * el.scrollWidth - midX;
-        el.scrollTop = fy * el.scrollHeight - midY;
-      });
-      return;
-    }
     if (touchStartX.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 50) {
-      // RTL mushaf: swipe left→right turns FORWARD (next page); right→left goes back.
-      if (dx > 0) goNext();
+      // RTL mushaf: swipe right→left turns FORWARD (next page); left→right goes back.
+      if (dx < 0) goNext();
       else goPrev();
-    } else if (Math.abs(dx) < 10) {
-      setChrome((c) => !c); // a tap → toggle the bars for full-screen reading
+    } else if (Math.abs(dx) < 10 && !(e.target as HTMLElement).closest('.mushaf-word')) {
+      setChrome((c) => !c);
     }
     touchStartX.current = null;
   };
@@ -342,69 +247,72 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Hardware back closes an open overlay (index / tafsir) and stays on the
-  // Mushaf, instead of leaving to Home.
+  // Hardware back closes an open overlay (index / tafsir) and stays on the Mushaf.
   useEffect(() => { if (showIndex) return pushBack(() => { setShowIndex(false); return true; }); }, [showIndex]);
   useEffect(() => { if (tafsirFollow) return pushBack(() => { setTafsirFollow(false); return true; }); }, [tafsirFollow]);
 
+  const openTafsir = () => setTafsirFollow((v) => {
+    const nv = !v;
+    if (nv && !currentVerseKey) setCurrentVerseKey(pageVerseKeys[0] ?? keysFromTokens(tokens)[0] ?? null);
+    return nv;
+  });
+
   return (
     <div className="page-enter mushaf-stage" style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
-      {/* Outgoing page — slides out the opposite way as the new page slides in,
-          giving a real "filmstrip" page-turn. Removed once the slide finishes. */}
-      {outgoing && (
-        <img
-          key={`out-${outgoing.page}-${outgoing.dir}`}
-          src={localPageUrl(outgoing.page)}
-          alt=""
-          aria-hidden="true"
-          className="mushaf-page-img absolute inset-0 z-30 pointer-events-none"
-          style={{ width: '100%', height: '100%', objectFit: fitMode, animation: `${outgoing.dir >= 0 ? 'mushaf-out-fwd' : 'mushaf-out-back'} 0.32s ease-out both` }}
-        />
-      )}
-
-      {/* Page image — STRETCHED to fill the entire screen, edge to edge (top &
-          sides included). Pinch to zoom; tap toggles the toolbar. */}
+      {/* Cream page with a gold ornamental frame; every word is tappable. */}
       <div
         ref={scrollRef}
-        className={`absolute inset-0 overflow-auto select-none ${zoom === 1 ? 'flex items-center justify-center' : ''}`}
+        className="absolute inset-0 overflow-auto select-none"
+        style={{ paddingTop: 'calc(0.5rem + env(safe-area-inset-top))', paddingBottom: chrome ? 132 : 24, paddingLeft: 12, paddingRight: 12, transition: 'padding 0.3s ease' }}
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         <div
-          ref={pageElRef}
-          className="relative flex-shrink-0"
-          style={{ width: `${Math.round(zoom * 100)}%`, height: `${Math.round(zoom * 100)}%` }}
+          key={page}
+          className="mushaf-paper mx-auto"
+          style={{ maxWidth: 560, animation: `${slideDirRef.current >= 0 ? 'mushaf-in-fwd' : 'mushaf-in-back'} 0.3s ease-out both` }}
         >
-          {!loaded && (
-            <div className="absolute inset-0 flex items-center justify-center z-10">
-              <Loader2 size={28} className="text-[#d4af37] animate-spin" />
+          {pageLoading ? (
+            <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
+              <Loader2 size={26} className="animate-spin" style={{ color: '#c9a227' }} />
             </div>
+          ) : (
+            <p className="mushaf-paper-inner" dir="rtl" style={{ fontSize: `${fontSize}rem` }}>
+              {tokens.map((tk, i) => {
+                if (tk.kind === 'surah') {
+                  const name = surahList.find((s) => s.number === tk.surah)?.name ?? '';
+                  return (
+                    <span key={`s${i}`} className="mushaf-surah-block">
+                      <span className="mushaf-surah-name">سورة {name}</span>
+                      {tk.bismillah && <span className="mushaf-bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</span>}
+                    </span>
+                  );
+                }
+                if (tk.kind === 'end') {
+                  return <span key={`e${i}`} className="mushaf-ayah-end">{toArabicDigits(tk.num)}</span>;
+                }
+                const active = tafsirFollow && tk.key === currentVerseKey;
+                return (
+                  <span
+                    key={i}
+                    className="mushaf-word"
+                    data-active={active ? 'true' : undefined}
+                    onClick={() => onWord(tk.key)}
+                  >
+                    {tk.text}{' '}
+                  </span>
+                );
+              })}
+            </p>
           )}
-          <img
-            key={page}
-            src={localPageUrl(page)}
-            alt={`صفحة ${page}`}
-            decoding="async"
-            onLoad={() => setLoaded(true)}
-            onError={(e) => {
-              const t = e.currentTarget;
-              if (!t.dataset.fb) { t.dataset.fb = '1'; t.src = cdnPageUrl(page); }
-            }}
-            onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
-            className="mushaf-page-img"
-            style={{ width: '100%', height: '100%', objectFit: fitMode, opacity: loaded ? 1 : 0, transition: 'opacity 0.15s ease', animation: `${slideDirRef.current >= 0 ? 'mushaf-in-fwd' : 'mushaf-in-back'} 0.32s ease-out both` }}
-          />
         </div>
       </div>
 
-      {/* One smooth slide toolbar with every control — tap the page to toggle */}
-      <div className="fixed bottom-0 inset-x-0 z-40 px-3 pb-3 transition-transform duration-300 ease-out"
-        style={{ transform: chrome ? 'none' : 'translateY(145%)' }}>
+      {/* One toolbar with every control — tap a blank area to toggle */}
+      <div className="fixed bottom-0 inset-x-0 z-40 px-3 transition-transform duration-300 ease-out"
+        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))', transform: chrome ? 'none' : 'translateY(160%)' }}>
         <div className="mx-auto max-w-md rounded-2xl overflow-hidden"
           style={{
-            // Opaque (no backdrop-blur) so the slide stays smooth — blur is the
-            // expensive bit to re-rasterise every frame on mobile.
             background: 'linear-gradient(135deg, rgb(16,34,29), rgb(13,28,24))',
             border: '1px solid rgba(212,175,55,0.14)',
             boxShadow: '0 -8px 30px rgba(0,0,0,0.45)',
@@ -418,8 +326,8 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
               <p className="text-xs font-semibold text-white arabic-text truncate">سورة {currentSurah?.name ?? ''}</p>
               <p className="text-[9px] text-[#d4af37] arabic-text">{t('Juz', 'الجزء')} {juzForPage(page)} · {t('Hizb', 'الحزب')} {hizbForPage(page)} · {t('Page', 'صفحة')} {page}/{TOTAL_PAGES}</p>
             </div>
-            <button onClick={toggleFit} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Toggle fit" title={fitMode === 'cover' ? t('Fit whole page', 'عرض الصفحة كاملة') : t('Fill screen', 'ملء الشاشة')}>
-              {fitMode === 'cover' ? <Minimize2 size={16} className="text-[color:var(--text-muted)]" /> : <Maximize2 size={16} className="text-[#d4af37]" />}
+            <button onClick={cycleFont} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Font size" title={t('Text size', 'حجم الخط')}>
+              <Type size={16} className="text-[#d4af37]" />
             </button>
             <button onClick={toggleBookmark} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Bookmark page">
               {isBookmarked ? <BookmarkCheck size={17} className="text-[#d4af37]" /> : <Bookmark size={17} className="text-[color:var(--text-muted)]" />}
@@ -430,9 +338,9 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
           {bookmarks.length > 0 && (
             <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto">
               {bookmarks.map((b) => (
-                <button key={b} onClick={() => setPage(b)} className="flex-shrink-0 px-2.5 py-0.5 rounded-lg text-[10px] transition-all"
+                <button key={b} onClick={() => { slideDirRef.current = b >= page ? 1 : -1; setPage(b); }} className="flex-shrink-0 px-2.5 py-0.5 rounded-lg text-[10px] transition-all"
                   style={{ background: b === page ? 'rgba(212,175,55,0.2)' : 'rgba(var(--glass-1), 0.5)', color: b === page ? '#d4af37' : 'var(--text-muted)', border: '1px solid rgba(var(--hair), 0.08)' }}>
-                  ص {b}
+                  {t('p.', 'ص')} {b}
                 </button>
               ))}
             </div>
@@ -446,7 +354,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
             <button onClick={() => setShowIndex(true)} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
               <ListTree size={15} className="text-[#14879c]" /><span className="text-[11px] text-white arabic-text">{t('Index', 'الفهرس')}</span>
             </button>
-            <button onClick={() => setTafsirFollow((v) => !v)} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
+            <button onClick={openTafsir} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
               <BookOpen size={15} className={tafsirFollow ? 'text-[#d4af37]' : 'text-[#14879c]'} /><span className="text-[11px] text-white arabic-text">{t('Tafsir', 'التفسير')}</span>
             </button>
             <button onClick={toggleAudio} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
@@ -464,13 +372,12 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
         </div>
       </div>
 
-      {/* Floating translucent tafsir window — follows recitation, or step through
-          ayat manually with the arrows (works without playing audio). */}
+      {/* Floating tafsir window — opens on a word tap or follows recitation. */}
       {tafsirFollow && currentVerseKey && (
         <MushafTafsirPanel verseKey={currentVerseKey} keys={pageVerseKeys} onSelect={setCurrentVerseKey} onClose={() => setTafsirFollow(false)} />
       )}
 
-      {/* Page index (jump to any page, grouped by Juz') */}
+      {/* Page index (jump to any surah) */}
       {showIndex && (
         <div className="fixed inset-0 z-[70] flex flex-col" style={{ background: 'rgba(var(--glass-2), 0.98)', backdropFilter: 'blur(6px)' }}>
           <div className="sticky top-0 px-4 py-3 flex items-center gap-3 border-b border-white/10">
@@ -504,7 +411,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
                 return (
                   <button
                     key={s.number}
-                    onClick={() => { setPage(sp); setShowIndex(false); setIndexQuery(''); }}
+                    onClick={() => { slideDirRef.current = sp >= page ? 1 : -1; setPage(sp); setShowIndex(false); setIndexQuery(''); }}
                     className="w-full flex items-center gap-3 p-2.5 rounded-xl transition-all"
                     style={{ background: active ? 'rgba(20,135,156,0.18)' : 'rgba(var(--hair),0.04)', border: active ? '1px solid rgba(20,135,156,0.35)' : '1px solid rgba(var(--hair),0.06)' }}
                   >
@@ -527,8 +434,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   );
 }
 
-// Translucent panel that shows the tafsir of the ayah currently being recited
-// in the mushaf, updating automatically as the recitation advances.
+// Translucent panel that shows the tafsir of the tapped/recited ayah.
 function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: string; keys: string[]; onSelect: (k: string) => void; onClose: () => void }) {
   const { t } = useI18n();
   const [text, setText] = useState<string | null>(null);
@@ -536,7 +442,7 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: st
   const [ayahText, setAyahText] = useState('');
   const idx = keys.indexOf(verseKey);
 
-  // The recited ayah's own text (offline) — shown highlighted in yellow.
+  // The ayah's own text (offline) — shown highlighted in gold.
   useEffect(() => {
     let active = true;
     const [s, a] = verseKey.split(':').map(Number);
@@ -558,10 +464,10 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: st
   }, [verseKey]);
 
   return (
-    <div className="fixed inset-x-0 bottom-20 z-40 px-3 pointer-events-none">
+    <div className="fixed inset-x-0 bottom-32 z-40 px-3 pointer-events-none">
       <div
         className="mx-auto max-w-md rounded-2xl p-3 pointer-events-auto"
-        style={{ background: 'rgba(var(--glass-2), 0.86)', border: '1px solid rgba(212,175,55,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+        style={{ background: 'rgba(var(--glass-2), 0.92)', border: '1px solid rgba(212,175,55,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
       >
         <div className="flex items-center justify-between mb-1.5 gap-2">
           <span className="text-[11px] text-[#d4af37] arabic-text flex-1 truncate">{t('Ayah', 'الآية')} {verseKey} · {t('Tafsir al-Saʿdi', 'تفسير السعدي')}</span>
@@ -580,7 +486,6 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: st
           </div>
         </div>
 
-        {/* Recited ayah — highlighted in yellow, follows the recitation */}
         {ayahText && (
           <p className="arabic-text text-[16px] leading-loose mb-2 px-2.5 py-2 rounded-lg" dir="rtl"
              style={{ background: 'rgba(212,175,55,0.18)', color: 'rgb(var(--text-strong-rgb))', border: '1px solid rgba(212,175,55,0.38)' }}>
