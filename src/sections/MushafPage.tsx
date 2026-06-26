@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, BookOpen, Search } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, BookOpen, Search, Maximize2, Minimize2 } from 'lucide-react';
 import { getReciter, everyayahUrl } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
 import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
@@ -55,6 +55,10 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const [indexQuery, setIndexQuery] = useState('');
   const [zoom, setZoom] = useState(1);
   const [chrome, setChrome] = useState(true); // top/bottom bars visible (tap page to hide)
+  // How the page fills the screen: 'cover' = edge-to-edge, no distortion (a sliver
+  // of the margin is cropped); 'contain' = the whole page, no crop & no stretch.
+  const [fitMode, setFitMode] = useState<'cover' | 'contain'>(() => (localStorage.getItem('nur-mushaf-fit') as 'cover' | 'contain') || 'cover');
+  const toggleFit = () => setFitMode((f) => { const n = f === 'cover' ? 'contain' : 'cover'; try { localStorage.setItem('nur-mushaf-fit', n); } catch { /* ignore */ } return n; });
 
   // Which surah the current page belongs to (for highlighting in the index).
   const currentSurahNumber = useMemo(() => {
@@ -271,10 +275,14 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       const originX = (el?.scrollLeft ?? 0) + m.x;
       const originY = (el?.scrollTop ?? 0) + m.y;
       pinchRef.current = { startDist: touchDist(e.touches), startZoom: zoom, midX: m.x, midY: m.y, fx: originX / sw, fy: originY / sh };
+      // Stop the browser from doing its OWN pan/zoom on the same two fingers —
+      // that contention is what made the pinch stutter. We drive it ourselves.
+      if (el) el.style.touchAction = 'none';
       // Scale around the point under the fingers — that point stays put.
       if (pageElRef.current) {
         pageElRef.current.style.transformOrigin = `${originX}px ${originY}px`;
         pageElRef.current.style.willChange = 'transform';
+        pageElRef.current.style.backfaceVisibility = 'hidden'; // own compositor layer → GPU-smooth
       }
       touchStartX.current = null;
     } else if (zoom === 1) { touchStartX.current = e.touches[0].clientX; }
@@ -296,6 +304,8 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       pageElRef.current.style.transform = '';
       pageElRef.current.style.transformOrigin = '';
       pageElRef.current.style.willChange = '';
+      pageElRef.current.style.backfaceVisibility = '';
+      if (scrollRef.current) scrollRef.current.style.touchAction = ''; // hand panning back to the browser
       const { fx, fy, midX, midY } = p;
       pinchRef.current = null;
       skipCenterRef.current = true;
@@ -344,7 +354,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
           alt=""
           aria-hidden="true"
           className="mushaf-page-img absolute inset-0 z-30 pointer-events-none"
-          style={{ width: '100%', height: '100%', objectFit: 'fill', animation: `${outgoing.dir >= 0 ? 'mushaf-out-fwd' : 'mushaf-out-back'} 0.32s ease-out both` }}
+          style={{ width: '100%', height: '100%', objectFit: fitMode, animation: `${outgoing.dir >= 0 ? 'mushaf-out-fwd' : 'mushaf-out-back'} 0.32s ease-out both` }}
         />
       )}
 
@@ -379,7 +389,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
             }}
             onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
             className="mushaf-page-img"
-            style={{ width: '100%', height: '100%', objectFit: 'fill', opacity: loaded ? 1 : 0, transition: 'opacity 0.15s ease', animation: `${slideDirRef.current >= 0 ? 'mushaf-in-fwd' : 'mushaf-in-back'} 0.32s ease-out both` }}
+            style={{ width: '100%', height: '100%', objectFit: fitMode, opacity: loaded ? 1 : 0, transition: 'opacity 0.15s ease', animation: `${slideDirRef.current >= 0 ? 'mushaf-in-fwd' : 'mushaf-in-back'} 0.32s ease-out both` }}
           />
         </div>
       </div>
@@ -404,6 +414,9 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
               <p className="text-xs font-semibold text-white arabic-text truncate">سورة {currentSurah?.name ?? ''}</p>
               <p className="text-[9px] text-[#d4af37] arabic-text">الجزء {juzForPage(page)} · الحزب {hizbForPage(page)} · صفحة {page}/{TOTAL_PAGES}</p>
             </div>
+            <button onClick={toggleFit} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Toggle fit" title={fitMode === 'cover' ? 'عرض الصفحة كاملة' : 'ملء الشاشة'}>
+              {fitMode === 'cover' ? <Minimize2 size={16} className="text-[color:var(--text-muted)]" /> : <Maximize2 size={16} className="text-[#d4af37]" />}
+            </button>
             <button onClick={toggleBookmark} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Bookmark page">
               {isBookmarked ? <BookmarkCheck size={17} className="text-[#d4af37]" /> : <Bookmark size={17} className="text-[color:var(--text-muted)]" />}
             </button>

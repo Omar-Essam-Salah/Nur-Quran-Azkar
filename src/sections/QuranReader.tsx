@@ -394,20 +394,22 @@ export default function QuranReader({
           </div>
         )}
 
+        {/* RTL mushaf order: the NEXT surah is on the LEFT, the PREVIOUS on the
+            right — like turning pages of an Arabic book (right → left). */}
         <div className="mx-auto max-w-lg mt-2 flex items-center justify-between px-2">
-          <button
-            onClick={() => goToSurah(surahNumber - 1)} disabled={surahNumber <= 1}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] text-[color:var(--text-muted)] hover:text-white hover:bg-white/5 transition-all disabled:opacity-30"
-          >
-            <ChevronLeft size={14} />
-            {surahNumber > 1 ? surahList.find((s) => s.number === surahNumber - 1)?.englishName : ''}
-          </button>
-          <span className="text-[10px] text-[#14879c]">{surah.number} / 114</span>
           <button
             onClick={() => goToSurah(surahNumber + 1)} disabled={surahNumber >= 114}
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] text-[color:var(--text-muted)] hover:text-white hover:bg-white/5 transition-all disabled:opacity-30"
           >
+            <ChevronLeft size={14} />
             {surahNumber < 114 ? surahList.find((s) => s.number === surahNumber + 1)?.englishName : ''}
+          </button>
+          <span className="text-[10px] text-[#14879c]">{surah.number} / 114</span>
+          <button
+            onClick={() => goToSurah(surahNumber - 1)} disabled={surahNumber <= 1}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] text-[color:var(--text-muted)] hover:text-white hover:bg-white/5 transition-all disabled:opacity-30"
+          >
+            {surahNumber > 1 ? surahList.find((s) => s.number === surahNumber - 1)?.englishName : ''}
             <ChevronRight size={14} />
           </button>
         </div>
@@ -491,14 +493,14 @@ export default function QuranReader({
           </div>
         )}
 
-        {/* Footer nav */}
+        {/* Footer nav — RTL: Next on the left, Previous on the right. */}
         <div className="flex items-center justify-between pt-4">
-          <button onClick={() => goToSurah(surahNumber - 1)} disabled={surahNumber <= 1} className="glass-btn flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-30">
-            <ChevronLeft size={16} /> {t('Previous', 'السابقة')}
+          <button onClick={() => goToSurah(surahNumber + 1)} disabled={surahNumber >= 114} className="glass-btn flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-30">
+            <ChevronLeft size={16} /> {t('Next', 'التالية')}
           </button>
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-[10px] text-[color:var(--text-muted)] hover:text-white transition-colors">{t('Top', 'أعلى')}</button>
-          <button onClick={() => goToSurah(surahNumber + 1)} disabled={surahNumber >= 114} className="glass-btn flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-30">
-            {t('Next', 'التالية')} <ChevronRight size={16} />
+          <button onClick={() => goToSurah(surahNumber - 1)} disabled={surahNumber <= 1} className="glass-btn flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-30">
+            {t('Previous', 'السابقة')} <ChevronRight size={16} />
           </button>
         </div>
         <div className="h-8" />

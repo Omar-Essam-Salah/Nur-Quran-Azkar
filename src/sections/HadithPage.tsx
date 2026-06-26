@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Loader2, Quote } from 'lucide-react';
+import { useI18n } from '@/i18n';
 
 interface HadithPageProps {
   onBack: () => void;
 }
 
-interface Hadith { n: number; text: string }
+interface Hadith { n: number; text: string; en?: string }
 interface HadithBook { id: string; title: string; author: string; hadiths: Hadith[] }
 
 export default function HadithPage({ onBack }: HadithPageProps) {
+  const { t, lang } = useI18n();
   const [book, setBook] = useState<HadithBook | null>(null);
   const [error, setError] = useState(false);
 
@@ -38,8 +40,8 @@ export default function HadithPage({ onBack }: HadithPageProps) {
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-white arabic-text">{book?.title ?? 'الأربعون النووية'}</h1>
-            <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{book?.author ?? 'الإمام النووي'}</p>
+            <h1 className="text-base font-semibold text-white arabic-text">{lang === 'ar' ? (book?.title ?? 'الأربعون النووية') : "Al-Nawawi's Forty Hadith"}</h1>
+            <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{lang === 'ar' ? (book?.author ?? 'الإمام النووي') : 'Imam an-Nawawi'}</p>
           </div>
         </div>
       </header>
@@ -48,7 +50,7 @@ export default function HadithPage({ onBack }: HadithPageProps) {
         {!book && !error && (
           <div className="glass-card p-10 flex justify-center"><Loader2 size={26} className="text-[#14879c] animate-spin" /></div>
         )}
-        {error && <div className="glass-card p-8 text-center text-sm text-[color:var(--text-muted)]">تعذّر تحميل الأحاديث.</div>}
+        {error && <div className="glass-card p-8 text-center text-sm text-[color:var(--text-muted)]">{t('Could not load the hadiths.', 'تعذّر تحميل الأحاديث.')}</div>}
 
         {book?.hadiths.map((h) => (
           <div key={h.n} className="glass-card-sm p-5 space-y-3">
@@ -59,6 +61,9 @@ export default function HadithPage({ onBack }: HadithPageProps) {
               <Quote size={14} className="text-[color:var(--text-muted)]" />
             </div>
             <p className="arabic-text text-white leading-loose text-[15px]" dir="rtl">{h.text}</p>
+            {h.en && (
+              <p className="text-[13px] text-[color:var(--text-muted)] leading-relaxed border-t border-white/5 pt-2.5" dir="ltr">{h.en}</p>
+            )}
           </div>
         ))}
         <div className="h-8" />
