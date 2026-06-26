@@ -4,6 +4,7 @@ import { getAzkarCategoryById } from '@/data/azkarData';
 import { getCustomAdhkar, addCustomDhikr, removeCustomDhikr, MY_ADHKAR_ID } from '@/lib/customAdhkar';
 import type { AzkarItem } from '@/types';
 import { useI18n } from '@/i18n';
+import { haptic } from '@/lib/haptics';
 
 interface AzkarDetailProps {
   categoryId: string;
@@ -79,6 +80,7 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
   const incrementCount = useCallback((itemId: string, targetCount: number) => {
     setItemCounts(prev => {
       const current = (prev[itemId] || 0) + 1;
+      if (current >= targetCount) haptic.success(); else haptic.tick();
       return { ...prev, [itemId]: current > targetCount ? targetCount : current };
     });
   }, []);

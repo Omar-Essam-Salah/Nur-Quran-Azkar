@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft, RotateCcw, Trophy, TrendingUp } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { haptic } from '@/lib/haptics';
 
 interface TasbihPageProps {
   onBack: () => void;
@@ -60,7 +61,9 @@ export default function TasbihPage({
     setShowRipple(true);
     setTimeout(() => setShowRipple(false), 600);
     increment(activeDhikr);
-  }, [activeDhikr, increment]);
+    if (!isInfinite && currentCount + 1 >= currentDhikr.target) haptic.success();
+    else haptic.tick();
+  }, [activeDhikr, increment, isInfinite, currentCount, currentDhikr.target]);
 
   const handleReset = useCallback(() => {
     reset(activeDhikr);

@@ -261,6 +261,20 @@
     50%      { box-shadow: 0 0 46px 11px rgba(255,196,80,0.66), 0 0 108px 32px rgba(255,160,46,0.38); }
   }
 
+  /* ── "Pampered" micro-interactions: a tactile press on tappable surfaces,
+        plus a smooth (not instant) light ⇄ dark theme switch. ── */
+  .glass-btn, .glass-card-sm, button.glass-card {
+    transition:
+      transform 0.13s cubic-bezier(0.34, 1.56, 0.64, 1),
+      background-color 0.4s ease, background 0.4s ease,
+      color 0.4s ease, border-color 0.4s ease, box-shadow 0.2s ease;
+  }
+  .glass-btn:active, .glass-card-sm:active, button.glass-card:active { transform: scale(0.96); }
+  @media (hover: hover) {
+    .glass-btn:hover, .glass-card-sm:hover { transform: translateY(-1px); }
+  }
+  body { transition: background-color 0.4s ease, color 0.4s ease; }
+
   /* Qibla Compass */
   .tilt-card-wrap { perspective: 800px; }
   .tilt-card { transform-style: preserve-3d; will-change: transform; transition: transform 0.1s ease-out; }

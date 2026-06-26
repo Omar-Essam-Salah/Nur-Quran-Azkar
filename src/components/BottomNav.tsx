@@ -1,6 +1,7 @@
 import type { BottomNavPage } from '@/types';
 import { Home, BookOpen, Sparkles, Clock, Menu } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { haptic } from '@/lib/haptics';
 
 interface BottomNavProps {
   activePage: BottomNavPage;
@@ -37,7 +38,7 @@ export default function BottomNav({ activePage, onNavigate }: BottomNavProps) {
           return (
             <button
               key={item.page}
-              onClick={() => onNavigate(item.page)}
+              onClick={() => { haptic.light(); onNavigate(item.page); }}
               className="flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all duration-300 relative"
               style={{
                 background: isActive ? 'rgba(20, 135, 156, 0.15)' : 'transparent',

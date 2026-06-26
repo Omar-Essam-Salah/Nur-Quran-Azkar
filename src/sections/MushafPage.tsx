@@ -8,6 +8,7 @@ import { loadAyahRange } from '@/lib/localQuran';
 import { surahList } from '@/data/surahList';
 import { startPageForSurah } from '@/data/mushafPages';
 import { loadPageTokens, keysFromTokens, type PageToken } from '@/lib/mushafText';
+import { haptic } from '@/lib/haptics';
 import { useI18n } from '@/i18n';
 
 interface MushafPageProps {
@@ -250,6 +251,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     const to = Math.min(TOTAL_PAGES, Math.max(1, from + dir));
     if (to === from) return;
     slideDirRef.current = dir;
+    haptic.light();
     setPage(to);
   };
   const goNext = () => turn(1);
@@ -258,6 +260,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   // Tap an ayah → recite FROM it; swipe → turn the page; tap a blank area → bars.
   // (Tafsir is the toolbar's book button; it follows the selected/recited ayah.)
   const onWord = (key: string) => {
+    haptic.light();
     setCurrentVerseKey(key);
     setPageVerseKeys((prev) => (prev.length ? prev : keysFromTokens(tokens)));
     void loadAndPlayPage(page, key);
