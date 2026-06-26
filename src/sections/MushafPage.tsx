@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, BookOpen, Search, Type } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, BookOpen, Search } from 'lucide-react';
 import { getReciter, everyayahUrl } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
 import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
@@ -27,15 +27,7 @@ const juzForPage = (page: number) => {
   for (let i = 0; i < JUZ_START_PAGES.length; i++) if (page >= JUZ_START_PAGES[i]) juz = i + 1;
   return juz;
 };
-// Each juz' is two ahzab; the 2nd hizb begins around the juz' midpoint.
-const hizbForPage = (page: number) => {
-  const juz = juzForPage(page);
-  const start = JUZ_START_PAGES[juz - 1];
-  const end = JUZ_START_PAGES[juz] ?? TOTAL_PAGES + 1;
-  return (juz - 1) * 2 + (page >= start + (end - start) / 2 ? 2 : 1);
-};
 
-const FONT_SIZES = [1.35, 1.6, 1.9, 2.2]; // rem
 const toArabicDigits = (n: number) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[+d]);
 
 export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
@@ -57,12 +49,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const [chrome, setChrome] = useState(true); // top/bottom bars visible (tap page to hide)
   const [fontSize, setFontSize] = useState<number>(() => {
     const v = Number(localStorage.getItem('nur-mushaf-font'));
-    return FONT_SIZES.includes(v) ? v : 1.6;
-  });
-  const cycleFont = () => setFontSize((f) => {
-    const next = FONT_SIZES[(FONT_SIZES.indexOf(f) + 1) % FONT_SIZES.length];
-    try { localStorage.setItem('nur-mushaf-font', String(next)); } catch { /* ignore */ }
-    return next;
+    return v >= 1 && v <= 3.4 ? v : 1.6;
   });
 
   // Which surah the current page belongs to (for highlighting in the index).
@@ -169,6 +156,8 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
 
   // Load the page's text tokens (offline) and keep the tafsir ayah-keys in sync.
   const scrollRef = useRef<HTMLDivElement>(null);
+  const paperRef = useRef<HTMLDivElement>(null);
+  const pinchRef = useRef<{ startDist: number; startFont: number } | null>(null);
   const slideDirRef = useRef(1);
   const pageRef = useRef(page);
   pageRef.current = page;
@@ -222,15 +211,40 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     setTafsirFollow(true);
     setChrome(true);
   };
+  // Two-finger pinch zooms the text. We preview with a GPU transform during the
+  // gesture, then commit the new font size on release (so it reflows crisply).
+  const dist2 = (tl: React.TouchList) => Math.hypot(tl[0].clientX - tl[1].clientX, tl[0].clientY - tl[1].clientY);
   const onTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches.length === 1 ? e.touches[0].clientX : null;
+    if (e.touches.length === 2) {
+      pinchRef.current = { startDist: dist2(e.touches), startFont: fontSize };
+      if (paperRef.current) { paperRef.current.style.transformOrigin = 'center top'; paperRef.current.style.willChange = 'transform'; }
+      touchStartX.current = null;
+    } else {
+      touchStartX.current = e.touches[0].clientX;
+    }
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchRef.current && paperRef.current) {
+      const scale = Math.min(2.2, Math.max(0.6, dist2(e.touches) / pinchRef.current.startDist));
+      paperRef.current.style.transform = `scale(${scale})`;
+    }
   };
   const onTouchEnd = (e: React.TouchEvent) => {
+    if (pinchRef.current && paperRef.current) {
+      const m = /scale\(([\d.]+)\)/.exec(paperRef.current.style.transform);
+      const scale = m ? parseFloat(m[1]) : 1;
+      paperRef.current.style.transform = '';
+      paperRef.current.style.willChange = '';
+      const nf = Math.min(3.4, Math.max(1.0, Math.round(pinchRef.current.startFont * scale * 100) / 100));
+      pinchRef.current = null;
+      setFontSize(nf);
+      try { localStorage.setItem('nur-mushaf-font', String(nf)); } catch { /* ignore */ }
+      return;
+    }
     if (touchStartX.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 50) {
-      // RTL mushaf: swipe right→left turns FORWARD (next page); left→right goes back.
-      if (dx < 0) goNext();
+      if (dx > 0) goNext();
       else goPrev();
     } else if (Math.abs(dx) < 10 && !(e.target as HTMLElement).closest('.mushaf-word')) {
       setChrome((c) => !c);
@@ -259,18 +273,28 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
 
   return (
     <div className="page-enter mushaf-stage" style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
-      {/* Cream page with a gold ornamental frame; every word is tappable. */}
+      {/* Slim top pill — surah · juz · page (slides away with the side bar). */}
+      <div className="fixed top-0 inset-x-0 z-40 flex justify-center px-3 pointer-events-none transition-transform duration-300 ease-out"
+        style={{ paddingTop: 'calc(0.4rem + env(safe-area-inset-top))', transform: chrome ? 'none' : 'translateY(-180%)' }}>
+        <div className="px-3 py-1 rounded-full" style={{ background: 'rgba(8,29,35,0.82)', border: '1px solid rgba(212,175,55,0.25)' }}>
+          <p className="text-[10px] font-semibold text-white arabic-text whitespace-nowrap">سورة {currentSurah?.name ?? ''} · {t('Juz', 'ج')} {juzForPage(page)} · {t('p.', 'ص')} {page}/{TOTAL_PAGES}</p>
+        </div>
+      </div>
+
+      {/* Ivory FULL-SCREEN page; every word is tappable; pinch to zoom. */}
       <div
         ref={scrollRef}
-        className="absolute inset-0 overflow-auto select-none"
-        style={{ paddingTop: 'calc(0.5rem + env(safe-area-inset-top))', paddingBottom: chrome ? 132 : 24, paddingLeft: 12, paddingRight: 12, transition: 'padding 0.3s ease' }}
+        className="absolute inset-0 overflow-auto select-none mushaf-scroll"
+        style={{ paddingTop: 'calc(0.3rem + env(safe-area-inset-top))', paddingBottom: 'calc(0.3rem + env(safe-area-inset-bottom))' }}
         onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         <div
+          ref={paperRef}
           key={page}
-          className="mushaf-paper mx-auto"
-          style={{ maxWidth: 560, animation: `${slideDirRef.current >= 0 ? 'mushaf-in-fwd' : 'mushaf-in-back'} 0.3s ease-out both` }}
+          className="mushaf-paper"
+          style={{ animation: `${slideDirRef.current >= 0 ? 'mushaf-in-fwd' : 'mushaf-in-back'} 0.3s ease-out both` }}
         >
           {pageLoading ? (
             <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
@@ -308,67 +332,44 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
         </div>
       </div>
 
-      {/* One toolbar with every control — tap a blank area to toggle */}
-      <div className="fixed bottom-0 inset-x-0 z-40 px-3 transition-transform duration-300 ease-out"
-        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))', transform: chrome ? 'none' : 'translateY(160%)' }}>
-        <div className="mx-auto max-w-md rounded-2xl overflow-hidden"
+      {/* Compact vertical SIDE BAR — slides off the left edge so it never sits on
+          top of the text. Tap a blank area of the page to show/hide it. */}
+      <div className="fixed left-0 z-40 transition-transform duration-300 ease-out"
+        style={{ top: '50%', transform: chrome ? 'translateY(-50%)' : 'translate(-130%, -50%)' }}>
+        <div className="flex flex-col items-center gap-1 py-2 px-1 rounded-r-2xl"
           style={{
-            background: 'linear-gradient(135deg, rgb(16,34,29), rgb(13,28,24))',
-            border: '1px solid rgba(212,175,55,0.14)',
-            boxShadow: '0 -8px 30px rgba(0,0,0,0.45)',
+            background: 'linear-gradient(135deg, rgba(16,34,29,0.94), rgba(13,28,24,0.94))',
+            border: '1px solid rgba(212,175,55,0.18)', borderLeft: 'none',
+            boxShadow: '4px 0 22px rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
           }}>
-          {/* Info row */}
-          <div className="px-3 pt-2.5 pb-1.5 flex items-center gap-2">
-            <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Back">
-              <ArrowLeft size={17} className="text-[color:var(--text-muted)]" />
-            </button>
-            <div className="flex-1 min-w-0 text-center">
-              <p className="text-xs font-semibold text-white arabic-text truncate">سورة {currentSurah?.name ?? ''}</p>
-              <p className="text-[9px] text-[#d4af37] arabic-text">{t('Juz', 'الجزء')} {juzForPage(page)} · {t('Hizb', 'الحزب')} {hizbForPage(page)} · {t('Page', 'صفحة')} {page}/{TOTAL_PAGES}</p>
-            </div>
-            <button onClick={cycleFont} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Font size" title={t('Text size', 'حجم الخط')}>
-              <Type size={16} className="text-[#d4af37]" />
-            </button>
-            <button onClick={toggleBookmark} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Bookmark page">
-              {isBookmarked ? <BookmarkCheck size={17} className="text-[#d4af37]" /> : <Bookmark size={17} className="text-[color:var(--text-muted)]" />}
-            </button>
-          </div>
-
-          {/* Saved pages */}
-          {bookmarks.length > 0 && (
-            <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto">
-              {bookmarks.map((b) => (
-                <button key={b} onClick={() => { slideDirRef.current = b >= page ? 1 : -1; setPage(b); }} className="flex-shrink-0 px-2.5 py-0.5 rounded-lg text-[10px] transition-all"
-                  style={{ background: b === page ? 'rgba(212,175,55,0.2)' : 'rgba(var(--glass-1), 0.5)', color: b === page ? '#d4af37' : 'var(--text-muted)', border: '1px solid rgba(var(--hair), 0.08)' }}>
-                  {t('p.', 'ص')} {b}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Action row */}
-          <div className="px-3 pb-2.5 pt-1 flex items-center gap-1.5">
-            <button onClick={goNext} disabled={page >= TOTAL_PAGES} className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Next page">
-              <ChevronLeft size={20} className="text-white" />
-            </button>
-            <button onClick={() => setShowIndex(true)} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
-              <ListTree size={15} className="text-[#14879c]" /><span className="text-[11px] text-white arabic-text">{t('Index', 'الفهرس')}</span>
-            </button>
-            <button onClick={openTafsir} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
-              <BookOpen size={15} className={tafsirFollow ? 'text-[#d4af37]' : 'text-[#14879c]'} /><span className="text-[11px] text-white arabic-text">{t('Tafsir', 'التفسير')}</span>
-            </button>
-            <button onClick={toggleAudio} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
-              {audioLoading ? <Loader2 size={15} className="text-[#14879c] animate-spin" /> : audioPlaying ? <Pause size={15} className="text-[#14879c]" fill="currentColor" /> : <Play size={15} className="text-[#14879c]" fill="currentColor" />}
-              <span className="text-[11px] text-white arabic-text">{t('Recite', 'تلاوة')}</span>
-            </button>
-            <input type="number" inputMode="numeric" min={1} max={TOTAL_PAGES} value={pageStr}
-              onChange={(e) => setPageStr(e.target.value)} onBlur={commitPage}
-              onKeyDown={(e) => { if (e.key === 'Enter') { commitPage(); (e.currentTarget as HTMLInputElement).blur(); } }}
-              className="w-11 px-1 py-1.5 rounded-lg bg-white/5 text-center text-xs text-white outline-none" title={t('Page number', 'رقم الصفحة')} />
-            <button onClick={goPrev} disabled={page <= 1} className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Previous page">
-              <ChevronRight size={20} className="text-white" />
-            </button>
-          </div>
+          <button onClick={onBack} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Back">
+            <ArrowLeft size={17} className="text-[color:var(--text-muted)]" />
+          </button>
+          <div className="w-5 h-px bg-white/10" />
+          <button onClick={goNext} disabled={page >= TOTAL_PAGES} className="p-2 rounded-lg hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Next page">
+            <ChevronLeft size={18} className="text-white" />
+          </button>
+          <input type="number" inputMode="numeric" min={1} max={TOTAL_PAGES} value={pageStr}
+            onChange={(e) => setPageStr(e.target.value)} onBlur={commitPage}
+            onKeyDown={(e) => { if (e.key === 'Enter') { commitPage(); (e.currentTarget as HTMLInputElement).blur(); } }}
+            className="w-9 px-0.5 py-1 rounded-md bg-white/5 text-center text-[11px] text-white outline-none" title={t('Page number', 'رقم الصفحة')} />
+          <button onClick={goPrev} disabled={page <= 1} className="p-2 rounded-lg hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Previous page">
+            <ChevronRight size={18} className="text-white" />
+          </button>
+          <div className="w-5 h-px bg-white/10" />
+          <button onClick={() => setShowIndex(true)} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Index" title={t('Index', 'الفهرس')}>
+            <ListTree size={16} className="text-[#14879c]" />
+          </button>
+          <button onClick={openTafsir} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Tafsir" title={t('Tafsir', 'التفسير')}>
+            <BookOpen size={16} className={tafsirFollow ? 'text-[#d4af37]' : 'text-[#14879c]'} />
+          </button>
+          <button onClick={toggleAudio} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Recite" title={t('Recite', 'تلاوة')}>
+            {audioLoading ? <Loader2 size={16} className="text-[#14879c] animate-spin" /> : audioPlaying ? <Pause size={16} className="text-[#14879c]" fill="currentColor" /> : <Play size={16} className="text-[#14879c]" fill="currentColor" />}
+          </button>
+          <button onClick={toggleBookmark} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Bookmark page">
+            {isBookmarked ? <BookmarkCheck size={16} className="text-[#d4af37]" /> : <Bookmark size={16} className="text-[color:var(--text-muted)]" />}
+          </button>
         </div>
       </div>
 
