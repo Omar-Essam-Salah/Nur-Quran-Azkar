@@ -57,9 +57,11 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const [indexQuery, setIndexQuery] = useState('');
   const [zoom, setZoom] = useState(1);
   const [chrome, setChrome] = useState(true); // top/bottom bars visible (tap page to hide)
-  // How the page fills the screen: 'cover' = edge-to-edge, no distortion (a sliver
-  // of the margin is cropped); 'contain' = the whole page, no crop & no stretch.
-  const [fitMode, setFitMode] = useState<'cover' | 'contain'>(() => (localStorage.getItem('nur-mushaf-fit') as 'cover' | 'contain') || 'cover');
+  // How the page fits: 'contain' (DEFAULT) = the whole page, nothing cropped and
+  // no stretch — so no side text is ever cut off; 'cover' = edge-to-edge but a
+  // sliver of the margins is cropped. Default to contain so the text is always
+  // complete; the toolbar button lets the user switch to fill-screen.
+  const [fitMode, setFitMode] = useState<'cover' | 'contain'>(() => (localStorage.getItem('nur-mushaf-fit') as 'cover' | 'contain') || 'contain');
   const toggleFit = () => setFitMode((f) => { const n = f === 'cover' ? 'contain' : 'cover'; try { localStorage.setItem('nur-mushaf-fit', n); } catch { /* ignore */ } return n; });
 
   // Which surah the current page belongs to (for highlighting in the index).

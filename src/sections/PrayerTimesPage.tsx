@@ -45,6 +45,17 @@ const adhanOptions = [
   { id: 'shuaisha', name: 'أبو العينين شعيشع', local: '/adhan/shuaisha.mp3', fallback: '' },
 ];
 
+// The five prayers, each with its own adhan on/off (id used for the scheduled
+// notification). Lets the user silence the adhan for a specific prayer while
+// keeping it on for the rest.
+const ADHAN_PRAYERS: { key: string; en: string; ar: string; id: number }[] = [
+  { key: 'Fajr', en: 'Fajr', ar: 'الفجر', id: 1001 },
+  { key: 'Dhuhr', en: 'Dhuhr', ar: 'الظهر', id: 1002 },
+  { key: 'Asr', en: 'Asr', ar: 'العصر', id: 1003 },
+  { key: 'Maghrib', en: 'Maghrib', ar: 'المغرب', id: 1004 },
+  { key: 'Isha', en: 'Isha', ar: 'العشاء', id: 1005 },
+];
+
 // Android locks a notification channel's sound at creation time, so we can't
 // "fix" a previously-silent channel — we must delete the old ones and create a
 // fresh id. Bump this whenever the adhan sound/behaviour needs to change.
@@ -83,6 +94,16 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   const [loading, setLoading] = useState(cachedGeo === null);
 
   const [adhanEnabled, setAdhanEnabled] = useState(() => localStorage.getItem('nur-adhan-enabled') === '1');
+  // Per-prayer adhan switch (default: all on). Lets you mute a single prayer.
+  const [prayerAdhan, setPrayerAdhan] = useState<Record<string, boolean>>(() => {
+    const base: Record<string, boolean> = { Fajr: true, Dhuhr: true, Asr: true, Maghrib: true, Isha: true };
+    try { return { ...base, ...JSON.parse(localStorage.getItem('nur-adhan-prayers') || '{}') }; } catch { return base; }
+  });
+  const togglePrayerAdhan = (k: string) => setPrayerAdhan((prev) => {
+    const next = { ...prev, [k]: !prev[k] };
+    try { localStorage.setItem('nur-adhan-prayers', JSON.stringify(next)); } catch { /* ignore */ }
+    return next;
+  });
   const [adhanOpen, setAdhanOpen] = useState(false);
   const [previewing, setPreviewing] = useState(false); // adhan sound preview is playing
   const [selectedAdhan, setSelectedAdhan] = useState(() => {
@@ -203,19 +224,19 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
         const perm = await LocalNotifications.requestPermissions();
         if (perm.display !== 'granted') return;
         await ensureAdhanChannel();
-        const ids = [1001, 1002, 1003, 1004, 1005];
-        await LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) }).catch(() => {});
-        const prayers: [string, string][] = [['Fajr', 'الفجر'], ['Dhuhr', 'الظهر'], ['Asr', 'العصر'], ['Maghrib', 'المغرب'], ['Isha', 'العشاء']];
+        // Always clear all five first, then schedule only the enabled prayers.
+        await LocalNotifications.cancel({ notifications: ADHAN_PRAYERS.map((p) => ({ id: p.id })) }).catch(() => {});
         const now = new Date();
-        const notifications = prayers
-          .map(([key, ar], i) => {
-            const [h, m] = timings[key].split(':').map(Number);
+        const notifications = ADHAN_PRAYERS
+          .filter((p) => prayerAdhan[p.key] !== false)
+          .map((p) => {
+            const [h, m] = timings[p.key].split(':').map(Number);
             const at = new Date();
             at.setHours(h, m, 0, 0);
             return {
-              id: ids[i],
+              id: p.id,
               title: t('Prayer Time', 'حان وقت الصلاة'),
-              body: `${t('It is now time for', 'حان الآن وقت صلاة')} ${ar}`,
+              body: `${t('It is now time for', 'حان الآن وقت صلاة')} ${t(p.en, p.ar)}`,
               schedule: { at, allowWhileIdle: true },
               channelId: ADHAN_CHANNEL,
               sound: 'adhan.mp3',
@@ -229,7 +250,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
         /* notifications unavailable on this platform */
       }
     })();
-  }, [timings, adhanEnabled, t]);
+  }, [timings, adhanEnabled, prayerAdhan, t]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -241,6 +262,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
 
         const prayersToCheck = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
         for (const prayer of prayersToCheck) {
+          if (prayerAdhan[prayer] === false) continue; // this prayer's adhan is muted
           if (timings[prayer] === nowHHMM && lastPlayedPrayer !== prayer) {
             ownerRef.current = claimAudio();
             const a = audioEl();
@@ -255,7 +277,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [timings, adhanEnabled, lastPlayedPrayer, audioSrc]);
+  }, [timings, adhanEnabled, lastPlayedPrayer, audioSrc, prayerAdhan]);
 
   const formatTime12Hour = (time24: string) => {
     const [h, m] = time24.split(':');
@@ -529,6 +551,25 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Per-prayer adhan on/off — mute the adhan for a specific prayer
+                  while keeping the service running for the rest. */}
+              <div className="pt-1">
+                <p className="text-[10px] text-[color:var(--text-muted)] arabic-text mb-2" dir={t('ltr', 'rtl')}>{t('Adhan per prayer (tap to mute)', 'الأذان لكل صلاة (اضغط للكتم)')}</p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {ADHAN_PRAYERS.map((p) => {
+                    const on = prayerAdhan[p.key] !== false;
+                    return (
+                      <button key={p.key} onClick={() => togglePrayerAdhan(p.key)}
+                        className="py-2 rounded-lg text-[10px] arabic-text transition-all flex flex-col items-center gap-0.5"
+                        style={{ background: on ? 'rgba(20,135,156,0.16)' : 'rgba(255,255,255,0.04)', color: on ? '#14879c' : 'var(--text-muted)', border: on ? '1px solid rgba(20,135,156,0.3)' : '1px solid rgba(var(--hair),0.08)' }}>
+                        {on ? <Bell size={12} /> : <BellOff size={12} />}
+                        <span>{t(p.en, p.ar)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

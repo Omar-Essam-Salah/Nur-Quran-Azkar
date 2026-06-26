@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Coins, Info, RefreshCw, Loader2, CalendarClock } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Coins, Info, RefreshCw, Loader2, CalendarClock, Calculator } from 'lucide-react';
 import { fetchGoldPricePerGram, getCachedGold, ZAKAT_CURRENCIES } from '@/lib/goldPrice';
 import { useI18n } from '@/i18n';
 
@@ -61,6 +61,16 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
   const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
   const dir = t('ltr', 'rtl') as 'ltr' | 'rtl';
 
+  // The result updates live, but a "Calculate" button gives an explicit action:
+  // it scrolls to the result and pulses it so the user clearly sees the figure.
+  const resultRef = useRef<HTMLDivElement>(null);
+  const [pulse, setPulse] = useState(false);
+  const calculate = () => {
+    resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setPulse(true);
+    window.setTimeout(() => setPulse(false), 1400);
+  };
+
   // Hawl reminder — a local notification on the date the user's wealth completes
   // a full lunar year, nudging them to recalculate and pay their zakat.
   const [zReminder, setZReminder] = useState(() => localStorage.getItem('nur-zakat-reminder') || '');
@@ -105,7 +115,7 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
 
       <div className="px-4 pt-2 pb-10 max-w-lg mx-auto space-y-4">
         {/* Result */}
-        <div className="glass-card p-6 text-center space-y-1">
+        <div ref={resultRef} className="glass-card p-6 text-center space-y-1" style={{ scrollMarginTop: 70, transition: 'box-shadow 0.4s ease, border-color 0.4s ease', boxShadow: pulse ? '0 0 0 2px rgba(212,175,55,0.6), 0 0 30px rgba(212,175,55,0.35)' : undefined }}>
           <p className="text-[10px] uppercase tracking-wider text-[#d4af37]">{t('Zakat due', 'الزكاة المستحقّة')}</p>
           <p className="text-4xl font-light text-white tabular-nums">{fmt(zakat)} <span className="text-base text-[#d4af37]">{currency}</span></p>
           <p className="text-[11px] arabic-text" dir={t('ltr', 'rtl')}
@@ -162,6 +172,13 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
                'النِّصاب = ٨٥ جرامًا من الذهب. ومقدار الزكاة ٢٫٥٪ مما حال عليه الحول (سنة هجرية).')}
           </p>
         </div>
+
+        {/* Calculate — scrolls to & highlights the result at the top */}
+        <button onClick={calculate}
+          className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold"
+          style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.95), rgba(212,175,55,0.75))', color: '#0c2f44' }}>
+          <Calculator size={17} /> {t('Calculate my Zakat', 'احسب زكاتي')}
+        </button>
 
         {/* Hawl (lunar-year) reminder */}
         <div className="glass-card-sm p-4 space-y-2">

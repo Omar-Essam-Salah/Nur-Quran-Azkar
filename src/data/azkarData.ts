@@ -599,6 +599,50 @@ export const azkarCategories: AzkarCategory[] = [
       },
     ],
   },
+  {
+    id: 'friday',
+    name: 'Friday',
+    arabicName: 'سُنن وأذكار الجمعة',
+    icon: 'sun',
+    items: [
+      {
+        id: 'fr1',
+        arabic: 'قِرَاءَةُ سُورَةِ الْكَهْفِ — قَالَ ﷺ: «مَنْ قَرَأَ سُورَةَ الْكَهْفِ يَوْمَ الْجُمُعَةِ أَضَاءَ لَهُ مِنَ النُّورِ مَا بَيْنَ الْجُمُعَتَيْنِ»',
+        translation: 'Reciting Surat al-Kahf — The Prophet ﷺ said: "Whoever reads Surat al-Kahf on Friday, a light will shine for him between the two Fridays."',
+        transliteration: 'Qira’atu Surati l-Kahf yawma l-Jumu‘ah.',
+        count: 1,
+        reference: 'الحاكم والبيهقي · Al-Hakim & al-Bayhaqi',
+        virtue: 'نورٌ ما بين الجمعتين',
+      },
+      {
+        id: 'fr2',
+        arabic: 'اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ',
+        translation: 'O Allah, send blessings and peace upon our Prophet Muhammad — the Prophet ﷺ said: "Increase your blessings upon me on Friday."',
+        transliteration: 'Allahumma salli wa sallim ‘ala nabiyyina Muhammad.',
+        count: 100,
+        reference: 'أبو داود · Abu Dawud',
+        virtue: 'أكثِروا من الصلاة عليّ يوم الجمعة',
+      },
+      {
+        id: 'fr3',
+        arabic: 'الدُّعَاءُ فِي سَاعَةِ الْإِجَابَةِ (آخِرُ سَاعَةٍ بَعْدَ الْعَصْرِ): «اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ خَيْرِ مَا سَأَلَكَ مِنْهُ نَبِيُّكَ مُحَمَّدٌ ﷺ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا اسْتَعَاذَكَ مِنْهُ نَبِيُّكَ مُحَمَّدٌ ﷺ»',
+        translation: 'Supplicating in the hour of acceptance (the last hour after ‘Asr): "O Allah, I ask You for the best of what Your Prophet Muhammad ﷺ asked You for, and I seek refuge in You from the evil from which he sought refuge."',
+        transliteration: 'Ad-du‘a’u fi sa‘ati l-ijabah.',
+        count: 1,
+        reference: 'البخاري ومسلم · Al-Bukhari & Muslim',
+        virtue: 'ساعةٌ لا يُوافقها عبدٌ مسلمٌ يسأل الله خيرًا إلا أعطاه',
+      },
+      {
+        id: 'fr4',
+        arabic: 'مِنْ سُنَنِ الْجُمُعَةِ: الِاغْتِسَالُ، وَالتَّطَيُّبُ، وَلُبْسُ أَحْسَنِ الثِّيَابِ، وَالتَّبْكِيرُ إِلَى الْمَسْجِدِ، وَالْإِنْصَاتُ لِلْخُطْبَةِ',
+        translation: 'From the sunnahs of Friday: ghusl (bathing), applying perfume, wearing one’s best clothes, going early to the mosque, and listening attentively to the khutbah.',
+        transliteration: 'Min sunani l-Jumu‘ah: al-ightisal wa t-tatayyub…',
+        count: 1,
+        reference: 'متفق عليه · Agreed upon',
+        virtue: 'سُننٌ مؤكَّدة ليوم الجمعة',
+      },
+    ],
+  },
 ];
 
 export const getAzkarCategoryById = (id: string): AzkarCategory | undefined => {

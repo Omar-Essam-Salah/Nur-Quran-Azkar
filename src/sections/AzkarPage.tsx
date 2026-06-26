@@ -27,6 +27,7 @@ const colorMap: Record<string, string> = {
   waking: '#f97316',
   general: '#ec4899',
   ruqya: '#14b8a6',
+  friday: '#22c55e',
 };
 
 export default function AzkarPage({ onOpenAzkar, onBack }: AzkarPageProps) {

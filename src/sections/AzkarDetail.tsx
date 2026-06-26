@@ -41,8 +41,8 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
   }, []);
 
   // Load saved counts — but RESET them if they're from a previous day, so the
-  // morning/evening adhkar always start fresh each new day.
-  useEffect(() => {
+  // morning/evening adhkar (and every category) always start fresh each new day.
+  const loadCounts = useCallback(() => {
     const today = new Date().toISOString().slice(0, 10);
     const saved = localStorage.getItem(`azkar-counts-${categoryId}`);
     if (!saved) { setItemCounts({}); return; }
@@ -52,6 +52,21 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
       else { setItemCounts({}); localStorage.removeItem(`azkar-counts-${categoryId}`); }
     } catch { setItemCounts({}); }
   }, [categoryId]);
+
+  useEffect(() => { loadCounts(); }, [loadCounts]);
+
+  // Re-check the date whenever the app comes back to the foreground, so counters
+  // zero out at the start of a new day even if the page was left open / the app
+  // was just backgrounded across midnight.
+  useEffect(() => {
+    const recheck = () => { if (document.visibilityState === 'visible') loadCounts(); };
+    document.addEventListener('visibilitychange', recheck);
+    window.addEventListener('focus', recheck);
+    return () => {
+      document.removeEventListener('visibilitychange', recheck);
+      window.removeEventListener('focus', recheck);
+    };
+  }, [loadCounts]);
 
   // Save counts (stamped with today's date) to localStorage.
   useEffect(() => {
