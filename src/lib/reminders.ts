@@ -94,6 +94,7 @@ export async function scheduleSpiritualNudges(days = 3): Promise<void> {
     const notifications: any[] = [];
     let id = NUDGE_ID_BASE;
 
+    const isAr = (localStorage.getItem('nur-lang') || 'ar') === 'ar';
     const dnd = isPrayerDnd();
     const geo = dnd ? getCachedGeo() : null;
 
@@ -112,8 +113,8 @@ export async function scheduleSpiritualNudges(days = 3): Promise<void> {
         const r = REMINDERS[Math.floor(Math.random() * REMINDERS.length)];
         notifications.push({
           id: id++,
-          title: 'نور · تذكير',
-          body: r.ar,
+          title: isAr ? 'نور · تذكير' : 'Nur · Reminder',
+          body: isAr ? r.ar : r.en,
           schedule: { at, allowWhileIdle: true },
           smallIcon: 'ic_stat_nur',
           largeIcon: 'nur_logo',

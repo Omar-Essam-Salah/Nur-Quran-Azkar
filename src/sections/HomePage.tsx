@@ -3,7 +3,7 @@ import { BookOpen, Sparkles, Clock, Compass, Heart, Search, Settings, Bookmark, 
 import { useI18n } from '@/i18n';
 import { surahList } from '@/data/surahList';
 import { azkarCategories } from '@/data/azkarData';
-import { getHijriDate } from '@/data/prayerTimes';
+import { getHijriDate } from '@/lib/prayer';
 import type { Page } from '@/types';
 
 interface HomePageProps {
@@ -28,10 +28,10 @@ export default function HomePage({
   // Selected language goes on top (large); the other below (small).
   const primary = (en: string, ar: string) => (isAr ? ar : en);
   const secondary = (en: string, ar: string) => (isAr ? en : ar);
-  const hijriDate = useMemo(() => getHijriDate(), []);
-  const gregorianDate = useMemo(() => 
-    new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
-  []);
+  const hijriDate = useMemo(() => getHijriDate(new Date(), isAr ? 'ar' : 'en'), [isAr]);
+  const gregorianDate = useMemo(() =>
+    new Date().toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+  [isAr]);
 
   // Get last read surah info
   const lastReadSurah = lastRead ? surahList.find(s => s.number === lastRead.surahNumber) : null;
