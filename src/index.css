@@ -362,37 +362,35 @@ html.large-ui { font-size: 18.5px; }
 }
 /* Ivory page that FILLS the screen, with a gold ornamental frame inset near the
    edges (text Mushaf, tap-a-word). */
-.mushaf-scroll { background: #5c181b; } /* deep maroon behind the page (Madinah palette) */
+.mushaf-scroll { background: #241a0c; } /* warm dark behind the page, so the gold pops */
 .mushaf-paper {
   position: relative;
   min-height: 100%;
   /* Warm ivory (easier on the eyes than bright white), faint illumination. */
   background:
-    radial-gradient(ellipse at 50% -8%, rgba(212,175,55,0.10), transparent 58%),
+    radial-gradient(ellipse at 50% -8%, rgba(212,175,55,0.12), transparent 58%),
     linear-gradient(180deg, #fbf6e6 0%, #f5ecd4 100%);
-  /* Decorated Madinah-style frame: cream margin · gold line · thick MAROON band
-     · gold line · cream · gold hairline. Evokes the printed mushaf border. */
+  /* Elegant double-gold frame (cream margin · gold · cream · gold · cream · gold). */
   box-shadow:
     inset 0 0 0 6px #f5ecd4,
     inset 0 0 0 8px #c9a227,
     inset 0 0 0 11px #f5ecd4,
-    inset 0 0 0 20px #7a2226,
-    inset 0 0 0 22px #c9a227,
-    inset 0 0 0 25px #f5ecd4,
-    inset 0 0 0 26px #b8901f;
-  padding: clamp(34px, 9vw, 56px) clamp(30px, 8vw, 48px);
+    inset 0 0 0 12.5px #b8901f,
+    inset 0 0 0 17px #f5ecd4,
+    inset 0 0 0 18.5px #d4af37;
+  padding: clamp(30px, 8vw, 50px) clamp(26px, 7vw, 40px);
 }
-/* Gold corner flourishes layered over the maroon band. */
+/* Gold corner flourishes for a decorated look. */
 .mushaf-paper::before, .mushaf-paper::after {
   content: '';
   position: absolute;
-  width: 26px; height: 26px;
-  border: 2.5px solid #e6c659;
+  width: 24px; height: 24px;
+  border: 2.5px solid #c9a227;
   pointer-events: none;
   z-index: 1;
 }
-.mushaf-paper::before { top: 12px; right: 12px; border-left: none; border-bottom: none; border-top-right-radius: 7px; }
-.mushaf-paper::after  { bottom: 12px; left: 12px; border-right: none; border-top: none; border-bottom-left-radius: 7px; }
+.mushaf-paper::before { top: 13px; right: 13px; border-left: none; border-bottom: none; border-top-right-radius: 7px; }
+.mushaf-paper::after  { bottom: 13px; left: 13px; border-right: none; border-top: none; border-bottom-left-radius: 7px; }
 .mushaf-paper-inner {
   font-family: 'Amiri Quran', 'Amiri', 'Scheherazade New', 'Scheherazade', 'Noto Naskh Arabic', serif;
   color: #2a1d0a;            /* soft dark-brown ink (gentler than near-black) */
@@ -440,17 +438,17 @@ html.large-ui { font-size: 18.5px; }
   display: block;
   font-size: 0.82em;
   font-weight: 700;
-  color: #f3e2b0;            /* gold-cream text on a maroon band (mushaf header) */
-  padding: 0.32em 0;
+  color: #7a5a0a;            /* deep gold ink on a soft gold band (mushaf header) */
+  padding: 0.3em 0;
   border-radius: 5px;
   border: 1.5px solid #c9a227;
-  box-shadow: inset 0 0 0 2.5px #7a2226, inset 0 0 0 3.5px #c9a227;
-  background: #7a2226;
+  box-shadow: inset 0 0 0 2.5px #fbf6e6, inset 0 0 0 3.5px #d4af37;
+  background: linear-gradient(180deg, #f3e3b4, #ecd79a);
 }
 .mushaf-bismillah { display: block; font-size: 0.78em; color: #1a130a; margin-top: 0.4em; }
 /* Page-turn slide animation (direction set per turn). RTL: NEXT enters from the LEFT. */
-@keyframes mushaf-in-fwd   { from { transform: translateX(-22%); opacity: 0.3; } to { transform: translateX(0); opacity: 1; } }
-@keyframes mushaf-in-back  { from { transform: translateX(22%);  opacity: 0.3; } to { transform: translateX(0); opacity: 1; } }
+@keyframes mushaf-in-fwd   { from { transform: translateX(-100%) scale(0.96); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+@keyframes mushaf-in-back  { from { transform: translateX(100%) scale(0.96);  opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
 
 /* The app is edge-to-edge (viewport-fit=cover + a translucent status bar), so
    without this the sticky page headers slide UNDER the status bar / notch and

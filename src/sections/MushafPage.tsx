@@ -194,6 +194,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const paperRef = useRef<HTMLDivElement>(null);
   const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
+  const livePinchRef = useRef(1); // current zoom during a pinch
   const slideDirRef = useRef(1);
   const pageRef = useRef(page);
   pageRef.current = page;
@@ -267,9 +268,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const onTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       pinchRef.current = { startDist: dist2(e.touches), startZoom: zoom };
-      // Scale the TEXT itself (GPU transform) for a buttery pinch; the gold frame
-      // stays put. On release we commit it to font-size so it stays crisp.
-      if (innerRef.current) { innerRef.current.style.transformOrigin = 'center top'; innerRef.current.style.willChange = 'transform'; }
+      livePinchRef.current = zoom;
       touchStartX.current = null;
     } else {
       touchStartX.current = e.touches[0].clientX;
@@ -277,17 +276,16 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   };
   const onTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 2 && pinchRef.current && innerRef.current) {
-      const scale = Math.min(2.4, Math.max(0.5, dist2(e.touches) / pinchRef.current.startDist));
-      innerRef.current.style.transform = `scale(${scale})`;
+      // Zoom via FONT-SIZE (not transform): the text reflows within the frame, so
+      // nothing (e.g. the surah header) overflows the gold border.
+      const z = Math.min(2.6, Math.max(0.6, pinchRef.current.startZoom * (dist2(e.touches) / pinchRef.current.startDist)));
+      livePinchRef.current = z;
+      innerRef.current.style.fontSize = `${(fitFont * z).toFixed(3)}rem`;
     }
   };
   const onTouchEnd = (e: React.TouchEvent) => {
-    if (pinchRef.current && innerRef.current) {
-      const m = /scale\(([\d.]+)\)/.exec(innerRef.current.style.transform);
-      const scale = m ? parseFloat(m[1]) : 1;
-      innerRef.current.style.transform = '';
-      innerRef.current.style.willChange = '';
-      const nz = Math.min(2.6, Math.max(0.6, Math.round(pinchRef.current.startZoom * scale * 100) / 100));
+    if (pinchRef.current) {
+      const nz = Math.round(livePinchRef.current * 100) / 100;
       pinchRef.current = null;
       setZoom(nz);
       try { localStorage.setItem('nur-mushaf-zoom', String(nz)); } catch { /* ignore */ }
@@ -335,8 +333,8 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       {/* Slim top pill — surah · juz · page (slides away with the side bar). */}
       <div className="fixed top-0 inset-x-0 z-40 flex justify-center px-3 pointer-events-none transition-transform duration-300 ease-out"
         style={{ paddingTop: 'calc(0.4rem + env(safe-area-inset-top))', transform: chrome ? 'none' : 'translateY(-180%)' }}>
-        <div className="px-3 py-1 rounded-full" style={{ background: 'rgba(8,29,35,0.82)', border: '1px solid rgba(212,175,55,0.25)' }}>
-          <p className="text-[10px] font-semibold text-white arabic-text whitespace-nowrap">سورة {currentSurah?.name ?? ''} · {t('Juz', 'ج')} {juzForPage(page)} · {t('p.', 'ص')} {page}/{TOTAL_PAGES}</p>
+        <div className="px-3 py-1 rounded-full" style={{ background: 'linear-gradient(180deg, #f3e3b4, #ecd79a)', border: '1px solid #c9a227', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+          <p className="text-[10px] font-semibold arabic-text whitespace-nowrap" style={{ color: '#6e4f08' }}>سورة {currentSurah?.name ?? ''} · {t('Juz', 'ج')} {juzForPage(page)} · {t('p.', 'ص')} {page}/{TOTAL_PAGES}</p>
         </div>
       </div>
 
@@ -353,7 +351,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
           ref={paperRef}
           key={page}
           className="mushaf-paper"
-          style={{ animation: `${slideDirRef.current >= 0 ? 'mushaf-in-fwd' : 'mushaf-in-back'} 0.3s ease-out both` }}
+          style={{ animation: `${slideDirRef.current >= 0 ? 'mushaf-in-fwd' : 'mushaf-in-back'} 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both` }}
         >
           {pageLoading ? (
             <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
@@ -398,7 +396,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       {/* Compact vertical SIDE BAR — slides off the left edge so it never sits on
           top of the text. Tap a blank area of the page to show/hide it. */}
       <div className="fixed left-0 z-40 transition-transform duration-300 ease-out"
-        style={{ top: '50%', transform: chrome ? 'translateY(-50%)' : 'translate(-130%, -50%)' }}>
+        style={{ top: '50%', transform: (chrome && !tafsirFollow) ? 'translateY(-50%)' : 'translate(-130%, -50%)' }}>
         <div className="flex flex-col items-center gap-1 py-2 px-1 rounded-r-2xl"
           style={{
             background: 'linear-gradient(135deg, rgba(16,34,29,0.94), rgba(13,28,24,0.94))',
@@ -429,7 +427,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
 
       {/* Floating tafsir window — opens on a word tap or follows recitation. */}
       {tafsirFollow && currentVerseKey && (
-        <MushafTafsirPanel verseKey={currentVerseKey} keys={pageVerseKeys} onSelect={setCurrentVerseKey} onClose={() => setTafsirFollow(false)} />
+        <MushafTafsirPanel verseKey={currentVerseKey} keys={pageVerseKeys} onSelect={setCurrentVerseKey} onClose={() => setTafsirFollow(false)} playing={audioPlaying} onToggleAudio={toggleAudio} />
       )}
 
       {/* Page index (jump to any surah) */}
@@ -496,7 +494,7 @@ const TAFSIRS: { id: number; ar: string; en: string; rtl: boolean }[] = [
   { id: 169, ar: 'ابن كثير (إنجليزي)', en: 'Ibn Kathir (EN)', rtl: false },
 ];
 
-function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: string; keys: string[]; onSelect: (k: string) => void; onClose: () => void }) {
+function MushafTafsirPanel({ verseKey, keys, onSelect, onClose, playing, onToggleAudio }: { verseKey: string; keys: string[]; onSelect: (k: string) => void; onClose: () => void; playing: boolean; onToggleAudio: () => void }) {
   const { t } = useI18n();
   const [text, setText] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -553,6 +551,9 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: st
             title={t('Drag to move', 'اسحب لتحريكه')}
           >⠿ {t('Ayah', 'الآية')} {verseKey}</span>
           <div className="flex items-center gap-0.5">
+            <button onClick={onToggleAudio} className="p-1 rounded hover:bg-white/10" aria-label="Play/Pause" title={t('Recite', 'تلاوة')}>
+              {playing ? <Pause size={15} className="text-[#14879c]" fill="currentColor" /> : <Play size={15} className="text-[#14879c]" fill="currentColor" />}
+            </button>
             <button onClick={() => idx > 0 && onSelect(keys[idx - 1])} disabled={idx <= 0}
               className="p-1 rounded hover:bg-white/10 disabled:opacity-30" aria-label="Previous ayah" title={t('Previous ayah', 'الآية السابقة')}>
               <ChevronRight size={15} className="text-[color:var(--text-muted)]" />
