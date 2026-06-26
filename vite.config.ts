@@ -45,16 +45,6 @@ export default defineConfig({
             },
           },
           {
-            // Mushaf (paper) page images
-            urlPattern: ({ url }) => url.hostname === 'files.quran.app' || url.hostname === 'android.quran.com',
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'mushaf-pages',
-              expiration: { maxEntries: 650, maxAgeSeconds: 60 * 60 * 24 * 180 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
             // Prayer times + hijri date
             urlPattern: ({ url }) => url.hostname === 'api.aladhan.com',
             handler: 'StaleWhileRevalidate',
