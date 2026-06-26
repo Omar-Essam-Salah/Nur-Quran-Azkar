@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, Search } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, Search, BookOpen } from 'lucide-react';
 import { getReciter, everyayahUrl } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
 import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
@@ -96,34 +96,47 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const audioPlayingRef = useRef(false);
   audioPlayingRef.current = audioPlaying;
 
-  const loadAndPlayPage = async (p: number) => {
+  // Build the audio playlist for a page = the EXACT ayat shown on it (same
+  // offline pagination as the text), so the recitation always matches the screen.
+  const buildPlaylist = async (keys: string[]): Promise<{ url: string; key?: string; segments?: number[][] }[]> => {
+    if (reciter.everyayah) {
+      return keys.map((k) => {
+        const [s, a] = k.split(':').map(Number);
+        return { url: everyayahUrl(reciter.everyayah!, s, a), key: k };
+      });
+    }
+    const fetched = await Promise.all(keys.map(async (k) => {
+      try {
+        const res = await fetch(`https://api.quran.com/api/v4/recitations/${reciter.apiId}/by_ayah/${k}`);
+        const data = await res.json();
+        const f = ((data?.audio_files ?? []) as { url: string; segments?: number[][] }[])[0];
+        if (f?.url) return { url: absoluteAudioUrl(f.url) as string, key: k, segments: f.segments };
+      } catch { /* skip this ayah */ }
+      return undefined;
+    }));
+    const items: { url: string; key?: string; segments?: number[][] }[] = [];
+    for (const x of fetched) if (x) items.push(x);
+    return items;
+  };
+
+  const loadAndPlayPage = async (p: number, startKey?: string) => {
     try {
       setAudioLoading(true);
       playingPageRef.current = p;
       ownerRef.current = claimAudio(); // take the shared element (frees adhan/preview)
-      let items: { url: string; key?: string }[];
-      if (reciter.everyayah) {
-        const res = await fetch(`https://api.quran.com/api/v4/verses/by_page/${p}?per_page=50&fields=verse_key`);
-        const data = await res.json();
-        items = ((data?.verses ?? []) as { verse_key: string }[]).map((v) => {
-          const [s, a] = v.verse_key.split(':').map(Number);
-          return { url: everyayahUrl(reciter.everyayah!, s, a), key: v.verse_key };
-        });
-      } else {
-        const res = await fetch(`https://api.quran.com/api/v4/recitations/${reciter.apiId}/by_page/${p}`);
-        const data = await res.json();
-        items = ((data?.audio_files ?? []) as { url: string; verse_key?: string; segments?: number[][] }[])
-          .map((f) => ({ url: absoluteAudioUrl(f.url) as string, key: f.verse_key, segments: f.segments }))
-          .filter((x) => x.url);
-      }
+      const keys = keysFromTokens(await loadPageTokens(p));
+      const items = await buildPlaylist(keys);
+      if (playingPageRef.current !== p) return; // a newer page took over
       playlistRef.current = items;
-      idxRef.current = 0;
+      const start = startKey ? items.findIndex((it) => it.key === startKey) : 0;
+      idxRef.current = Math.max(0, start);
       setCurrentWord(0);
       setAudioLoading(false);
       if (!items.length) { setAudioPlaying(false); return; }
-      setCurrentVerseKey(items[0].key ?? null);
+      const it = items[idxRef.current];
+      setCurrentVerseKey(it.key ?? null);
       const a = ensureAudioEl();
-      a.src = items[0].url;
+      a.src = it.url;
       await a.play();
       setAudioPlaying(true);
     } catch { setAudioLoading(false); setAudioPlaying(false); }
@@ -241,12 +254,12 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const goNext = () => turn(1);
   const goPrev = () => turn(-1);
 
-  // Tap a word → show its ayah's tafsir; swipe → turn the page; tap blank → bars.
+  // Tap an ayah → recite FROM it; swipe → turn the page; tap a blank area → bars.
+  // (Tafsir is the toolbar's book button; it follows the selected/recited ayah.)
   const onWord = (key: string) => {
     setCurrentVerseKey(key);
     setPageVerseKeys((prev) => (prev.length ? prev : keysFromTokens(tokens)));
-    setTafsirFollow(true);
-    setChrome(true);
+    void loadAndPlayPage(page, key);
   };
   // Two-finger pinch zooms the text. We preview with a GPU transform during the
   // gesture, then commit the new font size on release (so it reflows crisply).
@@ -254,24 +267,26 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const onTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       pinchRef.current = { startDist: dist2(e.touches), startZoom: zoom };
-      if (paperRef.current) { paperRef.current.style.transformOrigin = 'center top'; paperRef.current.style.willChange = 'transform'; }
+      // Scale the TEXT itself (GPU transform) for a buttery pinch; the gold frame
+      // stays put. On release we commit it to font-size so it stays crisp.
+      if (innerRef.current) { innerRef.current.style.transformOrigin = 'center top'; innerRef.current.style.willChange = 'transform'; }
       touchStartX.current = null;
     } else {
       touchStartX.current = e.touches[0].clientX;
     }
   };
   const onTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && pinchRef.current && paperRef.current) {
-      const scale = Math.min(2.2, Math.max(0.6, dist2(e.touches) / pinchRef.current.startDist));
-      paperRef.current.style.transform = `scale(${scale})`;
+    if (e.touches.length === 2 && pinchRef.current && innerRef.current) {
+      const scale = Math.min(2.4, Math.max(0.5, dist2(e.touches) / pinchRef.current.startDist));
+      innerRef.current.style.transform = `scale(${scale})`;
     }
   };
   const onTouchEnd = (e: React.TouchEvent) => {
-    if (pinchRef.current && paperRef.current) {
-      const m = /scale\(([\d.]+)\)/.exec(paperRef.current.style.transform);
+    if (pinchRef.current && innerRef.current) {
+      const m = /scale\(([\d.]+)\)/.exec(innerRef.current.style.transform);
       const scale = m ? parseFloat(m[1]) : 1;
-      paperRef.current.style.transform = '';
-      paperRef.current.style.willChange = '';
+      innerRef.current.style.transform = '';
+      innerRef.current.style.willChange = '';
       const nz = Math.min(2.6, Math.max(0.6, Math.round(pinchRef.current.startZoom * scale * 100) / 100));
       pinchRef.current = null;
       setZoom(nz);
@@ -308,6 +323,12 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   // Hardware back closes an open overlay (index / tafsir) and stays on the Mushaf.
   useEffect(() => { if (showIndex) return pushBack(() => { setShowIndex(false); return true; }); }, [showIndex]);
   useEffect(() => { if (tafsirFollow) return pushBack(() => { setTafsirFollow(false); return true; }); }, [tafsirFollow]);
+
+  const openTafsir = () => setTafsirFollow((v) => {
+    const nv = !v;
+    if (nv && !currentVerseKey) setCurrentVerseKey(pageVerseKeys[0] ?? keysFromTokens(tokens)[0] ?? null);
+    return nv;
+  });
 
   return (
     <div className="page-enter mushaf-stage" style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
@@ -393,6 +414,9 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
           <button onClick={toggleBookmark} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Save place" title={t('Save my place', 'احفظ مكاني')}>
             {isBookmarked ? <BookmarkCheck size={17} className="text-[#d4af37]" /> : <Bookmark size={17} className="text-[color:var(--text-muted)]" />}
           </button>
+          <button onClick={openTafsir} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Tafsir" title={t('Tafsir', 'التفسير')}>
+            <BookOpen size={16} className={tafsirFollow ? 'text-[#d4af37]' : 'text-[#14879c]'} />
+          </button>
           <div className="w-5 h-px bg-white/10" />
           <button onClick={() => setShowIndex(true)} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Index" title={t('Index', 'الفهرس')}>
             <ListTree size={16} className="text-[#14879c]" />
@@ -466,11 +490,19 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
 }
 
 // Translucent panel that shows the tafsir of the tapped/recited ayah.
+const TAFSIRS: { id: number; ar: string; en: string; rtl: boolean }[] = [
+  { id: 91, ar: 'السعدي', en: 'Al-Saadi', rtl: true },
+  { id: 14, ar: 'ابن كثير', en: 'Ibn Kathir', rtl: true },
+  { id: 169, ar: 'ابن كثير (إنجليزي)', en: 'Ibn Kathir (EN)', rtl: false },
+];
+
 function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: string; keys: string[]; onSelect: (k: string) => void; onClose: () => void }) {
   const { t } = useI18n();
   const [text, setText] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [ayahText, setAyahText] = useState('');
+  const [src, setSrc] = useState<number>(() => Number(localStorage.getItem('nur-mushaf-tafsir')) || 91);
+  const tafsir = TAFSIRS.find((x) => x.id === src) ?? TAFSIRS[0];
   const idx = keys.indexOf(verseKey);
 
   // Drag the panel by its title so it never sits on top of the verse you read.
@@ -494,18 +526,18 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: st
     return () => { active = false; };
   }, [verseKey]);
 
-  // Its tafsir (online).
+  // Its tafsir (online) — from the selected source.
   useEffect(() => {
     let active = true;
     setLoading(true);
     setText(null);
-    fetch(`https://api.quran.com/api/v4/tafsirs/91/by_ayah/${verseKey}`)
+    fetch(`https://api.quran.com/api/v4/tafsirs/${src}/by_ayah/${verseKey}`)
       .then((r) => r.json())
       .then((d) => { if (active) setText(d?.tafsir?.text ?? null); })
       .catch(() => {})
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [verseKey]);
+  }, [verseKey, src]);
 
   return (
     <div className="fixed inset-x-0 bottom-32 z-40 px-3 pointer-events-none">
@@ -519,7 +551,7 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: st
             className="text-[11px] text-[#d4af37] arabic-text flex-1 truncate cursor-grab active:cursor-grabbing"
             style={{ touchAction: 'none' }}
             title={t('Drag to move', 'اسحب لتحريكه')}
-          >⠿ {t('Ayah', 'الآية')} {verseKey} · {t('Tafsir al-Saʿdi', 'تفسير السعدي')}</span>
+          >⠿ {t('Ayah', 'الآية')} {verseKey}</span>
           <div className="flex items-center gap-0.5">
             <button onClick={() => idx > 0 && onSelect(keys[idx - 1])} disabled={idx <= 0}
               className="p-1 rounded hover:bg-white/10 disabled:opacity-30" aria-label="Previous ayah" title={t('Previous ayah', 'الآية السابقة')}>
@@ -535,6 +567,18 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: st
           </div>
         </div>
 
+        {/* Tafsir source selector */}
+        <div className="flex gap-1 mb-2">
+          {TAFSIRS.map((x) => (
+            <button key={x.id}
+              onClick={() => { setSrc(x.id); try { localStorage.setItem('nur-mushaf-tafsir', String(x.id)); } catch { /* ignore */ } }}
+              className="flex-1 py-1 rounded-lg text-[10px] arabic-text transition-all"
+              style={{ background: src === x.id ? 'rgba(212,175,55,0.22)' : 'rgba(255,255,255,0.04)', color: src === x.id ? '#d4af37' : 'var(--text-muted)', border: src === x.id ? '1px solid rgba(212,175,55,0.4)' : '1px solid transparent' }}>
+              {t(x.en, x.ar)}
+            </button>
+          ))}
+        </div>
+
         {ayahText && (
           <p className="arabic-text text-[16px] leading-loose mb-2 px-2.5 py-2 rounded-lg" dir="rtl"
              style={{ background: 'rgba(212,175,55,0.18)', color: 'rgb(var(--text-strong-rgb))', border: '1px solid rgba(212,175,55,0.38)' }}>
@@ -542,7 +586,7 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: st
           </p>
         )}
 
-        <div className="overflow-y-auto custom-scrollbar text-[12.5px] arabic-text leading-loose" dir="rtl" style={{ maxHeight: '24vh', color: 'rgba(var(--text-strong-rgb), 0.85)' }}>
+        <div className={`overflow-y-auto custom-scrollbar text-[12.5px] leading-loose ${tafsir.rtl ? 'arabic-text' : ''}`} dir={tafsir.rtl ? 'rtl' : 'ltr'} style={{ maxHeight: '24vh', color: 'rgba(var(--text-strong-rgb), 0.85)' }}>
           {loading
             ? <div className="flex justify-center py-4"><Loader2 size={18} className="animate-spin text-[#14879c]" /></div>
             : text
