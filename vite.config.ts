@@ -45,6 +45,17 @@ export default defineConfig({
             },
           },
           {
+            // Hadith library data (static JSON on the jsDelivr CDN) — cached for
+            // offline reuse after the first time a collection is opened.
+            urlPattern: ({ url }) => url.hostname === 'cdn.jsdelivr.net',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'hadith-data',
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             // Prayer times + hijri date
             urlPattern: ({ url }) => url.hostname === 'api.aladhan.com',
             handler: 'StaleWhileRevalidate',
