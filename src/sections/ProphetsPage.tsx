@@ -10,7 +10,8 @@ interface ProphetsPageProps {
 }
 
 export default function ProphetsPage({ onBack, onOpenSurah }: ProphetsPageProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const isAr = lang === 'ar';
   const [selected, setSelected] = useState<Prophet | null>(null);
 
   if (selected) {
@@ -51,8 +52,8 @@ export default function ProphetsPage({ onBack, onOpenSurah }: ProphetsPageProps)
               <BookOpen size={18} className="text-[#d4af37]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white arabic-text">{p.name}</p>
-              <p className="text-[11px] text-[color:var(--text-muted)] arabic-text truncate" dir="rtl">{p.note}</p>
+              <p className="text-sm font-semibold text-white arabic-text">{p.name}{!isAr && <span className="text-[color:var(--text-muted)] font-normal"> · {p.en}</span>}</p>
+              <p className={`text-[11px] text-[color:var(--text-muted)] truncate ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>{isAr ? p.note : (p.noteEn ?? p.note)}</p>
             </div>
             <ChevronLeft size={16} className="text-[color:var(--text-muted)] flex-shrink-0" />
           </button>
@@ -64,7 +65,9 @@ export default function ProphetsPage({ onBack, onOpenSurah }: ProphetsPageProps)
 }
 
 function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onBack: () => void; onOpenSurah: (n: number, ayah?: number) => void }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const isAr = lang === 'ar';
+  const story = isAr ? prophet.story : (prophet.storyEn ?? prophet.story);
   const [ayat, setAyat] = useState<SimpleAyah[] | null>(null);
 
   useEffect(() => {
@@ -113,15 +116,15 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
             <BookOpen size={24} className="text-[#d4af37]" />
           </div>
           <h2 className="text-2xl font-bold text-white arabic-text">{prophet.name}</h2>
-          <p className="text-xs text-[color:var(--text-muted)] arabic-text" dir="rtl">{prophet.note}</p>
+          <p className={`text-xs text-[color:var(--text-muted)] ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>{isAr ? prophet.note : (prophet.noteEn ?? prophet.note)}</p>
         </div>
 
         {/* Story */}
         <div className="glass-card-sm p-5">
           <p className="text-[10px] uppercase tracking-wider text-[#14879c] mb-3">{t('The Story', 'القصة')}</p>
-          <div className="space-y-3" dir="rtl">
-            {prophet.story.split('\n\n').map((para, i) => (
-              <p key={i} className="text-[15px] arabic-text leading-loose" style={{ color: 'rgba(var(--text-strong-rgb), 0.9)' }}>{para}</p>
+          <div className="space-y-3" dir={isAr ? 'rtl' : 'ltr'}>
+            {story.split('\n\n').map((para, i) => (
+              <p key={i} className={`text-[15px] leading-loose ${isAr ? 'arabic-text' : ''}`} style={{ color: 'rgba(var(--text-strong-rgb), 0.9)' }}>{para}</p>
             ))}
           </div>
         </div>
