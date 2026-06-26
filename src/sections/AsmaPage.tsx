@@ -39,8 +39,8 @@ export default function AsmaPage({ onBack }: AsmaPageProps) {
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-white arabic-text">الأسماء الحسنى</h1>
-            <p className="text-[10px] text-[color:var(--text-muted)]">{t('The 99 Names of Allah', '٩٩ اسمًا لله تعالى')}</p>
+            <h1 className="text-base font-semibold text-white arabic-text">{t('The 99 Names of Allah', 'الأسماء الحسنى')}</h1>
+            <p className="text-[10px] text-[color:var(--text-muted)]">{t('Names & attributes of Allah', '٩٩ اسمًا لله تعالى')}</p>
           </div>
         </div>
       </header>
@@ -49,7 +49,7 @@ export default function AsmaPage({ onBack }: AsmaPageProps) {
         {!names && !error && (
           <div className="glass-card p-10 flex justify-center"><Loader2 size={26} className="text-[#14879c] animate-spin" /></div>
         )}
-        {error && <div className="glass-card p-8 text-center text-sm text-[color:var(--text-muted)]">تعذّر التحميل.</div>}
+        {error && <div className="glass-card p-8 text-center text-sm text-[color:var(--text-muted)]">{t('Could not load.', 'تعذّر التحميل.')}</div>}
 
         <div className="grid grid-cols-2 gap-3">
           {names?.map((a) => (

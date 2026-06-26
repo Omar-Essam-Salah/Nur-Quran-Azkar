@@ -7,6 +7,7 @@ import { pushBack } from '@/lib/backStack';
 import { loadAyahRange } from '@/lib/localQuran';
 import { surahList } from '@/data/surahList';
 import { startPageForSurah } from '@/data/mushafPages';
+import { useI18n } from '@/i18n';
 
 interface MushafPageProps {
   onBack: () => void;
@@ -40,6 +41,7 @@ const hizbForPage = (page: number) => {
 };
 
 export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
+  const { t } = useI18n();
   const [page, setPage] = useState(() => {
     if (initialPage) return Math.min(Math.max(1, initialPage), TOTAL_PAGES);
     const saved = Number(localStorage.getItem('nur-mushaf-page'));
@@ -412,9 +414,9 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
             </button>
             <div className="flex-1 min-w-0 text-center">
               <p className="text-xs font-semibold text-white arabic-text truncate">سورة {currentSurah?.name ?? ''}</p>
-              <p className="text-[9px] text-[#d4af37] arabic-text">الجزء {juzForPage(page)} · الحزب {hizbForPage(page)} · صفحة {page}/{TOTAL_PAGES}</p>
+              <p className="text-[9px] text-[#d4af37] arabic-text">{t('Juz', 'الجزء')} {juzForPage(page)} · {t('Hizb', 'الحزب')} {hizbForPage(page)} · {t('Page', 'صفحة')} {page}/{TOTAL_PAGES}</p>
             </div>
-            <button onClick={toggleFit} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Toggle fit" title={fitMode === 'cover' ? 'عرض الصفحة كاملة' : 'ملء الشاشة'}>
+            <button onClick={toggleFit} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Toggle fit" title={fitMode === 'cover' ? t('Fit whole page', 'عرض الصفحة كاملة') : t('Fill screen', 'ملء الشاشة')}>
               {fitMode === 'cover' ? <Minimize2 size={16} className="text-[color:var(--text-muted)]" /> : <Maximize2 size={16} className="text-[#d4af37]" />}
             </button>
             <button onClick={toggleBookmark} className="p-1.5 rounded-lg hover:bg-white/10 transition-all" aria-label="Bookmark page">
@@ -440,19 +442,19 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
               <ChevronLeft size={20} className="text-white" />
             </button>
             <button onClick={() => setShowIndex(true)} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
-              <ListTree size={15} className="text-[#14879c]" /><span className="text-[11px] text-white arabic-text">الفهرس</span>
+              <ListTree size={15} className="text-[#14879c]" /><span className="text-[11px] text-white arabic-text">{t('Index', 'الفهرس')}</span>
             </button>
             <button onClick={() => setTafsirFollow((v) => !v)} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
-              <BookOpen size={15} className={tafsirFollow ? 'text-[#d4af37]' : 'text-[#14879c]'} /><span className="text-[11px] text-white arabic-text">التفسير</span>
+              <BookOpen size={15} className={tafsirFollow ? 'text-[#d4af37]' : 'text-[#14879c]'} /><span className="text-[11px] text-white arabic-text">{t('Tafsir', 'التفسير')}</span>
             </button>
             <button onClick={toggleAudio} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
               {audioLoading ? <Loader2 size={15} className="text-[#14879c] animate-spin" /> : audioPlaying ? <Pause size={15} className="text-[#14879c]" fill="currentColor" /> : <Play size={15} className="text-[#14879c]" fill="currentColor" />}
-              <span className="text-[11px] text-white arabic-text">تلاوة</span>
+              <span className="text-[11px] text-white arabic-text">{t('Recite', 'تلاوة')}</span>
             </button>
             <input type="number" inputMode="numeric" min={1} max={TOTAL_PAGES} value={pageStr}
               onChange={(e) => setPageStr(e.target.value)} onBlur={commitPage}
               onKeyDown={(e) => { if (e.key === 'Enter') { commitPage(); (e.currentTarget as HTMLInputElement).blur(); } }}
-              className="w-11 px-1 py-1.5 rounded-lg bg-white/5 text-center text-xs text-white outline-none" title="رقم الصفحة" />
+              className="w-11 px-1 py-1.5 rounded-lg bg-white/5 text-center text-xs text-white outline-none" title={t('Page number', 'رقم الصفحة')} />
             <button onClick={goPrev} disabled={page <= 1} className="p-2 rounded-xl hover:bg-white/10 transition-all disabled:opacity-30" aria-label="Previous page">
               <ChevronRight size={20} className="text-white" />
             </button>
@@ -473,7 +475,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
             <button onClick={() => setShowIndex(false)} className="p-2 rounded-xl hover:bg-white/10">
               <X size={18} className="text-white" />
             </button>
-            <h2 className="text-base font-semibold text-white arabic-text flex-1">فهرس السور</h2>
+            <h2 className="text-base font-semibold text-white arabic-text flex-1">{t('Surah index', 'فهرس السور')}</h2>
           </div>
           <div className="px-4 pt-3 max-w-lg mx-auto w-full">
             <div className="relative">
@@ -481,7 +483,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
               <input
                 value={indexQuery}
                 onChange={(e) => setIndexQuery(e.target.value)}
-                placeholder="ابحث باسم السورة أو رقمها…"
+                placeholder={t('Search by surah name or number…', 'ابحث باسم السورة أو رقمها…')}
                 className="w-full pr-9 pl-3 py-2.5 rounded-xl bg-white/5 text-sm text-white arabic-text text-right outline-none border border-transparent focus:border-[#14879c]/40 placeholder:text-[color:var(--text-muted)]/60"
                 dir="rtl"
               />
@@ -509,9 +511,9 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
                     </div>
                     <div className="flex-1 min-w-0 text-right">
                       <p className="text-sm font-medium text-white arabic-text">{s.name}</p>
-                      <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir="rtl">{s.verses} آية · {s.type === 'Meccan' ? 'مكية' : 'مدنية'}</p>
+                      <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir="rtl">{s.verses} {t('verses', 'آية')} · {s.type === 'Meccan' ? t('Meccan', 'مكية') : t('Medinan', 'مدنية')}</p>
                     </div>
-                    <span className="text-[10px] text-[#d4af37] arabic-text flex-shrink-0">ص {sp}</span>
+                    <span className="text-[10px] text-[#d4af37] arabic-text flex-shrink-0">{t('p.', 'ص')} {sp}</span>
                   </button>
                 );
               })}
@@ -526,6 +528,7 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
 // Translucent panel that shows the tafsir of the ayah currently being recited
 // in the mushaf, updating automatically as the recitation advances.
 function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: string; keys: string[]; onSelect: (k: string) => void; onClose: () => void }) {
+  const { t } = useI18n();
   const [text, setText] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [ayahText, setAyahText] = useState('');
@@ -559,14 +562,14 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: st
         style={{ background: 'rgba(var(--glass-2), 0.86)', border: '1px solid rgba(212,175,55,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
       >
         <div className="flex items-center justify-between mb-1.5 gap-2">
-          <span className="text-[11px] text-[#d4af37] arabic-text flex-1 truncate">الآية {verseKey} · تفسير السعدي</span>
+          <span className="text-[11px] text-[#d4af37] arabic-text flex-1 truncate">{t('Ayah', 'الآية')} {verseKey} · {t('Tafsir al-Saʿdi', 'تفسير السعدي')}</span>
           <div className="flex items-center gap-0.5">
             <button onClick={() => idx > 0 && onSelect(keys[idx - 1])} disabled={idx <= 0}
-              className="p-1 rounded hover:bg-white/10 disabled:opacity-30" aria-label="Previous ayah" title="الآية السابقة">
+              className="p-1 rounded hover:bg-white/10 disabled:opacity-30" aria-label="Previous ayah" title={t('Previous ayah', 'الآية السابقة')}>
               <ChevronRight size={15} className="text-[color:var(--text-muted)]" />
             </button>
             <button onClick={() => idx >= 0 && idx < keys.length - 1 && onSelect(keys[idx + 1])} disabled={idx < 0 || idx >= keys.length - 1}
-              className="p-1 rounded hover:bg-white/10 disabled:opacity-30" aria-label="Next ayah" title="الآية التالية">
+              className="p-1 rounded hover:bg-white/10 disabled:opacity-30" aria-label="Next ayah" title={t('Next ayah', 'الآية التالية')}>
               <ChevronLeft size={15} className="text-[color:var(--text-muted)]" />
             </button>
             <button onClick={onClose} className="p-1 rounded hover:bg-white/10" aria-label="Close">
@@ -588,7 +591,7 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose }: { verseKey: st
             ? <div className="flex justify-center py-4"><Loader2 size={18} className="animate-spin text-[#14879c]" /></div>
             : text
               ? <span dangerouslySetInnerHTML={{ __html: text }} />
-              : <p className="text-[color:var(--text-muted)] py-2">التفسير غير متاح الآن (يتطلب اتصالًا بالإنترنت).</p>}
+              : <p className="text-[color:var(--text-muted)] py-2">{t('Tafsir is unavailable right now (needs an internet connection).', 'التفسير غير متاح الآن (يتطلب اتصالًا بالإنترنت).')}</p>}
         </div>
       </div>
     </div>

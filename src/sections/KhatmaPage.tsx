@@ -85,10 +85,10 @@ export default function KhatmaPage({ onBack, onNavigate }: KhatmaPageProps) {
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-white arabic-text">خطة الختمة</h1>
+            <h1 className="text-base font-semibold text-white arabic-text">{t('Khatma Plan', 'خطة الختمة')}</h1>
             <p className="text-[10px] text-[color:var(--text-muted)]">{t('Quran completion plan', 'هدف يومي وتتبّع التقدّم')}</p>
           </div>
-          <button onClick={reset} className="p-2 rounded-xl hover:bg-white/10 transition-all" title="إعادة">
+          <button onClick={reset} className="p-2 rounded-xl hover:bg-white/10 transition-all" title={t('Reset', 'إعادة')}>
             <RotateCcw size={16} className="text-[color:var(--text-muted)]" />
           </button>
         </div>
@@ -110,15 +110,15 @@ export default function KhatmaPage({ onBack, onNavigate }: KhatmaPageProps) {
             </div>
           </div>
           {done ? (
-            <p className="text-sm text-[#d4af37] arabic-text">ما شاء الله، أتممت الختمة! 🌙</p>
+            <p className="text-sm text-[#d4af37] arabic-text">{t('Ma sha Allah — you completed the Khatma!', 'ما شاء الله، أتممت الختمة!')} 🌙</p>
           ) : (
-            <p className="text-sm text-white arabic-text">وِرد اليوم: من صفحة <b className="text-[#14879c]">{from}</b> إلى <b className="text-[#14879c]">{to}</b></p>
+            <p className="text-sm text-white arabic-text">{t("Today's portion: pages", 'وِرد اليوم: من صفحة')} <b className="text-[#14879c]">{from}</b> {t('to', 'إلى')} <b className="text-[#14879c]">{to}</b></p>
           )}
         </div>
 
         {/* Target days */}
         <div className="glass-card-sm p-4 space-y-3">
-          <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider arabic-text">مدة الختمة</h3>
+          <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider arabic-text">{t('Khatma duration', 'مدة الختمة')}</h3>
           <div className="grid grid-cols-4 gap-2">
             {PRESETS.map((d) => {
               const on = k.targetDays === d;

@@ -52,7 +52,7 @@ export default function LedgerPage({ onBack }: LedgerPageProps) {
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-white arabic-text">سجل الخيرات</h1>
+            <h1 className="text-base font-semibold text-white arabic-text">{t('Deeds Ledger', 'سجل الخيرات')}</h1>
             <p className="text-[10px] text-[color:var(--text-muted)]">{t('Your private record of devotion', 'سجلّك الخاص للطاعات')}</p>
           </div>
         </div>

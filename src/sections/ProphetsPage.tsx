@@ -10,6 +10,7 @@ interface ProphetsPageProps {
 }
 
 export default function ProphetsPage({ onBack, onOpenSurah }: ProphetsPageProps) {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<Prophet | null>(null);
 
   if (selected) {
@@ -33,8 +34,8 @@ export default function ProphetsPage({ onBack, onOpenSurah }: ProphetsPageProps)
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-white arabic-text">قصص الأنبياء</h1>
-            <p className="text-[10px] text-[color:var(--text-muted)]">٢٥ نبيًّا ذُكروا في القرآن</p>
+            <h1 className="text-base font-semibold text-white arabic-text">{t('Stories of the Prophets', 'قصص الأنبياء')}</h1>
+            <p className="text-[10px] text-[color:var(--text-muted)]">{t('25 prophets mentioned in the Quran', '٢٥ نبيًّا ذُكروا في القرآن')}</p>
           </div>
         </div>
       </header>

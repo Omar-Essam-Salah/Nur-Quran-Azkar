@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Moon, Sunrise, Sunset, Star, CalendarDays } from 'lucide-react';
 import { getUpcomingFasts, classifyFasting, hijriString, type FastDay } from '@/lib/fasting';
+import { useI18n } from '@/i18n';
 
 interface FastingPageProps {
   onBack: () => void;
 }
 
-const to12h = (t: string) => {
+const to12h = (t: string, isAr: boolean) => {
   const [h, m] = t.split(':');
   let hr = parseInt(h, 10);
-  const ap = hr >= 12 ? 'م' : 'ص';
+  const ap = hr >= 12 ? (isAr ? 'م' : 'PM') : (isAr ? 'ص' : 'AM');
   hr = hr % 12 || 12;
   return `${hr}:${m} ${ap}`;
 };
 
 export default function FastingPage({ onBack }: FastingPageProps) {
+  const { t, lang } = useI18n();
+  const isAr = lang === 'ar';
   const [loc, setLoc] = useState<{ lat: number; lng: number }>({ lat: 30.0444, lng: 31.2357 });
 
   useEffect(() => {
@@ -45,8 +48,8 @@ export default function FastingPage({ onBack }: FastingPageProps) {
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-white">صيام التطوّع</h1>
-            <p className="text-[10px] text-[color:var(--text-muted)]">إمساكية السنن والنوافل</p>
+            <h1 className="text-base font-semibold text-white">{t('Voluntary Fasting', 'صيام التطوّع')}</h1>
+            <p className="text-[10px] text-[color:var(--text-muted)]">{t('Timetable for the sunnah & nafl fasts', 'إمساكية السنن والنوافل')}</p>
           </div>
           <Moon size={18} className="text-[#d4af37]" />
         </div>
@@ -55,7 +58,7 @@ export default function FastingPage({ onBack }: FastingPageProps) {
       <div className="px-4 pt-2 pb-8 max-w-lg mx-auto space-y-4">
         {/* Today */}
         <div className="glass-card p-6 text-center space-y-3">
-          <p className="text-xs text-[color:var(--text-muted)] uppercase tracking-widest">اليوم</p>
+          <p className="text-xs text-[color:var(--text-muted)] uppercase tracking-widest">{t('Today', 'اليوم')}</p>
           <p className="text-2xl font-light text-white arabic-text">{todayStr}</p>
           {today.forbidden ? (
             <p className="text-sm text-[#f59e0b]">{today.forbidden}</p>
@@ -69,14 +72,14 @@ export default function FastingPage({ onBack }: FastingPageProps) {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[color:var(--text-muted)]">لا يوجد صيام تطوّع مخصوص اليوم</p>
+            <p className="text-sm text-[color:var(--text-muted)]">{t('No specific voluntary fast today', 'لا يوجد صيام تطوّع مخصوص اليوم')}</p>
           )}
         </div>
 
         {/* Upcoming list */}
         <div className="flex items-center gap-2 px-1">
           <CalendarDays size={14} className="text-[#14879c]" />
-          <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider">أيام الصيام القادمة</h3>
+          <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider">{t('Upcoming fasting days', 'أيام الصيام القادمة')}</h3>
         </div>
 
         <div className="space-y-2">
@@ -88,7 +91,7 @@ export default function FastingPage({ onBack }: FastingPageProps) {
                     {d.weekday} · {d.hijri.day} {d.hijri.monthName}
                   </p>
                   <p className="text-[10px] text-[color:var(--text-muted)]">
-                    {d.date.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' })}
+                    {d.date.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'long' })}
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-end gap-1 max-w-[55%]">
@@ -110,10 +113,10 @@ export default function FastingPage({ onBack }: FastingPageProps) {
 
               <div className="flex items-center gap-4 text-[11px]">
                 <span className="flex items-center gap-1 text-[#6366f1]">
-                  <Sunrise size={12} /> الإمساك {to12h(d.imsak)}
+                  <Sunrise size={12} /> {t('Imsak', 'الإمساك')} {to12h(d.imsak, isAr)}
                 </span>
                 <span className="flex items-center gap-1 text-[#ec4899]">
-                  <Sunset size={12} /> الإفطار {to12h(d.iftar)}
+                  <Sunset size={12} /> {t('Iftar', 'الإفطار')} {to12h(d.iftar, isAr)}
                 </span>
               </div>
             </div>

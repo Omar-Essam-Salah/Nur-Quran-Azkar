@@ -6,10 +6,10 @@ import { useI18n } from '@/i18n';
 
 interface RamadanPageProps { onBack: () => void }
 
-const to12h = (t: string) => {
+const to12h = (t: string, isAr: boolean) => {
   const [h, m] = t.split(':');
   let hr = parseInt(h, 10);
-  const ap = hr >= 12 ? 'م' : 'ص';
+  const ap = hr >= 12 ? (isAr ? 'م' : 'PM') : (isAr ? 'ص' : 'AM');
   hr = hr % 12 || 12;
   return `${hr}:${m} ${ap}`;
 };
@@ -25,7 +25,8 @@ function daysUntilRamadan(from: Date): number {
 }
 
 export default function RamadanPage({ onBack }: RamadanPageProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const isAr = lang === 'ar';
   const [loc, setLoc] = useState({ lat: 30.0444, lng: 31.2357 });
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function RamadanPage({ onBack }: RamadanPageProps) {
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-white arabic-text">وضع رمضان</h1>
+            <h1 className="text-base font-semibold text-white arabic-text">{t('Ramadan Mode', 'وضع رمضان')}</h1>
             <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{h.day} {HIJRI_MONTHS[h.month - 1]} {h.year} هـ</p>
           </div>
           <Moon size={18} className="text-[#d4af37]" />
@@ -70,9 +71,9 @@ export default function RamadanPage({ onBack }: RamadanPageProps) {
         <div className="glass-card p-6 text-center space-y-2">
           {inRamadan ? (
             <>
-              <p className="text-xs text-[#d4af37] uppercase tracking-widest">رمضان كريم</p>
+              <p className="text-xs text-[#d4af37] uppercase tracking-widest">{t('Ramadan Kareem', 'رمضان كريم')}</p>
               <p className="text-5xl font-light text-white">{h.day}</p>
-              <p className="text-sm text-[color:var(--text-muted)] arabic-text">اليوم {h.day} من رمضان</p>
+              <p className="text-sm text-[color:var(--text-muted)] arabic-text">{t(`Day ${h.day} of Ramadan`, `اليوم ${h.day} من رمضان`)}</p>
               <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mt-3">
                 <div className="h-full rounded-full bg-[#d4af37]" style={{ width: `${Math.min(100, (h.day / 30) * 100)}%` }} />
               </div>
@@ -90,13 +91,13 @@ export default function RamadanPage({ onBack }: RamadanPageProps) {
         <div className="grid grid-cols-2 gap-3">
           <div className="glass-card-sm p-5 text-center space-y-2">
             <Sunrise size={22} className="text-[#6366f1] mx-auto" />
-            <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">الإمساك (الفجر)</p>
-            <p className="text-xl font-light text-white">{to12h(times.Fajr)}</p>
+            <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{t('Imsak (Fajr)', 'الإمساك (الفجر)')}</p>
+            <p className="text-xl font-light text-white">{to12h(times.Fajr, isAr)}</p>
           </div>
           <div className="glass-card-sm p-5 text-center space-y-2">
             <Sunset size={22} className="text-[#ec4899] mx-auto" />
-            <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">الإفطار (المغرب)</p>
-            <p className="text-xl font-light text-white">{to12h(times.Maghrib)}</p>
+            <p className="text-[10px] text-[color:var(--text-muted)] arabic-text">{t('Iftar (Maghrib)', 'الإفطار (المغرب)')}</p>
+            <p className="text-xl font-light text-white">{to12h(times.Maghrib, isAr)}</p>
           </div>
         </div>
 

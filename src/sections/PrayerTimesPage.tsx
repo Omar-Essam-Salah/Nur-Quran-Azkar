@@ -328,7 +328,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
     // Tap again while previewing → stop.
     if (previewing) { try { audioEl().pause(); } catch { /* ignore */ } adhanSoundingRef.current = false; setPreviewing(false); return; }
     if (!audioSrc) {
-      alert("جاري تحميل ملف الأذان، انتظر قليلاً...");
+      alert(t('The adhan file is still loading, please wait a moment…', 'جاري تحميل ملف الأذان، انتظر قليلاً...'));
       return;
     }
     try {
@@ -342,10 +342,9 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
       adhanSoundingRef.current = true;
       await a.play();
       setPreviewing(true);
-    } catch (err: any) {
+    } catch {
       setPreviewing(false);
-      console.error("خطأ في معاينة الأذان:", err);
-      alert(`حدث خطأ في تشغيل الأذان: ${err.message || "يرجى المحاولة مرة أخرى"}`);
+      alert(t('Could not play the adhan. Please try again.', 'تعذّر تشغيل الأذان. حاول مرّة أخرى.'));
     }
   };
 
@@ -474,7 +473,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Volume2 size={16} className="text-[#14879c]" />
-                  <span className="text-sm font-medium text-white">صوت المؤذن</span>
+                  <span className="text-sm font-medium text-white">{t('Adhan voice', 'صوت المؤذن')}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -603,8 +602,8 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
             <Moon size={22} className="text-[#d4af37]" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-white arabic-text">صيام التطوّع</p>
-            <p className="text-xs text-[color:var(--text-muted)]">إمساكية السنن والنوافل القادمة</p>
+            <p className="text-sm font-medium text-white arabic-text">{t('Voluntary Fasting', 'صيام التطوّع')}</p>
+            <p className="text-xs text-[color:var(--text-muted)]">{t('Upcoming sunnah & nafl fasts', 'إمساكية السنن والنوافل القادمة')}</p>
           </div>
         </button>
 

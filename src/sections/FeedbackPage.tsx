@@ -35,7 +35,7 @@ export default function FeedbackPage({ onBack }: FeedbackPageProps) {
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-white arabic-text">الشكاوى والمقترحات</h1>
+            <h1 className="text-base font-semibold text-white arabic-text">{t('Feedback & Suggestions', 'الشكاوى والمقترحات')}</h1>
             <p className="text-[10px] text-[color:var(--text-muted)]">{t('Help us improve Nur', 'ساعدنا نطوّر نُور')}</p>
           </div>
           <MessageSquarePlus size={18} className="text-[#14879c]" />

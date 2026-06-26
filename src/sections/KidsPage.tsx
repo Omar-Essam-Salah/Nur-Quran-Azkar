@@ -25,7 +25,7 @@ export default function KidsPage({ onBack, onOpenSurah, onNavigate }: KidsPagePr
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-white arabic-text">ركن الأطفال 🌙</h1>
+            <h1 className="text-base font-semibold text-white arabic-text">{t("Kids' Corner", 'ركن الأطفال')} 🌙</h1>
             <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir={t('ltr', 'rtl')}>{t('Short surahs to learn & repeat', 'سور قصيرة نتعلّمها ونردّدها')}</p>
           </div>
           <Star size={20} className="text-[#d4af37]" fill="currentColor" />
