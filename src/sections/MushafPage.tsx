@@ -30,6 +30,17 @@ const juzForPage = (page: number) => {
 
 const toArabicDigits = (n: number) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[+d]);
 
+// Which word (1-based) is sounding at `ms`, from the reciter's timing segments.
+// Each segment is [wordIndex, …, startMs, endMs]; returns 0 if none/between.
+function wordAt(segments: number[][], ms: number): number {
+  for (const seg of segments) {
+    if (seg.length < 2) continue;
+    const start = seg[seg.length - 2], end = seg[seg.length - 1];
+    if (ms >= start && ms < end) return seg[0] + 1;
+  }
+  return 0;
+}
+
 export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   const { t } = useI18n();
   const [page, setPage] = useState(() => {
@@ -69,12 +80,13 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
   }, []);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const ownerRef = useRef(0); // our claim on the app-wide shared audio element
-  const playlistRef = useRef<{ url: string; key?: string }[]>([]);
+  const playlistRef = useRef<{ url: string; key?: string; segments?: number[][] }[]>([]);
   const idxRef = useRef(0);
   const playingPageRef = useRef<number>(page);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
   const [currentVerseKey, setCurrentVerseKey] = useState<string | null>(null);
+  const [currentWord, setCurrentWord] = useState(0); // word position being recited (0 = none / no timing)
   const [tafsirFollow, setTafsirFollow] = useState(false);
   const [pageVerseKeys, setPageVerseKeys] = useState<string[]>([]);
   const audioPlayingRef = useRef(false);
@@ -96,12 +108,13 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
       } else {
         const res = await fetch(`https://api.quran.com/api/v4/recitations/${reciter.apiId}/by_page/${p}`);
         const data = await res.json();
-        items = ((data?.audio_files ?? []) as { url: string; verse_key?: string }[])
-          .map((f) => ({ url: absoluteAudioUrl(f.url) as string, key: f.verse_key }))
+        items = ((data?.audio_files ?? []) as { url: string; verse_key?: string; segments?: number[][] }[])
+          .map((f) => ({ url: absoluteAudioUrl(f.url) as string, key: f.verse_key, segments: f.segments }))
           .filter((x) => x.url);
       }
       playlistRef.current = items;
       idxRef.current = 0;
+      setCurrentWord(0);
       setAudioLoading(false);
       if (!items.length) { setAudioPlaying(false); return; }
       setCurrentVerseKey(items[0].key ?? null);
@@ -117,9 +130,15 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     a.onplay = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.add('reciting'); };
     a.onpause = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.remove('reciting'); };
     a.onerror = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.remove('reciting'); setAudioPlaying(false); setAudioLoading(false); };
+    a.ontimeupdate = () => {
+      if (!isOwner(ownerRef.current)) return;
+      const seg = playlistRef.current[idxRef.current]?.segments;
+      setCurrentWord(seg && seg.length ? wordAt(seg, a.currentTime * 1000) : 0);
+    };
     a.onended = () => {
       if (!isOwner(ownerRef.current)) return;
       idxRef.current += 1;
+      setCurrentWord(0);
       if (idxRef.current < playlistRef.current.length) {
         const it = playlistRef.current[idxRef.current];
         setCurrentVerseKey(it.key ?? null);
@@ -261,6 +280,13 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Keep the verse being recited in view (the page follows the recitation).
+  useEffect(() => {
+    if (!audioPlaying || !currentVerseKey) return;
+    const el = scrollRef.current?.querySelector("[data-reciting='true']") as HTMLElement | null;
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [currentVerseKey, audioPlaying]);
+
   // Hardware back closes an open overlay (index / tafsir) and stays on the Mushaf.
   useEffect(() => { if (showIndex) return pushBack(() => { setShowIndex(false); return true; }); }, [showIndex]);
   useEffect(() => { if (tafsirFollow) return pushBack(() => { setTafsirFollow(false); return true; }); }, [tafsirFollow]);
@@ -316,11 +342,15 @@ export default function MushafPage({ onBack, initialPage }: MushafPageProps) {
                   return <span key={`e${i}`} className="mushaf-ayah-end">{toArabicDigits(tk.num)}</span>;
                 }
                 const active = tafsirFollow && tk.key === currentVerseKey;
+                const reciting = audioPlaying && tk.key === currentVerseKey;
+                const recitingWord = reciting && currentWord > 0 && tk.pos === currentWord;
                 return (
                   <span
                     key={i}
                     className="mushaf-word"
                     data-active={active ? 'true' : undefined}
+                    data-reciting={reciting ? 'true' : undefined}
+                    data-reciting-word={recitingWord ? 'true' : undefined}
                     onClick={() => onWord(tk.key)}
                   >
                     {tk.text}{' '}

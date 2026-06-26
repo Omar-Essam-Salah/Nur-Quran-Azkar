@@ -37,7 +37,7 @@ async function loadSurah(s: number): Promise<LSurah | null> {
 
 export type PageToken =
   | { kind: 'surah'; surah: number; bismillah: boolean }
-  | { kind: 'word'; text: string; key: string }
+  | { kind: 'word'; text: string; key: string; pos: number } // pos = word position within its ayah (1-based)
   | { kind: 'end'; num: number; key: string };
 
 /** All renderable tokens for one Mushaf page (offline). */
@@ -50,11 +50,11 @@ export async function loadPageTokens(page: number): Promise<PageToken[]> {
     const sp = sStart(s);
     const spanPages = Math.max(1, sNext(s) - sp);
 
-    // Flatten the surah's words in order, tagged with their ayah.
-    const flat: { t: string; ayah: number; last: boolean }[] = [];
+    // Flatten the surah's words in order, tagged with their ayah + word position.
+    const flat: { t: string; ayah: number; last: boolean; pos: number }[] = [];
     for (const v of surah.verses) {
       const n = v.w.length;
-      v.w.forEach((w, i) => flat.push({ t: w.t, ayah: v.a, last: i === n - 1 }));
+      v.w.forEach((w, i) => flat.push({ t: w.t, ayah: v.a, last: i === n - 1, pos: w.p }));
     }
     const total = flat.length || 1;
     const from = Math.floor(((page - sp) / spanPages) * total);
@@ -67,7 +67,7 @@ export async function loadPageTokens(page: number): Promise<PageToken[]> {
 
     for (const w of slice) {
       const key = `${s}:${w.ayah}`;
-      tokens.push({ kind: 'word', text: w.t, key });
+      tokens.push({ kind: 'word', text: w.t, key, pos: w.pos });
       if (w.last) tokens.push({ kind: 'end', num: w.ayah, key });
     }
   }
