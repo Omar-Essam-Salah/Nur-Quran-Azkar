@@ -140,6 +140,8 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
             </div>
             {ayat == null ? (
               <div className="flex justify-center py-6"><Loader2 size={22} className="animate-spin text-[#14879c]" /></div>
+            ) : ayat.length === 0 ? (
+              <p className="text-center text-xs text-[color:var(--text-muted)] py-4 arabic-text">{t('Could not load these ayat — open the surah below.', 'تعذّر تحميل الآيات — افتح السورة بالأسفل.')}</p>
             ) : (
               <div className="space-y-3" dir="rtl">
                 {ayat.map((a) => (

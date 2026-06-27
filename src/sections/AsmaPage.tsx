@@ -88,7 +88,7 @@ export default function AsmaPage({ onBack }: AsmaPageProps) {
           <div
             className="max-w-xs w-full rounded-2xl p-6 text-center space-y-3"
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'linear-gradient(135deg, rgb(16,34,29), rgb(12,27,23))', border: '1px solid rgba(212,175,55,0.3)' }}
+            style={{ background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.98), rgba(var(--glass-2), 0.98))', border: '1px solid rgba(212,175,55,0.3)' }}
           >
             <span className="text-[10px] text-[color:var(--text-muted)]">{selected.n} / 99</span>
             <p className="arabic-text text-4xl text-[#d4af37] gold-glow leading-tight">{selected.name}</p>

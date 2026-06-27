@@ -203,7 +203,7 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
       {showTip && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-6" style={{ background: 'rgba(4,12,16,0.7)' }} onClick={dismissTip}>
           <div className="max-w-xs w-full rounded-2xl p-5 text-center space-y-3" onClick={(e) => e.stopPropagation()}
-            style={{ background: 'linear-gradient(135deg, rgb(16,34,29), rgb(12,27,23))', border: '1px solid rgba(212,175,55,0.25)' }}>
+            style={{ background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.98), rgba(var(--glass-2), 0.98))', border: '1px solid rgba(212,175,55,0.25)' }}>
             <Compass size={34} className="text-[#d4af37] mx-auto" />
             <h2 className="text-base font-semibold text-white arabic-text">معايرة البوصلة</h2>
             <p className="text-xs text-white/80 arabic-text leading-relaxed" dir="rtl">
