@@ -41,7 +41,7 @@ const FEATURES: { page: Page; en: string; ar: string; kw: string; icon: typeof C
   { page: 'mushaf', en: 'Paper Mushaf', ar: 'المصحف الورقي', kw: 'مصحف صفحه page mushaf', icon: BookOpen, color: '#14879c' },
   { page: 'tasbih', en: 'Tasbih', ar: 'السبحة', kw: 'ذكر تسبيح سبحه مسبحه dhikr counter', icon: Sparkles, color: '#14879c' },
   { page: 'asma', en: '99 Names of Allah', ar: 'أسماء الله الحسنى', kw: 'اسماء الحسنى names allah', icon: Sparkles, color: '#14879c' },
-  { page: 'hadith', en: '40 Hadith Nawawi', ar: 'الأربعون النووية', kw: 'حديث اربعون نوويه hadith', icon: BookOpen, color: '#d4af37' },
+  { page: 'hadith', en: 'Hadith', ar: 'الحديث', kw: 'حديث احاديث بخاري مسلم نووي قدسي اربعون سنن hadith bukhari muslim nawawi qudsi', icon: BookOpen, color: '#d4af37' },
   { page: 'khatma', en: 'Khatma Plan', ar: 'خطة الختمة', kw: 'ختمه khatma plan', icon: BookOpen, color: '#14879c' },
   { page: 'fasting', en: 'Fasting', ar: 'صيام التطوّع', kw: 'صيام صوم نوافل fasting', icon: Sparkles, color: '#10b981' },
   { page: 'ramadan', en: 'Ramadan', ar: 'وضع رمضان', kw: 'رمضان ramadan', icon: Sparkles, color: '#d4af37' },

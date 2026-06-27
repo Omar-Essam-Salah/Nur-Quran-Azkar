@@ -12,7 +12,9 @@ interface QiblaPageProps {
 export default function QiblaPage({ onBack }: QiblaPageProps) {
   const { t } = useI18n();
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [qiblaDirection, setQiblaDirection] = useState<number>(45);
+  // null = no fix yet / location unavailable → we show an explicit "unavailable"
+  // state instead of a fake bearing.
+  const [qiblaDirection, setQiblaDirection] = useState<number | null>(null);
   const [compassHeading, setCompassHeading] = useState<number>(0);
   const [locationError, setLocationError] = useState('');
   const [gpsOff, setGpsOff] = useState(false);
@@ -42,9 +44,9 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
         const enabled = await isLocationEnabled();
         setGpsOff(!enabled);
         setLocationError(enabled
-          ? t('Location unavailable — Qibla shown from Makkah.', 'تعذّر تحديد الموقع — القبلة محسوبة من مكة.')
+          ? t('Location unavailable — cannot compute the Qibla.', 'تعذّر تحديد الموقع — لا يمكن حساب اتجاه القبلة.')
           : t('Location (GPS) is off — turn it on for accurate Qibla.', 'خدمة الموقع (GPS) مقفولة — فعّلها لقبلة دقيقة.'));
-        if (!getCachedGeo()) setQiblaDirection(45);
+        if (!getCachedGeo()) setQiblaDirection(null);
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
@@ -190,9 +192,10 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
 
   // The qibla marker sits at this screen angle from the top. Kept CONTINUOUS
   // (no %360) so it rotates the short way as the heading crosses 0°/360°.
-  const qiblaScreen = qiblaDirection - compassHeading;
-  const signedDiff = ((qiblaDirection - compassHeading) % 360 + 540) % 360 - 180; // -180..180
-  const aligned = Math.abs(signedDiff) <= 6; // facing the qibla
+  const hasQibla = qiblaDirection !== null;
+  const qiblaScreen = (qiblaDirection ?? 0) - compassHeading;
+  const signedDiff = (((qiblaDirection ?? 0) - compassHeading) % 360 + 540) % 360 - 180; // -180..180
+  const aligned = hasQibla && Math.abs(signedDiff) <= 6; // facing the qibla
 
   return (
     <div className="page-enter min-h-screen">
@@ -234,7 +237,7 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
         {/* Info */}
         <div className="text-center space-y-2">
           <p className="text-xs text-[color:var(--text-muted)]">
-            {location ? `${t('From', 'من')}: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : t('Using default location', 'يُستخدم الموقع الافتراضي')}
+            {location ? `${t('From', 'من')}: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : t('Location unavailable', 'الموقع غير متاح')}
           </p>
           {locationError && (
             <div className="flex flex-col items-center gap-1.5">
@@ -325,15 +328,18 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
                   ))}
                 </div>
 
-                {/* Qibla arrow + Kaaba marker — points to the Kaaba */}
-                <div className="absolute inset-0" style={{ transform: `rotate(${qiblaScreen}deg)`, transition: 'transform 0.15s linear' }}>
-                  <div className="absolute left-1/2 top-1/2 rounded-full" style={{ width: '3px', height: '40%', transform: 'translate(-50%, -100%)', transformOrigin: 'bottom', background: `linear-gradient(to top, transparent, ${aligned ? '#34d399' : '#d4af37'})` }} />
-                  <div className="absolute left-1/2 -top-1 flex flex-col items-center" style={{ transform: `translateX(-50%) rotate(${-qiblaScreen}deg)` }}>
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: aligned ? '#34d399' : '#d4af37', boxShadow: `0 0 16px ${aligned ? 'rgba(52,211,153,0.8)' : 'rgba(212,175,55,0.7)'}`, transition: 'all 0.3s' }}>
-                      <span style={{ fontSize: '17px', lineHeight: 1 }}>🕋</span>
+                {/* Qibla arrow + Kaaba marker — points to the Kaaba. Hidden when
+                    there is no location fix (no fake bearing). */}
+                {hasQibla && (
+                  <div className="absolute inset-0" style={{ transform: `rotate(${qiblaScreen}deg)`, transition: 'transform 0.15s linear' }}>
+                    <div className="absolute left-1/2 top-1/2 rounded-full" style={{ width: '3px', height: '40%', transform: 'translate(-50%, -100%)', transformOrigin: 'bottom', background: `linear-gradient(to top, transparent, ${aligned ? '#34d399' : '#d4af37'})` }} />
+                    <div className="absolute left-1/2 -top-1 flex flex-col items-center" style={{ transform: `translateX(-50%) rotate(${-qiblaScreen}deg)` }}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: aligned ? '#34d399' : '#d4af37', boxShadow: `0 0 16px ${aligned ? 'rgba(52,211,153,0.8)' : 'rgba(212,175,55,0.7)'}`, transition: 'all 0.3s' }}>
+                        <span style={{ fontSize: '17px', lineHeight: 1 }}>🕋</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Center Hub */}
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -344,7 +350,14 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
               {/* Qibla Info — the big number is LIVE: it's how far you still need
                   to turn, counting down to 0° as you rotate toward the Kaaba. */}
               <div className="mt-6 text-center space-y-1">
-                {aligned ? (
+                {!hasQibla ? (
+                  <>
+                    <p className="text-3xl font-light text-[#f59e0b] tabular-nums">—</p>
+                    <p className="text-[11px] font-semibold text-[#f59e0b] arabic-text" dir="rtl">
+                      {t('Location unavailable — enable GPS to compute the Qibla.', 'الموقع غير متاح — فعّل GPS لحساب اتجاه القبلة.')}
+                    </p>
+                  </>
+                ) : aligned ? (
                   <>
                     <p className="text-3xl font-light text-[#34d399] tabular-nums">0°</p>
                     <div className="flex items-center justify-center gap-1.5">
@@ -362,9 +375,11 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
                     </p>
                   </>
                 )}
-                <p className="text-[10px] text-[color:var(--text-muted)] arabic-text pt-0.5" dir="rtl">
-                  {t('Qibla', 'القبلة')} {Math.round(qiblaDirection)}° · {t('Heading', 'اتجاهك')} {Math.round(((compassHeading % 360) + 360) % 360)}°
-                </p>
+                {qiblaDirection !== null && (
+                  <p className="text-[10px] text-[color:var(--text-muted)] arabic-text pt-0.5" dir="rtl">
+                    {t('Qibla', 'القبلة')} {Math.round(qiblaDirection)}° · {t('Heading', 'اتجاهك')} {Math.round(((compassHeading % 360) + 360) % 360)}°
+                  </p>
+                )}
               </div>
             </div>
           </div>

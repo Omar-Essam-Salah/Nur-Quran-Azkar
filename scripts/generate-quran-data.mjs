@@ -7,10 +7,17 @@
 import { writeFileSync, mkdirSync } from 'fs';
 
 const API = 'https://api.quran.com/api/v4';
-const TRANSLATION = 131; // Dr. Mustafa Khattab — The Clear Quran
+const TRANSLATION = 20; // Saheeh International
 const OUT = 'public/data/surah';
 
-const stripTags = (s) => (s ?? '').replace(/<sup[^>]*>.*?<\/sup>/gis, '').replace(/<[^>]+>/g, '').trim();
+// Strip translation footnote markup. Throws loudly on empty/undefined input —
+// sacred + translation text must NEVER silently degrade to an empty string.
+const stripTags = (s, where) => {
+  if (typeof s !== 'string' || s.length === 0) throw new Error(`stripTags: missing text at ${where}`);
+  const out = s.replace(/<sup[^>]*>.*?<\/sup>/gis, '').replace(/<[^>]+>/g, '').trim();
+  if (!out.length) throw new Error(`stripTags: text became empty after cleanup at ${where}`);
+  return out;
+};
 
 mkdirSync(OUT, { recursive: true });
 
@@ -32,12 +39,20 @@ for (let ch = 1; ch <= 114; ch++) {
     if (!res.ok) throw new Error(`surah ${ch} page ${page}: HTTP ${res.status}`);
     const data = await res.json();
     for (const v of data.verses) {
+      const key = `${ch}:${v.verse_number}`;
+      if (typeof v.text_uthmani !== 'string' || !v.text_uthmani.length) throw new Error(`Missing text_uthmani at ${key}`);
+      if (typeof v.text_uthmani_tajweed !== 'string' || !v.text_uthmani_tajweed.length) throw new Error(`Missing tajweed at ${key}`);
+      const words = (v.words ?? []).filter((w) => w.char_type_name === 'word').map((w) => {
+        if (typeof w.text_uthmani !== 'string' || !w.text_uthmani.length) throw new Error(`Missing word text at ${key} pos ${w.position}`);
+        return { p: w.position, t: w.text_uthmani };
+      });
+      if (!words.length) throw new Error(`No words at ${key}`);
       verses.push({
         a: v.verse_number,
-        t: v.text_uthmani ?? '',
-        j: v.text_uthmani_tajweed ?? '',
-        w: (v.words ?? []).filter((w) => w.char_type_name === 'word').map((w) => ({ p: w.position, t: w.text_uthmani ?? '' })),
-        r: stripTags(v.translations?.[0]?.text),
+        t: v.text_uthmani,
+        j: v.text_uthmani_tajweed,
+        w: words,
+        r: stripTags(v.translations?.[0]?.text, key),
       });
     }
     if (!data.pagination.next_page) break;

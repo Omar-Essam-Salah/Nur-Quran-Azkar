@@ -108,10 +108,11 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
     }
     const fetched = await Promise.all(keys.map(async (k) => {
       try {
-        const res = await fetch(`https://api.quran.com/api/v4/recitations/${reciter.apiId}/by_ayah/${k}`);
+        // by_key (not by_ayah) is the endpoint that returns word-timing segments.
+        const res = await fetch(`https://api.quran.com/api/v4/verses/by_key/${k}?audio=${reciter.apiId}&words=false`);
         const data = await res.json();
-        const f = ((data?.audio_files ?? []) as { url: string; segments?: number[][] }[])[0];
-        if (f?.url) return { url: absoluteAudioUrl(f.url) as string, key: k, segments: f.segments };
+        const audio = (data?.verse?.audio ?? null) as { url?: string; segments?: number[][] } | null;
+        if (audio?.url) return { url: absoluteAudioUrl(audio.url) as string, key: k, segments: audio.segments };
       } catch { /* skip this ayah */ }
       return undefined;
     }));
@@ -379,7 +380,7 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
                   return (
                     <span key={`s${i}`} className="mushaf-surah-block">
                       <span className="mushaf-surah-name">سورة {name}</span>
-                      {tk.bismillah && <span className="mushaf-bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</span>}
+                      {tk.bismillah && <span className="mushaf-bismillah">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span>}
                     </span>
                   );
                 }

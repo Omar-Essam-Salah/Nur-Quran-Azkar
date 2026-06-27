@@ -5,7 +5,7 @@
 
 import type { SurahContent, NormVerse } from './quranApi';
 
-export const BUNDLED_TRANSLATION_ID = 131; // Dr. Mustafa Khattab — The Clear Quran
+export const BUNDLED_TRANSLATION_ID = 20; // Saheeh International
 
 interface LocalAyah {
   a: number;            // ayah number

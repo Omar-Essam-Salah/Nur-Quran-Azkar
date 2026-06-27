@@ -134,8 +134,9 @@ const AyahView = memo(function AyahView({
                   onClick={() => setActiveWordPopup(activeWordPopup === w.position ? null : w.position)}
                   className="cursor-pointer rounded px-0.5 transition-colors"
                   style={lit ? { color: '#d4af37', background: 'rgba(212, 175, 55, 0.14)' } : undefined}
-                  dangerouslySetInnerHTML={{ __html: w.text }}
-                />
+                >
+                  {w.text}
+                </span>
                 
                 {/* Word Meaning Popover */}
                 {activeWordPopup === w.position && (wordTranslation || wordTransliteration) && (

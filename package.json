@@ -9,9 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "gen:quran": "node scripts/generate-quran-data.mjs",
+    "gen:pagemap": "node scripts/generate-page-map.mjs",
     "gen:hadith": "node scripts/generate-hadith.mjs",
     "gen:asma": "node scripts/generate-asma.mjs",
-    "setup:content": "node scripts/generate-quran-data.mjs && node scripts/generate-hadith.mjs && node scripts/generate-asma.mjs"
+    "setup:content": "node scripts/generate-quran-data.mjs && node scripts/generate-page-map.mjs && node scripts/generate-hadith.mjs && node scripts/generate-asma.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
