@@ -1,7 +1,7 @@
 import {
   Compass, Hash, BookMarked, Moon, Target, CalendarDays, Sparkles, BookOpen, ScrollText,
   Bookmark, Settings as SettingsIcon, Languages, ChevronLeft, HeartHandshake, BookText,
-  Coins, Star, MessageSquarePlus, ShieldCheck,
+  Coins, Star, MessageSquarePlus, ShieldCheck, PersonStanding, BookOpenCheck,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import type { Page } from '@/types';
@@ -21,6 +21,7 @@ const GROUPS: { en: string; ar: string; items: Item[] }[] = [
   {
     en: 'Worship', ar: 'العبادات',
     items: [
+      { page: 'prayer-learn', en: 'Learn to Pray', ar: 'تعلّم الصلاة', icon: PersonStanding, color: '#34d399' },
       { page: 'guide', en: 'Muslim Guide', ar: 'دليل المسلم', icon: BookText, color: '#10b981' },
       { page: 'tasbih', en: 'Tasbih', ar: 'السبحة', icon: Hash, color: '#14879c' },
       { page: 'qibla', en: 'Qibla', ar: 'القبلة', icon: Compass, color: '#f472b6' },
@@ -33,6 +34,7 @@ const GROUPS: { en: string; ar: string; items: Item[] }[] = [
     en: 'Quran', ar: 'القرآن',
     items: [
       { page: 'mushaf', en: 'Paper Mushaf', ar: 'المصحف الورقي', icon: BookMarked, color: '#14879c' },
+      { page: 'muhkamat', en: 'Clear Verses', ar: 'الآيات المحكمات', icon: BookOpenCheck, color: '#d4af37' },
       { page: 'khatma', en: 'Khatma Plan', ar: 'خطة الختمة', icon: Target, color: '#14879c' },
       { page: 'kids', en: "Kids' Corner", ar: 'ركن الأطفال', icon: Star, color: '#f59e0b' },
     ],

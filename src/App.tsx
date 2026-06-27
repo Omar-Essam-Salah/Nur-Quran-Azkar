@@ -21,6 +21,8 @@ import ZakatPage from '@/sections/ZakatPage';
 import KidsPage from '@/sections/KidsPage';
 import FeedbackPage from '@/sections/FeedbackPage';
 import AuthenticityPage from '@/sections/AuthenticityPage';
+import PrayerLearnPage from '@/sections/PrayerLearnPage';
+import MuhkamatPage from '@/sections/MuhkamatPage';
 import MorePage from '@/sections/MorePage';
 import TasbihPage from '@/sections/TasbihPage';
 import BookmarksPage from '@/sections/BookmarksPage';
@@ -349,6 +351,16 @@ function App() {
         {/* Authenticity / verify */}
         {currentPage === 'authenticity' && (
           <AuthenticityPage onBack={goBack} />
+        )}
+
+        {/* Learn to pray (wudū + ṣalāh) */}
+        {currentPage === 'prayer-learn' && (
+          <PrayerLearnPage onBack={goBack} />
+        )}
+
+        {/* Clear verses (muḥkamāt) */}
+        {currentPage === 'muhkamat' && (
+          <MuhkamatPage onBack={goBack} />
         )}
 
         {/* Ramadan mode */}
