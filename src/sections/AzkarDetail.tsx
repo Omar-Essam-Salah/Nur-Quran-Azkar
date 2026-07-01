@@ -1,11 +1,21 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Celebration } from '@/components/Celebration';
-import { ArrowLeft, Bookmark, BookmarkCheck, RotateCcw, ChevronRight, Volume2, Info, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Bookmark, BookmarkCheck, RotateCcw, ChevronRight, Volume2, Info, Plus, Trash2, Play, Pause, Loader2 } from 'lucide-react';
 import { getAzkarCategoryById } from '@/data/azkarData';
 import { getCustomAdhkar, addCustomDhikr, removeCustomDhikr, MY_ADHKAR_ID } from '@/lib/customAdhkar';
+import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
 import type { AzkarItem } from '@/types';
 import { useI18n } from '@/i18n';
 import { haptic } from '@/lib/haptics';
+
+// A full recited track for the morning/evening adhkār (Faisal Labban, hosted on
+// the Internet Archive — streamed and cached after first play, so it then works
+// offline). The recitation includes the Qur'anic adhkār (Āyat al-Kursī, the
+// Muʿawwidhāt) in context.
+const AZKAR_AUDIO: Record<string, string> = {
+  morning: 'https://archive.org/download/AthkarAlm2472472472472474aaFaisalLabban/Athkar%20Alsabah%20-%20Faisal%20Labban.mp3',
+  evening: 'https://archive.org/download/AthkarAlm2472472472472474aaFaisalLabban/Athkar%20Almasaa%20-%20Faisal%20Labban.mp3',
+};
 
 interface AzkarDetailProps {
   categoryId: string;
@@ -25,6 +35,29 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
   const [itemCounts, setItemCounts] = useState<Record<string, number>>({});
   const [showTransliteration, setShowTransliteration] = useState(true);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+
+  // ── Full-track recitation (morning / evening only) ──
+  const audioUrl = AZKAR_AUDIO[categoryId];
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const audioOwnerRef = useRef(0);
+  useEffect(() => () => { if (isOwner(audioOwnerRef.current)) { try { audioEl().pause(); } catch { /* ignore */ } } }, []);
+  const toggleFullAudio = () => {
+    const a = audioEl();
+    if (audioPlaying) { a.pause(); setAudioPlaying(false); return; }
+    unlockAudio();
+    const token = claimAudio();
+    audioOwnerRef.current = token;
+    a.onplaying = () => { if (isOwner(token)) { setAudioLoading(false); setAudioPlaying(true); } };
+    a.onwaiting = () => { if (isOwner(token)) setAudioLoading(true); };
+    a.onpause = () => { if (isOwner(token)) setAudioPlaying(false); };
+    a.onended = () => { if (isOwner(token)) { setAudioPlaying(false); setAudioLoading(false); } };
+    a.onerror = () => { if (isOwner(token)) { setAudioPlaying(false); setAudioLoading(false); } };
+    a.src = audioUrl;
+    setAudioLoading(true);
+    try { a.load(); } catch { /* ignore */ }
+    void a.play().catch(() => { if (isOwner(token)) { setAudioLoading(false); setAudioPlaying(false); } });
+  };
 
   // ── My-Adhkar add form ──
   const [newArabic, setNewArabic] = useState('');
@@ -155,17 +188,32 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
               <span className="text-[10px] text-[#14879c]">{totalCurrent}/{totalTarget} ({progressPercent}%)</span>
             </div>
             <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${progressPercent}%`,
-                  background: allCompleted 
-                    ? 'linear-gradient(90deg, #10b981, #34d399)' 
+                  background: allCompleted
+                    ? 'linear-gradient(90deg, #10b981, #34d399)'
                     : 'linear-gradient(90deg, #14879c, #14b8a6)',
                 }}
               />
             </div>
           </div>
+
+          {/* Full recited track (morning / evening) */}
+          {audioUrl && (
+            <button onClick={toggleFullAudio}
+              className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all"
+              style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
+              <span className="w-8 h-8 rounded-full bg-[#d4af37]/20 flex items-center justify-center flex-shrink-0">
+                {audioLoading ? <Loader2 size={15} className="animate-spin text-[#d4af37]" /> : audioPlaying ? <Pause size={15} className="text-[#d4af37]" /> : <Play size={15} className="text-[#d4af37]" fill="currentColor" />}
+              </span>
+              <div className="flex-1 min-w-0 text-right">
+                <p className="text-[12.5px] font-semibold text-[#d4af37] arabic-text">{audioPlaying ? t('Playing…', 'جارٍ التشغيل…') : t('Listen to the full adhkār', 'استمع للأذكار كاملة')}</p>
+                <p className="text-[9px] text-[color:var(--text-muted)] arabic-text">{t('Recited by Faisal Labban', 'بصوت فيصل لبان')}</p>
+              </div>
+            </button>
+          )}
 
           {/* Toggle Transliteration — only useful for non-Arabic readers */}
           {!isAr && (

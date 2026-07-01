@@ -23,6 +23,7 @@ import FeedbackPage from '@/sections/FeedbackPage';
 import AuthenticityPage from '@/sections/AuthenticityPage';
 import PrayerLearnPage from '@/sections/PrayerLearnPage';
 import MuhkamatPage from '@/sections/MuhkamatPage';
+import OccasionsPage from '@/sections/OccasionsPage';
 import MorePage from '@/sections/MorePage';
 import TasbihPage from '@/sections/TasbihPage';
 import BookmarksPage from '@/sections/BookmarksPage';
@@ -361,6 +362,11 @@ function App() {
         {/* Clear verses (muḥkamāt) */}
         {currentPage === 'muhkamat' && (
           <MuhkamatPage onBack={goBack} />
+        )}
+
+        {/* Islamic occasions + reminders */}
+        {currentPage === 'occasions' && (
+          <OccasionsPage onBack={goBack} />
         )}
 
         {/* Ramadan mode */}
