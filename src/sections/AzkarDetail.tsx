@@ -303,8 +303,9 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
                     </div>
                   </div>
 
-                  {/* Arabic Text */}
-                  <p className="arabic-text text-lg text-white leading-relaxed text-right">
+                  {/* Arabic Text (whitespace-pre-line so multi-part adhkār like the
+                      three Quls keep their line breaks) */}
+                  <p className="arabic-text text-lg text-white leading-relaxed text-right whitespace-pre-line">
                     {item.arabic}
                   </p>
 
