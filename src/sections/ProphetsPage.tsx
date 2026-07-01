@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, BookOpen, ChevronLeft, Loader2 } from 'lucide-react';
-import { PROPHETS, type Prophet } from '@/data/prophets';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, BookOpen, ChevronLeft, Loader2, Play, Pause } from 'lucide-react';
+import { PROPHETS, PROPHET_AUDIO, PROPHET_AUDIO_RECITER, type Prophet } from '@/data/prophets';
 import { loadAyahRange, type SimpleAyah } from '@/lib/localQuran';
+import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
 import { useI18n } from '@/i18n';
 
 interface ProphetsPageProps {
@@ -70,6 +71,12 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
   const story = isAr ? prophet.story : (prophet.storyEn ?? prophet.story);
   const [ayat, setAyat] = useState<SimpleAyah[] | null>(null);
 
+  // Optional audio narration (streamed from the Internet Archive, cached after).
+  const audioUrl = PROPHET_AUDIO[prophet.id];
+  const [playing, setPlaying] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const ownerRef = useRef(0);
+
   useEffect(() => {
     let active = true;
     setAyat(null);
@@ -81,6 +88,26 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
     }
     return () => { active = false; };
   }, [prophet]);
+
+  // Stop our audio when leaving the detail (only if we still own the element).
+  useEffect(() => () => { if (isOwner(ownerRef.current)) { try { audioEl().pause(); } catch { /* ignore */ } } }, []);
+
+  const toggleAudio = () => {
+    const a = audioEl();
+    if (playing) { a.pause(); setPlaying(false); return; }
+    unlockAudio();
+    const token = claimAudio();
+    ownerRef.current = token;
+    a.onplaying = () => { if (isOwner(token)) { setAudioLoading(false); setPlaying(true); } };
+    a.onwaiting = () => { if (isOwner(token)) setAudioLoading(true); };
+    a.onpause = () => { if (isOwner(token)) setPlaying(false); };
+    a.onended = () => { if (isOwner(token)) { setPlaying(false); setAudioLoading(false); } };
+    a.onerror = () => { if (isOwner(token)) { setPlaying(false); setAudioLoading(false); } };
+    a.src = audioUrl;
+    setAudioLoading(true);
+    try { a.load(); } catch { /* ignore */ }
+    void a.play().catch(() => { if (isOwner(token)) { setAudioLoading(false); setPlaying(false); } });
+  };
 
   const passageSurahName = prophet.passage
     ? prophet.refs.find((r) => r.n === prophet.passage!.surah)?.name ?? `سورة ${prophet.passage.surah}`
@@ -117,6 +144,15 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
           </div>
           <h2 className="text-2xl font-bold text-white arabic-text">{prophet.name}</h2>
           <p className={`text-xs text-[color:var(--text-muted)] ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>{isAr ? prophet.note : (prophet.noteEn ?? prophet.note)}</p>
+          {audioUrl && (
+            <div className="pt-1 flex flex-col items-center gap-1">
+              <button onClick={toggleAudio} className="glass-btn px-4 py-2 text-sm flex items-center gap-2">
+                {audioLoading ? <Loader2 size={15} className="animate-spin" /> : playing ? <Pause size={15} /> : <Play size={15} />}
+                <span className="arabic-text">{playing ? t('Pause', 'إيقاف') : t('Listen to the story', 'استمع إلى القصة')}</span>
+              </button>
+              <p className="text-[9px] text-[color:var(--text-muted)] arabic-text">{isAr ? PROPHET_AUDIO_RECITER.ar : PROPHET_AUDIO_RECITER.en}</p>
+            </div>
+          )}
         </div>
 
         {/* Story */}

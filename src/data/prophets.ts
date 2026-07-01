@@ -197,3 +197,31 @@ export const PROPHETS: Prophet[] = [
     passage: { surah: 93, from: 1, to: 11 },
   },
 ];
+
+// Optional audio narration per prophet — the "Qaṣaṣ al-Anbiyāʾ" lecture series by
+// Sheikh Nabīl al-ʿAwaḍī, hosted on the Internet Archive (archive.org). Streamed
+// on demand and cached after first play (so it then works offline). Some episodes
+// cover two prophets, so a few ids share one file.
+const AWADI = 'https://archive.org/download/al3awadi-qasas-anbiya/';
+export const PROPHET_AUDIO: Record<string, string> = {
+  ibrahim: AWADI + '001.mp3',
+  idris: AWADI + '002.mp3',
+  nuh: AWADI + '002.mp3',
+  adam: AWADI + '003.mp3',
+  ayyub: AWADI + '005.mp3',
+  dawud: AWADI + '006.mp3',
+  zakariyya: AWADI + '007.mp3',
+  yahya: AWADI + '007.mp3',
+  sulayman: AWADI + '008.mp3',
+  shuayb: AWADI + '009.mp3',
+  salih: AWADI + '010.mp3',
+  isa: AWADI + '011.mp3',
+  lut: AWADI + '012.mp3',
+  muhammad: AWADI + '013.mp3',
+  musa: AWADI + '015.mp3',
+  harun: AWADI + '015.mp3',
+  hud: AWADI + '016.mp3',
+  yusuf: AWADI + '017.mp3',
+  yunus: AWADI + '019.mp3',
+};
+export const PROPHET_AUDIO_RECITER = { ar: 'بصوت الشيخ نبيل العوضي', en: 'Narrated by Sheikh Nabīl al-ʿAwaḍī' };

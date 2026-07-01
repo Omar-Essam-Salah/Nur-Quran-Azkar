@@ -56,6 +56,19 @@ export default defineConfig({
             },
           },
           {
+            // Prophet-stories narration (Internet Archive) — cached after the
+            // first play so it then works offline. `includes` also matches the
+            // ia######.us.archive.org node the download URL redirects to.
+            urlPattern: ({ url }) => url.hostname.includes('archive.org'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'prophet-audio',
+              rangeRequests: true,
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [200, 206] },
+            },
+          },
+          {
             // Prayer times + hijri date
             urlPattern: ({ url }) => url.hostname === 'api.aladhan.com',
             handler: 'StaleWhileRevalidate',

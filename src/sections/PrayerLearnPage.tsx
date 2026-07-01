@@ -68,8 +68,8 @@ export default function PrayerLearnPage({ onBack }: Props) {
             <button key={id} onClick={() => setTab(id as Tab)}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold arabic-text flex items-center justify-center gap-2 transition-all"
               style={tab === id
-                ? { background: 'rgba(212,175,55,0.18)', color: '#d4af37', border: '1px solid rgba(212,175,55,0.4)' }
-                : { background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)', border: '1px solid transparent' }}>
+                ? { background: 'rgba(212,175,55,0.22)', color: '#d4af37', border: '1px solid rgba(212,175,55,0.45)' }
+                : { background: 'rgba(var(--glass-1), 0.8)', color: 'var(--text-muted)', border: '1px solid rgba(var(--hair), 0.12)' }}>
               <Icon size={15} /> {label}
             </button>
           ))}
