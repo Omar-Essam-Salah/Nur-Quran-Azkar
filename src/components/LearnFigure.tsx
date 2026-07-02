@@ -21,52 +21,53 @@ export default function LearnFigure({ pose, className }: Props) {
     <svg viewBox="0 0 100 100" className={className} role="img" aria-label={pose}>{children}</svg>
   );
 
+  const fill = { fill: 'currentColor' };
   switch (pose) {
-    // ── Prayer postures (stick figures, rounded) ──
-    case 'takbir': // standing, hands raised by the ears
+    // ── Prayer postures (dignified filled silhouettes of a person in a thobe) ──
+    case 'takbir': // standing, hands raised beside the head
       return body(<>
-        <circle cx="50" cy="20" r="8" fill="currentColor" />
-        <path {...stroke} d="M50 29 V66" />
-        <path {...stroke} d="M50 66 L41 90 M50 66 L59 90" />
-        <path {...stroke} d="M50 40 L35 41 L37 25 M50 40 L65 41 L63 25" />
+        <circle cx="50" cy="17" r="8.5" {...fill} />
+        <path {...fill} d="M42 30 Q50 26 58 30 L62 86 Q50 90 38 86 Z" />
+        <path {...fill} d="M42 34 L31 21 Q29 18 32 17 Q34 16 36 19 L47 32 Z" />
+        <path {...fill} d="M58 34 L69 21 Q71 18 68 17 Q66 16 64 19 L53 32 Z" />
       </>);
     case 'qiyam': // standing, right hand over left on the chest
     case 'itidal':
       return body(<>
-        <circle cx="50" cy="20" r="8" fill="currentColor" />
-        <path {...stroke} d="M50 29 V66" />
-        <path {...stroke} d="M50 66 L41 90 M50 66 L59 90" />
-        <path {...stroke} d="M40 40 L50 55 L60 40" />
+        <circle cx="50" cy="17" r="8.5" {...fill} />
+        <path {...fill} d="M42 30 Q50 26 58 30 L62 86 Q50 90 38 86 Z" />
+        <path {...fill} d="M39 45 Q50 53 61 45 L58 54 Q50 59 42 54 Z" opacity="0.85" />
       </>);
-    case 'ruku': // bowing, back level, hands on knees (faces left)
+    case 'ruku': // bowing, back level, hands toward the knees (faces left)
       return body(<>
-        <circle cx="20" cy="52" r="8" fill="currentColor" />
-        <path {...stroke} d="M28 52 H58" />
-        <path {...stroke} d="M58 52 L55 78 L51 90 M58 52 L62 78 L66 90" />
-        <path {...stroke} d="M40 54 L40 76" />
+        <circle cx="20" cy="42" r="8.5" {...fill} />
+        <path {...fill} d="M27 37 Q44 33 60 40 Q64 42 62 47 L58 51 Q42 49 28 49 Z" />
+        <path {...fill} d="M50 49 L47 86 L41 86 L45 50 Z" />
+        <path {...fill} d="M60 47 L62 86 L55 86 L54 50 Z" />
+        <path {...fill} d="M33 48 L31 70 L36 70 L38 49 Z" opacity="0.9" />
       </>);
-    case 'sujud': // prostration
+    case 'sujud': // prostration — forehead to the ground, hips raised
       return body(<>
-        <circle cx="24" cy="74" r="8" fill="currentColor" />
-        <path {...stroke} d="M60 56 L34 74" />
-        <path {...stroke} d="M60 58 L60 86 H78" />
-        <path {...stroke} d="M40 70 L30 84" />
+        <circle cx="24" cy="72" r="8.5" {...fill} />
+        <path {...fill} d="M60 52 Q48 56 34 68 L30 73 Q28 76 33 77 L62 60 Q65 55 60 52 Z" />
+        <path {...fill} d="M58 56 L64 84 L54 84 L52 60 Z" />
+        <path {...fill} d="M62 80 L82 80 L82 86 L60 86 Z" />
+        <path {...fill} d="M34 68 L25 82 L30 84 L40 71 Z" opacity="0.9" />
       </>);
-    case 'julus': // sitting on the heels
+    case 'julus': // sitting back on the heels
     case 'tasleem':
       return body(<>
-        <circle cx="46" cy="26" r="8" fill="currentColor" />
-        <path {...stroke} d="M46 34 V58" />
-        <path {...stroke} d="M46 58 L46 70 L72 74" />
-        <path {...stroke} d="M46 44 L62 60" />
+        <circle cx="44" cy="23" r="8.5" {...fill} />
+        <path {...fill} d="M36 33 Q44 29 52 33 L56 60 Q56 64 51 64 L52 69 L36 69 L37 64 Q33 64 33 60 Z" />
+        <path {...fill} d="M34 65 Q52 61 74 70 L74 77 Q52 72 34 74 Z" />
       </>);
-    case 'tashahhud': // sitting, index finger raised
+    case 'tashahhud': // sitting, right index finger raised
       return body(<>
-        <circle cx="46" cy="26" r="8" fill="currentColor" />
-        <path {...stroke} d="M46 34 V58" />
-        <path {...stroke} d="M46 58 L46 70 L72 74" />
-        <path {...stroke} d="M46 44 L64 52" />
-        <path {...stroke} d="M64 52 V40" />
+        <circle cx="44" cy="23" r="8.5" {...fill} />
+        <path {...fill} d="M36 33 Q44 29 52 33 L56 60 Q56 64 51 64 L52 69 L36 69 L37 64 Q33 64 33 60 Z" />
+        <path {...fill} d="M34 65 Q52 61 74 70 L74 77 Q52 72 34 74 Z" />
+        <path {...fill} d="M50 46 L66 42 L67 46 L52 51 Z" />
+        <path {...fill} d="M64 44 L69 44 L69 33 L64 34 Z" />
       </>);
 
     // ── Wudū steps (a body part + a droplet) ──

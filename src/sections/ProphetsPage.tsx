@@ -76,7 +76,16 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
   const audioUrl = PROPHET_AUDIO[prophet.id];
   const [playing, setPlaying] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
+  const [curTime, setCurTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const ownerRef = useRef(0);
+  const started = playing || audioLoading || curTime > 0;
+  const fmtTime = (s: number) => {
+    if (!Number.isFinite(s) || s < 0) s = 0;
+    const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  };
+  const seek = (v: number) => { const a = audioEl(); if (isOwner(ownerRef.current)) { try { a.currentTime = v; } catch { /* ignore */ } setCurTime(v); } };
 
   useEffect(() => {
     let active = true;
@@ -102,9 +111,13 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
     a.onplaying = () => { if (isOwner(token)) { setAudioLoading(false); setPlaying(true); } };
     a.onwaiting = () => { if (isOwner(token)) setAudioLoading(true); };
     a.onpause = () => { if (isOwner(token)) setPlaying(false); };
-    a.onended = () => { if (isOwner(token)) { setPlaying(false); setAudioLoading(false); } };
+    a.onended = () => { if (isOwner(token)) { setPlaying(false); setAudioLoading(false); setCurTime(0); } };
     a.onerror = () => { if (isOwner(token)) { setPlaying(false); setAudioLoading(false); } };
+    a.ontimeupdate = () => { if (isOwner(token)) setCurTime(a.currentTime || 0); };
+    a.onloadedmetadata = () => { if (isOwner(token)) setDuration(a.duration || 0); };
+    a.ondurationchange = () => { if (isOwner(token)) setDuration(a.duration || 0); };
     a.src = audioUrl;
+    setCurTime(0); setDuration(0);
     setAudioLoading(true);
     try { a.load(); } catch { /* ignore */ }
     void a.play().catch(() => { if (isOwner(token)) { setAudioLoading(false); setPlaying(false); } });
@@ -146,11 +159,21 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
           <h2 className="text-2xl font-bold text-white arabic-text">{prophet.name}</h2>
           <p className={`text-xs text-[color:var(--text-muted)] ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>{isAr ? prophet.note : (prophet.noteEn ?? prophet.note)}</p>
           {audioUrl && (
-            <div className="pt-1 flex flex-col items-center gap-1">
+            <div className="pt-1 flex flex-col items-center gap-2">
               <button onClick={toggleAudio} className="glass-btn px-4 py-2 text-sm flex items-center gap-2">
                 {audioLoading ? <Loader2 size={15} className="animate-spin" /> : playing ? <Pause size={15} /> : <Play size={15} />}
-                <span className="arabic-text">{playing ? t('Pause', 'إيقاف') : t('Listen to the story', 'استمع إلى القصة')}</span>
+                <span className="arabic-text">{playing ? t('Pause', 'إيقاف') : started ? t('Resume', 'استكمال') : t('Listen to the story', 'استمع إلى القصة')}</span>
               </button>
+              {/* Seek bar — jump to any point once playback has started */}
+              {started && (
+                <div className="w-full flex items-center gap-2" dir="ltr">
+                  <span className="text-[9px] text-[color:var(--text-muted)] tabular-nums w-8 text-right">{fmtTime(curTime)}</span>
+                  <input type="range" min={0} max={duration || 0} step={1} value={Math.min(curTime, duration || 0)}
+                    onChange={(e) => seek(Number(e.target.value))}
+                    className="flex-1 accent-[#d4af37] h-1 cursor-pointer" aria-label="Seek" />
+                  <span className="text-[9px] text-[color:var(--text-muted)] tabular-nums w-8">{fmtTime(duration)}</span>
+                </div>
+              )}
               <p className="text-[9px] text-[color:var(--text-muted)] arabic-text">{isAr ? PROPHET_AUDIO_RECITER.ar : PROPHET_AUDIO_RECITER.en}</p>
             </div>
           )}

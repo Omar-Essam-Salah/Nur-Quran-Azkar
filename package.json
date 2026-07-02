@@ -15,6 +15,7 @@
     "setup:content": "node scripts/generate-quran-data.mjs && node scripts/generate-page-map.mjs && node scripts/generate-hadith.mjs && node scripts/generate-asma.mjs"
   },
   "dependencies": {
+    "@capacitor-community/text-to-speech": "^8.0.2",
     "@capacitor/android": "^8.4.1",
     "@capacitor/app": "^8.1.0",
     "@capacitor/cli": "^8.4.1",

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, Search, BookOpen, GripHorizontal } from 'lucide-react';
-import { getReciter, everyayahUrl } from '@/data/reciters';
+import { ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, Search, BookOpen, GripHorizontal, Mic2, Check } from 'lucide-react';
+import { getReciter, everyayahUrl, RECITERS } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
 import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
 import { pushBack } from '@/lib/backStack';
@@ -79,10 +79,16 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
 
   // ── Page recitation audio (plays the current page's verses in sequence,
   //    then auto-advances to the next page). Online feature. ──
-  const reciter = useMemo(() => {
-    try { return getReciter(JSON.parse(localStorage.getItem('nur-settings') || '{}').reciter); }
-    catch { return getReciter(undefined); }
-  }, []);
+  const [reciterId, setReciterId] = useState<string | undefined>(() => {
+    try { return JSON.parse(localStorage.getItem('nur-settings') || '{}').reciter; } catch { return undefined; }
+  });
+  const reciter = useMemo(() => getReciter(reciterId), [reciterId]);
+  const [showReciters, setShowReciters] = useState(false);
+  const changeReciter = (id: string) => {
+    setReciterId(id);
+    try { const s = JSON.parse(localStorage.getItem('nur-settings') || '{}'); s.reciter = id; localStorage.setItem('nur-settings', JSON.stringify(s)); } catch { /* ignore */ }
+    setShowReciters(false);
+  };
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const ownerRef = useRef(0); // our claim on the app-wide shared audio element
   const playlistRef = useRef<{ url: string; key?: string; segments?: number[][] }[]>([]);
@@ -188,6 +194,12 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
     if (audioPlaying && playingPageRef.current !== page) void loadAndPlayPage(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
+
+  // Switching reciter mid-recitation → reload the current page with the new voice.
+  useEffect(() => {
+    if (audioPlayingRef.current) void loadAndPlayPage(pageRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reciterId]);
 
   // Stop audio on unmount (only if we still own the shared element).
   useEffect(() => () => { if (isOwner(ownerRef.current)) { try { audioEl().pause(); } catch { /* ignore */ } document.body.classList.remove('reciting'); } }, []);
@@ -432,6 +444,9 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
           <button onClick={toggleAudio} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Recite" title={t('Recite the verses', 'تلاوة الآيات')}>
             {audioLoading ? <Loader2 size={17} className="text-[#14879c] animate-spin" /> : audioPlaying ? <Pause size={17} className="text-[#14879c]" fill="currentColor" /> : <Play size={17} className="text-[#14879c]" fill="currentColor" />}
           </button>
+          <button onClick={() => setShowReciters(true)} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Reciter" title={t('Change reciter', 'تغيير القارئ')}>
+            <Mic2 size={16} className="text-[#d4af37]" />
+          </button>
           <button onClick={toggleBookmark} className="p-2 rounded-lg hover:bg-white/10 transition-all" aria-label="Save place" title={t('Save my place', 'احفظ مكاني')}>
             {isBookmarked ? <BookmarkCheck size={17} className="text-[#d4af37]" /> : <Bookmark size={17} className="text-[color:var(--text-muted)]" />}
           </button>
@@ -443,6 +458,27 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
           </button>
         </div>
       </div>
+
+      {/* Reciter picker — change the qārī without going to Settings. */}
+      {showReciters && (
+        <div className="fixed inset-0 z-[75] flex items-end justify-center" style={{ background: 'rgba(4,12,16,0.6)' }} onClick={() => setShowReciters(false)}>
+          <div className="w-full max-w-lg rounded-t-2xl max-h-[70vh] overflow-y-auto custom-scrollbar p-4" onClick={(e) => e.stopPropagation()}
+            style={{ background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.98), rgba(var(--glass-2), 0.98))', border: '1px solid rgba(212,175,55,0.25)' }}>
+            <p className="text-sm font-semibold text-white arabic-text mb-3 text-center">{t('Choose reciter', 'اختر القارئ')}</p>
+            <div className="space-y-1.5">
+              {RECITERS.map((r) => (
+                <button key={r.id} onClick={() => changeReciter(r.id)}
+                  className="w-full flex items-center justify-between rounded-xl px-3 py-2.5"
+                  style={{ background: r.id === reciterId ? 'rgba(212,175,55,0.18)' : 'rgba(255,255,255,0.04)', border: r.id === reciterId ? '1px solid rgba(212,175,55,0.4)' : '1px solid transparent' }}>
+                  <span className="arabic-text text-sm" style={{ color: r.id === reciterId ? '#d4af37' : '#fff' }}>{r.arabicName}</span>
+                  {r.id === reciterId && <Check size={15} className="text-[#d4af37]" />}
+                </button>
+              ))}
+            </div>
+            <div className="h-4" />
+          </div>
+        </div>
+      )}
 
       {/* Floating tafsir window — opens on a word tap or follows recitation. */}
       {tafsirFollow && currentVerseKey && (

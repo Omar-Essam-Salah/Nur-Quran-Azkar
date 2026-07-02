@@ -16,12 +16,15 @@ const num = (v: string) => {
 // Defined at module scope — NOT inside the page — so it keeps a stable identity
 // across renders. (Defining it inline remounted the <input> on every keystroke,
 // which is exactly what was closing the keyboard.)
-function ZField({ label, value, onChange, dir }: { label: string; value: string; onChange: (v: string) => void; dir: 'ltr' | 'rtl' }) {
+function ZField({ label, hint, value, onChange, dir }: { label: string; hint?: string; value: string; onChange: (v: string) => void; dir: 'ltr' | 'rtl' }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <label className="text-xs text-white/80 arabic-text flex-1" dir={dir}>{label}</label>
-      <input type="number" inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0"
-        className="w-32 px-3 py-2 rounded-lg bg-white/5 text-sm text-white text-right outline-none border border-transparent focus:border-[#14879c]/40" />
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-3">
+        <label className="text-xs text-white/80 arabic-text flex-1" dir={dir}>{label}</label>
+        <input type="number" inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0"
+          className="w-32 px-3 py-2 rounded-lg bg-white/5 text-sm text-white text-right outline-none border border-transparent focus:border-[#14879c]/40" />
+      </div>
+      {hint && <p className="text-[9.5px] text-[color:var(--text-muted)]/85 arabic-text leading-snug" dir={dir}>{hint}</p>}
     </div>
   );
 }
@@ -115,36 +118,56 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
 
       <div className="px-4 pt-2 pb-10 max-w-lg mx-auto space-y-4">
         {/* Result */}
-        <div ref={resultRef} className="glass-card p-6 text-center space-y-1" style={{ scrollMarginTop: 70, transition: 'box-shadow 0.4s ease, border-color 0.4s ease', boxShadow: pulse ? '0 0 0 2px rgba(212,175,55,0.6), 0 0 30px rgba(212,175,55,0.35)' : undefined }}>
-          <p className="text-[10px] uppercase tracking-wider text-[#d4af37]">{t('Zakat due', 'الزكاة المستحقّة')}</p>
-          <p className="text-4xl font-light text-white tabular-nums">{fmt(zakat)} <span className="text-base text-[#d4af37]">{currency}</span></p>
-          <p className="text-[11px] arabic-text" dir={t('ltr', 'rtl')}
-            style={{ color: due ? '#10b981' : 'var(--text-muted)' }}>
-            {num(goldPrice) <= 0
-              ? t('Enter the gold price/gram to find the nisab', 'أدخل سعر جرام الذهب لحساب النِّصاب')
-              : due
-                ? t('Your wealth reached the nisab — zakat is due.', 'بلغ مالك النِّصاب — تجب الزكاة.')
-                : t('Below the nisab — no zakat due.', 'أقلّ من النِّصاب — لا زكاة.')}
-          </p>
-          <p className="text-[10px] text-[color:var(--text-muted)] arabic-text pt-1" dir={t('ltr', 'rtl')}>
-            {t('Zakatable wealth', 'وعاء الزكاة')}: {fmt(wealth)} · {t('Nisab', 'النِّصاب')}: {fmt(nisab)}
+        <div ref={resultRef} className="glass-card p-6 text-center space-y-2" style={{ scrollMarginTop: 70, transition: 'box-shadow 0.4s ease, border-color 0.4s ease', boxShadow: pulse ? '0 0 0 2px rgba(212,175,55,0.6), 0 0 30px rgba(212,175,55,0.35)' : undefined }}>
+          {num(goldPrice) <= 0 ? (
+            <>
+              <Coins size={26} className="text-[#d4af37] mx-auto" />
+              <p className="text-base font-semibold text-[#d4af37] arabic-text">{t('Enter the gold price to see your result', 'أدخل سعر جرام الذهب لتظهر النتيجة')}</p>
+              <p className="text-[11px] text-[color:var(--text-muted)] arabic-text" dir={dir}>{t('It sets the nisab — you can type it yourself if offline.', 'هو أساس النِّصاب — تقدر تكتبه بنفسك لو مفيش نت.')}</p>
+            </>
+          ) : due ? (
+            <>
+              <p className="text-[10px] uppercase tracking-wider text-[#d4af37]">{t('Zakat due on you', 'الزكاة الواجبة عليك')}</p>
+              <p className="text-4xl font-light text-white tabular-nums">{fmt(zakat)} <span className="text-base text-[#d4af37]">{currency}</span></p>
+              <p className="text-[12px] text-[#10b981] arabic-text" dir={dir}>💰 {t('Your wealth reached the nisab — zakat is due.', 'بلغ مالك النِّصاب — تجب عليك الزكاة.')}</p>
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-bold text-[#10b981] arabic-text">✅ {t('No zakat due on you', 'لا زكاة عليك')}</p>
+              <p className="text-[12px] text-[color:var(--text-muted)] arabic-text" dir={dir}>{t('Your zakatable wealth is below the nisab, so you are exempt.', 'مالك الذي تجب فيه الزكاة أقلّ من النِّصاب، فأنت غير مُلزَم.')}</p>
+            </>
+          )}
+          <p className="text-[10px] text-[color:var(--text-muted)] arabic-text pt-1 border-t border-white/5 mt-1" dir={dir}>
+            {t('Zakatable wealth', 'وعاء الزكاة')}: {fmt(wealth)} {currency} · {t('Nisab', 'النِّصاب')}: {fmt(nisab)} {currency}
           </p>
         </div>
 
         {/* Assets */}
         <div className="glass-card-sm p-4 space-y-3">
           <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider arabic-text">{t('Assets', 'الأموال')}</h3>
-          <ZField dir={dir} label={t('Cash & bank savings', 'النقود والمدّخرات')} value={cash} onChange={setCash} />
-          <ZField dir={dir} label={t('Gold value', 'قيمة الذهب')} value={gold} onChange={setGold} />
-          <ZField dir={dir} label={t('Silver value', 'قيمة الفضة')} value={silver} onChange={setSilver} />
-          <ZField dir={dir} label={t('Trade goods', 'عروض التجارة')} value={business} onChange={setBusiness} />
-          <ZField dir={dir} label={t('Money owed to you', 'ديون لك (مرجوّة السداد)')} value={receivable} onChange={setReceivable} />
+          <ZField dir={dir} value={cash} onChange={setCash}
+            label={t('Cash & bank savings', 'النقود والمدّخرات')}
+            hint={t('All the money you hold — cash, wallet and bank balance.', 'كل ما تملكه من نقود: في يدك أو محفظتك أو حسابك البنكي.')} />
+          <ZField dir={dir} value={gold} onChange={setGold}
+            label={t('Gold value', 'قيمة الذهب')}
+            hint={t('Today’s value of the gold you own (grams × price/gram).', 'قيمة ذهبك بسعر اليوم (عدد الجرامات × سعر الجرام).')} />
+          <ZField dir={dir} value={silver} onChange={setSilver}
+            label={t('Silver value', 'قيمة الفضة')}
+            hint={t('Today’s value of any silver you own.', 'قيمة ما تملكه من فضة بسعر اليوم.')} />
+          <ZField dir={dir} value={business} onChange={setBusiness}
+            label={t('Trade goods', 'عروض التجارة')}
+            hint={t('Value of goods you hold for sale (if you trade).', 'قيمة البضائع المُعدّة للبيع إن كان عندك تجارة.')} />
+          <ZField dir={dir} value={receivable} onChange={setReceivable}
+            label={t('Money owed to you', 'ديون لك')}
+            hint={t('Debts owed to you that you expect to be repaid.', 'ديونٌ لك عند الناس تتوقّع سدادها.')} />
         </div>
 
         {/* Deductions */}
         <div className="glass-card-sm p-4 space-y-3">
           <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider arabic-text">{t('Deduct', 'يُخصم')}</h3>
-          <ZField dir={dir} label={t('Debts you owe (due now)', 'ديون عليك حالّة')} value={debts} onChange={setDebts} />
+          <ZField dir={dir} value={debts} onChange={setDebts}
+            label={t('Debts you owe (due now)', 'ديون عليك حالّة')}
+            hint={t('Debts you must pay now — subtracted from your wealth.', 'ديونٌ عليك حالّة الآن — تُخصم من مالك.')} />
         </div>
 
         {/* Nisab basis — live gold price */}
@@ -163,7 +186,9 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
               </button>
             </div>
           </div>
-          <ZField dir={dir} label={t('Gold price per gram (24k)', 'سعر جرام الذهب (عيار ٢٤)')} value={goldPrice} onChange={setGoldPrice} />
+          <ZField dir={dir} value={goldPrice} onChange={setGoldPrice}
+            label={t('Gold price per gram (24k)', 'سعر جرام الذهب (عيار ٢٤)')}
+            hint={t('Sets the nisab. Fetched live when online — or type today’s price yourself.', 'أساس النِّصاب. يُجلب تلقائيًا مع الإنترنت — أو اكتب سعر اليوم بنفسك.')} />
           <p className="text-[10px] arabic-text" dir={t('ltr', 'rtl')} style={{ color: liveAt ? '#10b981' : 'var(--text-muted)' }}>
             {liveAt ? t('Live market price — adjust if needed.', 'سعرٌ مباشر من السوق — عدّله لو لزم.') : t('Connect to the internet for the live price, or enter it.', 'اتّصل بالإنترنت للسعر المباشر، أو أدخله يدويًا.')}
           </p>
