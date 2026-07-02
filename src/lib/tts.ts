@@ -25,6 +25,24 @@ function notify() { listeners.forEach((l) => l()); }
 export function subscribeTTS(l: Listener): () => void { listeners.add(l); return () => { listeners.delete(l); }; }
 export function speakingOwner(): number { return speakingId; }
 
+// Prefer a MALE Arabic voice on the native engine (falls back to the default
+// Arabic voice; a lower pitch also gives a deeper, more masculine tone).
+let nativeVoiceIdx: number | undefined;
+let voicesReady = false;
+async function ensureNativeVoice(): Promise<void> {
+  if (voicesReady || !native) return;
+  voicesReady = true;
+  try {
+    const { voices } = await TextToSpeech.getSupportedVoices();
+    const ar = voices.map((v, i) => ({ v, i })).filter((x) => (x.v.lang || '').toLowerCase().startsWith('ar'));
+    if (!ar.length) return;
+    // Heuristic: some engines label male voices (…-arm-…, "male", "rjl", "ذكر").
+    const male = ar.find((x) => /male|-arm-|_arm|\bard\b|rjl|ذكر|رجل/i.test(`${x.v.name} ${x.v.voiceURI}`));
+    nativeVoiceIdx = (male ?? ar[0]).i;
+  } catch { /* ignore */ }
+}
+if (native) void ensureNativeVoice();
+
 let nextId = 1;
 export function newSpeakerId(): number { return nextId++; }
 
@@ -51,7 +69,11 @@ export function speakAs(id: number, text: string, opts: { lang?: string; rate?: 
 
   if (native) {
     // A new speak flushes the previous one; resolve fires when it finishes.
-    TextToSpeech.speak({ text, lang, rate: opts.rate ?? 1.0, pitch: 1.0, volume: 1.0, category: 'playback' })
+    // rate 0.9 (clearer/more articulate) + pitch 0.9 (deeper, more masculine).
+    const params: Record<string, unknown> = { text, lang, rate: opts.rate ?? 0.9, pitch: 0.9, volume: 1.0, category: 'playback' };
+    if (nativeVoiceIdx !== undefined) params.voice = nativeVoiceIdx;
+    void ensureNativeVoice();
+    TextToSpeech.speak(params as unknown as { text: string; lang: string })
       .then(() => clearIf(id))
       .catch(() => clearIf(id));
     return;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapPin, Bell, Check, WifiOff, ChevronLeft } from 'lucide-react';
+import { MapPin, Bell, Check, WifiOff, ChevronLeft, Loader2 } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { isLocationEnabled, openLocationSettings } from '@/lib/locationGate';
 
@@ -10,9 +10,9 @@ import { isLocationEnabled, openLocationSettings } from '@/lib/locationGate';
 export default function Onboarding({ onDone }: { onDone: () => void }) {
   const { t, lang } = useI18n();
   const isAr = lang === 'ar';
-  const [loc, setLoc] = useState<'idle' | 'ok' | 'no'>('idle');
+  const [loc, setLoc] = useState<'idle' | 'ok' | 'no' | 'pending'>('idle');
   const [gpsOff, setGpsOff] = useState(false); // location SERVICE off (vs permission)
-  const [notif, setNotif] = useState<'idle' | 'ok' | 'no'>('idle');
+  const [notif, setNotif] = useState<'idle' | 'ok' | 'no' | 'pending'>('idle');
   const [offline, setOffline] = useState(typeof navigator !== 'undefined' && navigator.onLine === false);
   useEffect(() => {
     const on = () => setOffline(false); const off = () => setOffline(true);
@@ -22,6 +22,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
 
   const askLocation = () => {
     if (!navigator.geolocation) { setLoc('no'); return; }
+    setLoc('pending'); // show a spinner immediately so it never looks frozen
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         try { localStorage.setItem('nur-geo', JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: Date.now() })); } catch { /* ignore */ }
@@ -33,7 +34,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
         setGpsOff(!(await isLocationEnabled()));
         setLoc('no');
       },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 },
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 600000 },
     );
   };
 
@@ -54,6 +55,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   }, [loc]);
 
   const askNotif = async () => {
+    setNotif('pending');
     try {
       const { LocalNotifications } = await import('@capacitor/local-notifications');
       const p = await LocalNotifications.requestPermissions();
@@ -67,7 +69,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   };
 
   const PermRow = ({ icon: Icon, color, title, desc, state, onAsk, cta }: {
-    icon: typeof MapPin; color: string; title: string; desc: string; state: 'idle' | 'ok' | 'no'; onAsk: () => void; cta?: string;
+    icon: typeof MapPin; color: string; title: string; desc: string; state: 'idle' | 'ok' | 'no' | 'pending'; onAsk: () => void; cta?: string;
   }) => (
     <div className="glass-card-sm p-4 flex items-center gap-3">
       <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}1f` }}>
@@ -79,6 +81,8 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
       </div>
       {state === 'ok' ? (
         <span className="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center"><Check size={18} className="text-emerald-400" /></span>
+      ) : state === 'pending' ? (
+        <span className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: `${color}22` }}><Loader2 size={17} className="animate-spin" style={{ color }} /></span>
       ) : (
         <button onClick={onAsk} className="px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap" style={{ background: `${color}22`, color }}>
           {cta ?? (state === 'no' ? t('Retry', 'إعادة') : t('Allow', 'سماح'))}

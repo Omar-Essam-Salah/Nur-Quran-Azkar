@@ -26,7 +26,7 @@ export async function requestStartupPermissions(): Promise<void> {
           } catch { /* ignore */ }
         },
         () => { /* denied / unavailable — Qibla will fall back to a default */ },
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 },
+        { enableHighAccuracy: false, timeout: 6000, maximumAge: 600000 },
       );
     }
   } catch { /* ignore */ }
