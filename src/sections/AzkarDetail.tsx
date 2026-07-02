@@ -268,7 +268,10 @@ export default function AzkarDetail({ categoryId, onBack, onBookmark, isBookmark
                       {index + 1} {t('of', 'من')} {category.items.length}
                     </span>
                     <div className="flex items-center gap-1">
-                      <SpeakButton text={item.arabic} size={14} />
+                      <SpeakButton
+                        text={isAr ? item.arabic : (item.translation || item.arabic)}
+                        lang={isAr || !item.translation ? 'ar-SA' : 'en-US'}
+                        size={14} />
                       {isCustom ? (
                         <button
                           onClick={() => deleteDhikr(item.id)}

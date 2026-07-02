@@ -150,7 +150,7 @@ export default function HadithPage({ onBack }: HadithPageProps) {
                 <div className="flex items-center gap-2">
                   <span className="w-7 h-7 rounded-full bg-[#d4af37]/15 flex items-center justify-center text-[10px] font-bold text-[#d4af37]">{h.n}</span>
                   <span className="text-[10px] text-[color:var(--text-muted)] arabic-text">{isAr ? col.ar : col.en}</span>
-                  <SpeakButton text={h.ar} size={15} className="ml-auto p-1.5 rounded-lg hover:bg-white/10 transition-all flex-shrink-0" />
+                  <SpeakButton text={isAr ? h.ar : (h.en || h.ar)} lang={isAr || !h.en ? 'ar-SA' : 'en-US'} size={15} className="ml-auto p-1.5 rounded-lg hover:bg-white/10 transition-all flex-shrink-0" />
                 </div>
                 <p className="arabic-text text-white leading-loose text-[15px]" dir="rtl">{h.ar}</p>
                 {h.en && (

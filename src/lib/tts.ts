@@ -71,7 +71,9 @@ export function speakAs(id: number, text: string, opts: { lang?: string; rate?: 
     // A new speak flushes the previous one; resolve fires when it finishes.
     // rate 0.9 (clearer/more articulate) + pitch 0.9 (deeper, more masculine).
     const params: Record<string, unknown> = { text, lang, rate: opts.rate ?? 0.9, pitch: 0.9, volume: 1.0, category: 'playback' };
-    if (nativeVoiceIdx !== undefined) params.voice = nativeVoiceIdx;
+    // Only force our chosen Arabic voice when actually speaking Arabic; for other
+    // languages (e.g. English meanings) let the engine pick that language's voice.
+    if (nativeVoiceIdx !== undefined && lang.toLowerCase().startsWith('ar')) params.voice = nativeVoiceIdx;
     void ensureNativeVoice();
     TextToSpeech.speak(params as unknown as { text: string; lang: string })
       .then(() => clearIf(id))
