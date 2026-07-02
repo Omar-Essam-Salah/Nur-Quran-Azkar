@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, BookOpen, ChevronLeft, Loader2, Play, Pause } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronLeft, Loader2, Play, Pause, Download, CheckCircle2 } from 'lucide-react';
 import { PROPHETS, PROPHET_AUDIO, PROPHET_AUDIO_RECITER, type Prophet } from '@/data/prophets';
 import { loadAyahRange, type SimpleAyah } from '@/lib/localQuran';
 import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
+import { downloadForOffline, isDownloaded, markDownloaded } from '@/lib/offlineDownload';
 import { SpeakButton } from '@/components/SpeakButton';
 import { useI18n } from '@/i18n';
 
@@ -87,6 +88,19 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
   };
   const seek = (v: number) => { const a = audioEl(); if (isOwner(ownerRef.current)) { try { a.currentTime = v; } catch { /* ignore */ } setCurTime(v); } };
 
+  // Download the episode for offline listening (the SW then serves it with no net).
+  const dlId = `prophet-audio-${prophet.id}`;
+  const [downloaded, setDownloaded] = useState(() => isDownloaded(dlId));
+  const [dlPct, setDlPct] = useState(-1); // -1 = idle
+  useEffect(() => { setDownloaded(isDownloaded(dlId)); setDlPct(-1); }, [dlId]);
+  const download = async () => {
+    if (dlPct >= 0 || !audioUrl) return;
+    setDlPct(0);
+    const ok = await downloadForOffline(audioUrl, (r, tot) => setDlPct(tot ? Math.round((r / tot) * 100) : 0));
+    setDlPct(-1);
+    if (ok) { markDownloaded(dlId); setDownloaded(true); }
+  };
+
   useEffect(() => {
     let active = true;
     setAyat(null);
@@ -160,10 +174,18 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
           <p className={`text-xs text-[color:var(--text-muted)] ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>{isAr ? prophet.note : (prophet.noteEn ?? prophet.note)}</p>
           {audioUrl && (
             <div className="pt-1 flex flex-col items-center gap-2">
-              <button onClick={toggleAudio} className="glass-btn px-4 py-2 text-sm flex items-center gap-2">
-                {audioLoading ? <Loader2 size={15} className="animate-spin" /> : playing ? <Pause size={15} /> : <Play size={15} />}
-                <span className="arabic-text">{playing ? t('Pause', 'إيقاف') : started ? t('Resume', 'استكمال') : t('Listen to the story', 'استمع إلى القصة')}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={toggleAudio} className="glass-btn px-4 py-2 text-sm flex items-center gap-2">
+                  {audioLoading ? <Loader2 size={15} className="animate-spin" /> : playing ? <Pause size={15} /> : <Play size={15} />}
+                  <span className="arabic-text">{playing ? t('Pause', 'إيقاف') : started ? t('Resume', 'استكمال') : t('Listen to the story', 'استمع إلى القصة')}</span>
+                </button>
+                <button onClick={download} disabled={downloaded || dlPct >= 0}
+                  className="glass-btn px-3 py-2 text-sm flex items-center gap-1.5 disabled:opacity-70"
+                  title={t('Download for offline', 'تحميل للاستماع دون إنترنت')}>
+                  {downloaded ? <CheckCircle2 size={15} className="text-[#10b981]" /> : dlPct >= 0 ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+                  <span className="arabic-text text-[11px]">{downloaded ? t('Saved', 'محفوظ') : dlPct >= 0 ? `${dlPct}%` : t('Download', 'تحميل')}</span>
+                </button>
+              </div>
               {/* Seek bar — jump to any point once playback has started */}
               {started && (
                 <div className="w-full flex items-center gap-2" dir="ltr">

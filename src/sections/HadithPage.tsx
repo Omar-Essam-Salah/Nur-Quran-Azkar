@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BookText, Search, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, BookText, Search, ChevronLeft, Download, CheckCircle2, Loader2 } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { pushBack } from '@/lib/backStack';
 import { SkeletonCards } from '@/components/Skeleton';
 import { SpeakButton } from '@/components/SpeakButton';
+import { downloadForOffline, isDownloaded, markDownloaded } from '@/lib/offlineDownload';
 
 interface HadithPageProps { onBack: () => void }
 
@@ -36,6 +37,21 @@ export default function HadithPage({ onBack }: HadithPageProps) {
   const [error, setError] = useState(false);
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(30);
+
+  // Per-collection offline download state.
+  const [dl, setDl] = useState<Record<string, 'idle' | 'busy' | 'done'>>(() => {
+    const s: Record<string, 'idle' | 'busy' | 'done'> = {};
+    COLLECTIONS.forEach((c) => { if (isDownloaded(`hadith-${c.id}`)) s[c.id] = 'done'; });
+    return s;
+  });
+  const downloadCollection = async (c: Collection) => {
+    if (dl[c.id] === 'busy' || dl[c.id] === 'done') return;
+    setDl((s) => ({ ...s, [c.id]: 'busy' }));
+    const a = await downloadForOffline(`${CDN}/ara-${c.id}.min.json`);
+    const e = await downloadForOffline(`${CDN}/eng-${c.id}.min.json`);
+    if (a && e) { markDownloaded(`hadith-${c.id}`); setDl((s) => ({ ...s, [c.id]: 'done' })); }
+    else setDl((s) => ({ ...s, [c.id]: 'idle' }));
+  };
 
   // Hardware back: from a collection → back to the list; from the list → leave.
   useEffect(() => { if (col) return pushBack(() => { setCol(null); return true; }); }, [col]);
@@ -95,16 +111,23 @@ export default function HadithPage({ onBack }: HadithPageProps) {
                  'كل مجموعة تُحمّل مرّة ثم تعمل بدون إنترنت. والترجمة الإنجليزية هي المعنى المبسّط لكل حديث.')}
             </p>
             {COLLECTIONS.map((c) => (
-              <button key={c.id} onClick={() => setCol(c)} className="glass-card-sm w-full p-4 flex items-center gap-3 text-right">
-                <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 flex items-center justify-center flex-shrink-0">
-                  <BookText size={18} className="text-[#d4af37]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white arabic-text">{isAr ? c.ar : c.en}</p>
-                  <p className="text-[10px] text-[color:var(--text-muted)] arabic-text truncate" dir={isAr ? 'rtl' : 'ltr'}>{isAr ? c.en : c.ar} · {c.count} {t('hadith', 'حديث')}</p>
-                </div>
+              <div key={c.id} className="glass-card-sm w-full p-4 flex items-center gap-2">
+                <button onClick={() => setCol(c)} className="flex items-center gap-3 flex-1 min-w-0 text-right">
+                  <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 flex items-center justify-center flex-shrink-0">
+                    <BookText size={18} className="text-[#d4af37]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white arabic-text">{isAr ? c.ar : c.en}</p>
+                    <p className="text-[10px] text-[color:var(--text-muted)] arabic-text truncate" dir={isAr ? 'rtl' : 'ltr'}>{isAr ? c.en : c.ar} · {c.count} {t('hadith', 'حديث')}</p>
+                  </div>
+                </button>
+                <button onClick={() => downloadCollection(c)} disabled={dl[c.id] === 'busy' || dl[c.id] === 'done'}
+                  className="p-2 rounded-xl hover:bg-white/10 flex-shrink-0 disabled:opacity-80"
+                  title={dl[c.id] === 'done' ? t('Saved offline', 'محفوظ للعمل دون إنترنت') : t('Download for offline', 'تحميل للعمل دون إنترنت')}>
+                  {dl[c.id] === 'done' ? <CheckCircle2 size={17} className="text-[#10b981]" /> : dl[c.id] === 'busy' ? <Loader2 size={17} className="animate-spin text-[#14879c]" /> : <Download size={17} className="text-[#d4af37]" />}
+                </button>
                 <ChevronLeft size={16} className="text-[color:var(--text-muted)] flex-shrink-0" />
-              </button>
+              </div>
             ))}
           </>
         )}
