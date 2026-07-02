@@ -3,6 +3,7 @@ import { ArrowLeft, BookOpen, ChevronLeft, Loader2, Play, Pause } from 'lucide-r
 import { PROPHETS, PROPHET_AUDIO, PROPHET_AUDIO_RECITER, type Prophet } from '@/data/prophets';
 import { loadAyahRange, type SimpleAyah } from '@/lib/localQuran';
 import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
+import { SpeakButton } from '@/components/SpeakButton';
 import { useI18n } from '@/i18n';
 
 interface ProphetsPageProps {
@@ -157,7 +158,10 @@ function ProphetDetail({ prophet, onBack, onOpenSurah }: { prophet: Prophet; onB
 
         {/* Story */}
         <div className="glass-card-sm p-5">
-          <p className="text-[10px] uppercase tracking-wider text-[#14879c] mb-3">{t('The Story', 'القصة')}</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] uppercase tracking-wider text-[#14879c]">{t('The Story', 'القصة')}</p>
+            <SpeakButton text={story} lang={isAr ? 'ar-SA' : 'en-US'} size={15} />
+          </div>
           <div className="space-y-3" dir={isAr ? 'rtl' : 'ltr'}>
             {story.split('\n\n').map((para, i) => (
               <p key={i} className={`text-[15px] leading-loose ${isAr ? 'arabic-text' : ''}`} style={{ color: 'rgba(var(--text-strong-rgb), 0.9)' }}>{para}</p>
