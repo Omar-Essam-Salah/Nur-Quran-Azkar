@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { getAudioBlob } from '@/lib/contentCache';
 import { recordDeed } from '@/lib/ledger';
 import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
@@ -46,6 +47,22 @@ export interface SurahPlayer {
   prev: () => void;
   setRate: (rate: number) => void;
   setRepeat: (cfg: RepeatConfig | null) => void;
+}
+
+// Offline-first fallback message: shown (throttled) when playback fails because
+// the ayah isn't downloaded AND there's no connection to stream it.
+let lastOfflineToast = 0;
+function offlineAudioToast(): void {
+  if (typeof navigator !== 'undefined' && navigator.onLine) return;
+  const now = Date.now();
+  if (now - lastOfflineToast < 4000) return;
+  lastOfflineToast = now;
+  const ar = (localStorage.getItem('nur-lang') || 'ar') === 'ar';
+  toast(ar ? 'لا يوجد اتصال بالإنترنت' : 'You’re offline', {
+    description: ar
+      ? 'اتّصل بالإنترنت أو حمّل هذه السورة للاستماع دون إنترنت.'
+      : 'Please connect to the internet or download this surah for offline listening.',
+  });
 }
 
 function wordPositionAt(segments: number[][], ms: number): number {
@@ -349,8 +366,8 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
             objectUrlRef.current = url;
             audio.src = url;
             void audio.play().catch(reset);
-          } else reset();
-        }).catch(reset);
+          } else { offlineAudioToast(); reset(); } // not downloaded + failed to stream
+        }).catch(() => { offlineAudioToast(); reset(); });
         return;
       }
       reset();

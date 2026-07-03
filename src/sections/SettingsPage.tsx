@@ -9,6 +9,8 @@ import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
 import { exportData, importData } from '@/lib/backup';
 import { isPrayerDnd, setPrayerDnd } from '@/lib/reminders';
 import { VoiceSettings } from '@/components/VoiceSettings';
+import { StorageManager } from '@/components/StorageManager';
+import { TafsirPacks } from '@/components/TafsirPacks';
 import { useI18n } from '@/i18n';
 import type { AppSettings } from '@/types';
 
@@ -189,6 +191,12 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
 
         {/* Read-aloud voice (TTS) */}
         <VoiceSettings />
+
+        {/* Offline audio storage manager */}
+        <StorageManager />
+
+        {/* Tafsir offline packs */}
+        <TafsirPacks />
 
         {/* Theme */}
         <div className="glass-card-sm p-4 space-y-3">

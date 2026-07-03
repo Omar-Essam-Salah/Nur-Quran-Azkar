@@ -11,7 +11,7 @@ import { useTranslationsList } from '@/hooks/useTranslationsList';
 import { useSurahAudio, type PlayerVerse } from '@/hooks/useSurahAudio';
 import AudioPlayer from '@/components/AudioPlayer';
 import { fetchSurahContent, type NormVerse, type SurahContent } from '@/lib/quranApi';
-import { getContent, putContent, contentKey } from '@/lib/contentCache';
+import { getContent, putContent, contentKey, getTafsirText } from '@/lib/contentCache';
 import { loadLocalSurah } from '@/lib/localQuran';
 import { useI18n } from '@/i18n';
 import type { AppSettings } from '@/types';
@@ -243,25 +243,28 @@ export default function QuranReader({
     };
   }, [surahNumber, reciter.apiId, trKey]);
 
-  // Fetch Tafsir when modal opens or source changes
+  // Load Tafsir when modal opens or source changes — OFFLINE-FIRST: use the
+  // downloaded pack (IndexedDB) if present, otherwise fetch (and the SW caches).
   useEffect(() => {
     if (!tafsirVerse) return;
     let active = true;
     setTafsirLoading(true);
     setTafsirData(null);
-    fetch(`https://api.quran.com/api/v4/tafsirs/${tafsirId}/by_ayah/${surahNumber}:${tafsirVerse.ayah}`)
-      .then(res => res.json())
-      .then(data => {
-        if (active && data.tafsir) {
-          setTafsirData({ text: data.tafsir.text, name: data.tafsir.resource_name });
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setTafsirLoading(false);
-      });
+    const verseKey = `${surahNumber}:${tafsirVerse.ayah}`;
+    const name = TAFSIRS.find((x) => x.id === tafsirId)?.name ?? 'التفسير';
+    (async () => {
+      const local = await getTafsirText(tafsirId, verseKey).catch(() => undefined);
+      if (!active) return;
+      if (local) { setTafsirData({ text: local, name }); setTafsirLoading(false); return; }
+      try {
+        const res = await fetch(`https://api.quran.com/api/v4/tafsirs/${tafsirId}/by_ayah/${verseKey}`);
+        const data = await res.json();
+        if (active && data.tafsir) setTafsirData({ text: data.tafsir.text, name: data.tafsir.resource_name });
+      } catch { /* offline & not downloaded */ }
+      finally { if (active) setTafsirLoading(false); }
+    })();
     return () => { active = false; };
-  }, [tafsirVerse, tafsirId, surahNumber]);
+  }, [tafsirVerse, tafsirId, surahNumber, lang]);
 
   const playerVerses: PlayerVerse[] = content
     ? content.verses.map((v) => ({

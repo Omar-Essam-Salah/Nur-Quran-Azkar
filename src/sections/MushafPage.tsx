@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, Search, BookOpen, GripHorizontal, Mic2, Check } from 'lucide-react';
 import { getReciter, everyayahUrl, RECITERS } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
+import { getTafsirText } from '@/lib/contentCache';
 import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
 import { pushBack } from '@/lib/backStack';
 import { loadAyahRange } from '@/lib/localQuran';
@@ -579,16 +580,22 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose, playing, onToggl
     return () => { active = false; };
   }, [verseKey]);
 
-  // Its tafsir (online) — from the selected source.
+  // Its tafsir — OFFLINE-FIRST: downloaded pack (IndexedDB) if present, else API.
   useEffect(() => {
     let active = true;
     setLoading(true);
     setText(null);
-    fetch(`https://api.quran.com/api/v4/tafsirs/${src}/by_ayah/${verseKey}`)
-      .then((r) => r.json())
-      .then((d) => { if (active) setText(d?.tafsir?.text ?? null); })
-      .catch(() => {})
-      .finally(() => { if (active) setLoading(false); });
+    (async () => {
+      const local = await getTafsirText(src, verseKey).catch(() => undefined);
+      if (!active) return;
+      if (local) { setText(local); setLoading(false); return; }
+      try {
+        const r = await fetch(`https://api.quran.com/api/v4/tafsirs/${src}/by_ayah/${verseKey}`);
+        const d = await r.json();
+        if (active) setText(d?.tafsir?.text ?? null);
+      } catch { /* offline & not downloaded */ }
+      finally { if (active) setLoading(false); }
+    })();
     return () => { active = false; };
   }, [verseKey, src]);
 
