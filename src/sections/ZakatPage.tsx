@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Coins, Info, RefreshCw, Loader2, CalendarClock, Calculator } from 'lucide-react';
-import { fetchGoldPricePerGram, getCachedGold, ZAKAT_CURRENCIES } from '@/lib/goldPrice';
+import { fetchGoldPricePerGram, getCachedGold, defaultGoldPerGram, ZAKAT_CURRENCIES } from '@/lib/goldPrice';
 import { useI18n } from '@/i18n';
 
 interface ZakatPageProps { onBack: () => void }
@@ -47,6 +47,7 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
   const loadGold = async (cur: string) => {
     const cached = getCachedGold(cur);
     if (cached) { setGoldPrice(String(Math.round(cached.perGram * 100) / 100)); setLiveAt(cached.at); }
+    else { setGoldPrice(String(defaultGoldPerGram(cur))); setLiveAt(null); } // works offline / first run
     setFetching(true);
     const q = await fetchGoldPricePerGram(cur);
     setFetching(false);

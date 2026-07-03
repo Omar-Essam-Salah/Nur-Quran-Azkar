@@ -22,7 +22,10 @@ function StepCard({ step, index, isAr }: { step: LearnStep; index: number; isAr:
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-white arabic-text">{isAr ? step.titleAr : step.titleEn}</h3>
-          {step.repeat && <span className="text-[10px] text-[#14879c] font-bold flex-shrink-0">{step.repeat}</span>}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {step.middle && <span className="text-[9px] text-[#d4af37] bg-[#d4af37]/15 border border-[#d4af37]/30 px-1.5 py-0.5 rounded-full arabic-text">{isAr ? 'صلوات ٣ و ٤ ركعات' : '3 & 4 rakʿah prayers'}</span>}
+            {step.repeat && <span className="text-[10px] text-[#14879c] font-bold">{step.repeat}</span>}
+          </div>
         </div>
         <p className="text-[11px] text-[color:var(--text-muted)] mt-0.5 arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{isAr ? step.titleEn : step.titleAr}</p>
         <p className={`text-[12.5px] leading-relaxed mt-1.5 ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'} style={{ color: 'rgba(var(--text-strong-rgb), 0.85)' }}>

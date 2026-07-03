@@ -6,6 +6,15 @@ const CACHE_KEY = 'nur-gold-gram';
 
 export const ZAKAT_CURRENCIES = ['EGP', 'USD', 'SAR', 'AED', 'KWD', 'QAR', 'JOD', 'MAD', 'DZD', 'EUR', 'GBP', 'TRY', 'PKR', 'INR', 'IDR'];
 
+// APPROXIMATE 24k gold price per gram, used as a fallback so the Zakat nisab is
+// never zero when there is no live/cached price (offline / first run). Rough and
+// editable — the field auto-updates to the live price whenever online.
+const DEFAULT_GOLD_PER_GRAM: Record<string, number> = {
+  USD: 95, EGP: 4700, SAR: 356, AED: 349, KWD: 29, QAR: 346, JOD: 67, MAD: 950,
+  DZD: 12800, EUR: 88, GBP: 75, TRY: 3300, PKR: 26500, INR: 8100, IDR: 1540000,
+};
+export function defaultGoldPerGram(currency: string): number { return DEFAULT_GOLD_PER_GRAM[currency] ?? DEFAULT_GOLD_PER_GRAM.USD; }
+
 export interface GoldQuote { perGram: number; currency: string; at: number }
 
 export function getCachedGold(currency: string): GoldQuote | null {

@@ -2,10 +2,13 @@
 //
 // On the device it uses the NATIVE @capacitor-community/text-to-speech plugin
 // (the Android system TTS engine) — the Web Speech API is unreliable / absent in
-// the Android WebView, which is why the buttons appeared to "do nothing". It
-// works offline once an Arabic voice is installed on the device. In a plain
-// browser (dev) it falls back to window.speechSynthesis. A tiny pub/sub lets
-// every "listen" button reflect whether it is the one currently speaking.
+// the Android WebView. Works offline once a voice for the language is installed.
+// In a plain browser (dev) it falls back to window.speechSynthesis.
+//
+// Voice selection: the user can pick a preferred voice PER LANGUAGE (persisted);
+// otherwise we auto-pick a MALE voice for BOTH Arabic and English (previously
+// English fell back to the engine default, which was often female). A tiny
+// pub/sub lets every "listen" button reflect whether it is the one speaking.
 
 import { Capacitor } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
@@ -16,65 +19,81 @@ type Listener = () => void;
 const listeners = new Set<Listener>();
 let speakingId = 0; // owner id currently speaking (0 = none)
 
+export interface TtsVoice { key: string; name: string; lang: string; index: number }
+let voiceList: TtsVoice[] = [];
+let voicesLoaded = false;
+
 export function ttsSupported(): boolean {
   if (native) return true;
   return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 }
 
+async function loadVoices(): Promise<TtsVoice[]> {
+  if (voicesLoaded) return voiceList;
+  try {
+    if (native) {
+      const { voices } = await TextToSpeech.getSupportedVoices();
+      voiceList = voices.map((v, i) => ({ key: v.voiceURI || v.name || String(i), name: v.name || v.voiceURI || v.lang, lang: v.lang || '', index: i }));
+    } else if (ttsSupported()) {
+      const vs = window.speechSynthesis.getVoices();
+      voiceList = vs.map((v, i) => ({ key: v.voiceURI || v.name, name: v.name, lang: v.lang || '', index: i }));
+    }
+    voicesLoaded = voiceList.length > 0;
+  } catch { /* ignore */ }
+  return voiceList;
+}
+if (native) void loadVoices();
+if (!native && ttsSupported()) {
+  try { window.speechSynthesis.addEventListener('voiceschanged', () => { voicesLoaded = false; void loadVoices(); }); } catch { /* ignore */ }
+}
+
+/** All voices whose language matches the given prefix (e.g. 'ar', 'en'). */
+export async function listVoices(langPrefix: string): Promise<TtsVoice[]> {
+  await loadVoices();
+  const p = langPrefix.slice(0, 2).toLowerCase();
+  return voiceList.filter((v) => v.lang.toLowerCase().startsWith(p));
+}
+
+const prefKey = (lang: string) => `nur-tts-voice-${lang.slice(0, 2).toLowerCase()}`;
+export function getPreferredVoice(lang: string): string | null { try { return localStorage.getItem(prefKey(lang)); } catch { return null; } }
+export function setPreferredVoice(lang: string, key: string | null): void {
+  try { if (key) localStorage.setItem(prefKey(lang), key); else localStorage.removeItem(prefKey(lang)); } catch { /* ignore */ }
+}
+
+const isMale = (s: string) => /(^|[^fe])male|-arm|_arm|\bard\b|\bman\b|rjl|ذكر|رجل/i.test(s) && !/female|woman/i.test(s);
+const isFemale = (s: string) => /female|woman|\barf\b|-arf|_arf|أنثى|امرأة/i.test(s);
+
+function pickVoiceFor(lang: string): TtsVoice | undefined {
+  const p = lang.slice(0, 2).toLowerCase();
+  const cands = voiceList.filter((v) => v.lang.toLowerCase().startsWith(p));
+  if (!cands.length) return undefined;
+  const pref = getPreferredVoice(lang);
+  if (pref) { const f = cands.find((v) => v.key === pref); if (f) return f; }
+  // Default: prefer an identifiable MALE voice; otherwise any non-female voice.
+  return cands.find((v) => isMale(`${v.name} ${v.key}`))
+    ?? cands.find((v) => !isFemale(`${v.name} ${v.key}`))
+    ?? cands[0];
+}
+
 function notify() { listeners.forEach((l) => l()); }
 export function subscribeTTS(l: Listener): () => void { listeners.add(l); return () => { listeners.delete(l); }; }
 export function speakingOwner(): number { return speakingId; }
-
-// Prefer a MALE Arabic voice on the native engine (falls back to the default
-// Arabic voice; a lower pitch also gives a deeper, more masculine tone).
-let nativeVoiceIdx: number | undefined;
-let voicesReady = false;
-async function ensureNativeVoice(): Promise<void> {
-  if (voicesReady || !native) return;
-  voicesReady = true;
-  try {
-    const { voices } = await TextToSpeech.getSupportedVoices();
-    const ar = voices.map((v, i) => ({ v, i })).filter((x) => (x.v.lang || '').toLowerCase().startsWith('ar'));
-    if (!ar.length) return;
-    // Heuristic: some engines label male voices (…-arm-…, "male", "rjl", "ذكر").
-    const male = ar.find((x) => /male|-arm-|_arm|\bard\b|rjl|ذكر|رجل/i.test(`${x.v.name} ${x.v.voiceURI}`));
-    nativeVoiceIdx = (male ?? ar[0]).i;
-  } catch { /* ignore */ }
-}
-if (native) void ensureNativeVoice();
-
 let nextId = 1;
 export function newSpeakerId(): number { return nextId++; }
-
 function clearIf(id: number) { if (speakingId === id) { speakingId = 0; notify(); } }
-
-// ── Web fallback (browser dev) ──
-let webVoices: SpeechSynthesisVoice[] = [];
-if (!native && ttsSupported()) {
-  const load = () => { try { webVoices = window.speechSynthesis.getVoices(); } catch { /* ignore */ } };
-  load();
-  try { window.speechSynthesis.addEventListener('voiceschanged', load); } catch { /* ignore */ }
-}
-function webPick(lang: string): SpeechSynthesisVoice | undefined {
-  const p = lang.slice(0, 2).toLowerCase();
-  const m = webVoices.filter((v) => (v.lang || '').toLowerCase().startsWith(p));
-  return m.find((v) => v.localService) ?? m[0];
-}
 
 /** Speak `text` on behalf of owner `id` (cancels anything already speaking). */
 export function speakAs(id: number, text: string, opts: { lang?: string; rate?: number } = {}): void {
   if (!ttsSupported() || !text.trim()) return;
   const lang = opts.lang || 'ar-SA';
   speakingId = id; notify(); // optimistic → instant button feedback
+  const chosen = pickVoiceFor(lang);
 
   if (native) {
-    // A new speak flushes the previous one; resolve fires when it finishes.
-    // rate 0.9 (clearer/more articulate) + pitch 0.9 (deeper, more masculine).
+    // rate 0.9 (clearer) + pitch 0.9 (deeper / more masculine).
     const params: Record<string, unknown> = { text, lang, rate: opts.rate ?? 0.9, pitch: 0.9, volume: 1.0, category: 'playback' };
-    // Only force our chosen Arabic voice when actually speaking Arabic; for other
-    // languages (e.g. English meanings) let the engine pick that language's voice.
-    if (nativeVoiceIdx !== undefined && lang.toLowerCase().startsWith('ar')) params.voice = nativeVoiceIdx;
-    void ensureNativeVoice();
+    if (chosen) params.voice = chosen.index;
+    void loadVoices();
     TextToSpeech.speak(params as unknown as { text: string; lang: string })
       .then(() => clearIf(id))
       .catch(() => clearIf(id));
@@ -87,8 +106,8 @@ export function speakAs(id: number, text: string, opts: { lang?: string; rate?: 
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;
   u.rate = opts.rate ?? 0.9;
-  const v = webPick(lang);
-  if (v) u.voice = v;
+  u.pitch = 0.9;
+  if (chosen) { const v = synth.getVoices()[chosen.index]; if (v) u.voice = v; }
   u.onend = () => clearIf(id);
   u.onerror = () => clearIf(id);
   synth.speak(u);

@@ -146,7 +146,7 @@ export default function HadithPage({ onBack }: HadithPageProps) {
             {!items && !error && <SkeletonCards count={5} />}
 
             {items && filtered.slice(0, limit).map((h) => (
-              <div key={h.n} className="glass-card-sm p-5 space-y-3">
+              <div key={h.n} className="glass-card-sm cv-row p-5 space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="w-7 h-7 rounded-full bg-[#d4af37]/15 flex items-center justify-center text-[10px] font-bold text-[#d4af37]">{h.n}</span>
                   <span className="text-[10px] text-[color:var(--text-muted)] arabic-text">{isAr ? col.ar : col.en}</span>

@@ -89,6 +89,12 @@
 }
 
 @layer components {
+  /* Perf: skip rendering/layout for off-screen list rows (native list
+     virtualization, but free). `contain-intrinsic-size` keeps the scrollbar
+     stable. Apply to items in long scrollable lists (surah index, azkar,
+     hadith, prophets…). Big win on low-end devices. */
+  .cv-row { content-visibility: auto; contain-intrinsic-size: auto 72px; }
+
   /* Glass Card System */
   /* NOTE: list cards are deliberately OPAQUE and DO NOT use backdrop-filter.
      Per-element backdrop blur on long scrolling lists is the single biggest

@@ -8,6 +8,7 @@ import { absoluteAudioUrl } from '@/lib/quranApi';
 import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
 import { exportData, importData } from '@/lib/backup';
 import { isPrayerDnd, setPrayerDnd } from '@/lib/reminders';
+import { VoiceSettings } from '@/components/VoiceSettings';
 import { useI18n } from '@/i18n';
 import type { AppSettings } from '@/types';
 
@@ -185,6 +186,9 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
             })}
           </div>
         </div>
+
+        {/* Read-aloud voice (TTS) */}
+        <VoiceSettings />
 
         {/* Theme */}
         <div className="glass-card-sm p-4 space-y-3">

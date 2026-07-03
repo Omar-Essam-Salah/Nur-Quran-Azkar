@@ -17,6 +17,7 @@ export interface LearnStep {
   translit?: string;       // transliteration (for non-Arabic speakers)
   sayEn?: string;          // meaning
   repeat?: string;         // e.g. "×3"
+  middle?: boolean;        // only applies to 3/4-rakʿah prayers
 }
 
 export const WUDU_STEPS: LearnStep[] = [
@@ -148,8 +149,17 @@ export const PRAYER_STEPS: LearnStep[] = [
     sayAr: 'رَبِّ اغْفِرْ لِي', translit: 'Rabbi-ghfir lī', sayEn: 'My Lord, forgive me.',
   },
   {
+    id: 'middle-tashahhud', pose: 'julus', middle: true,
+    titleAr: 'التشهّد الأوسط', titleEn: 'The Middle Tashahhud',
+    descAr: 'خاصٌّ بالصلوات ذات ٣ أو ٤ ركعات (الظهر، العصر، المغرب، العشاء): بعد الركعة الثانية اجلس واقرأ التشهّد فقط (بدون الصلاة الإبراهيمية)، ثمّ قُم مكبّرًا لإكمال باقي الصلاة. أمّا الفجر فركعتان وليس فيه تشهّدٌ أوسط.',
+    descEn: 'For prayers of 3 or 4 rakʿahs (Dhuhr, Asr, Maghrib, Isha) only: after the second rakʿah, sit and recite the Tashahhud ONLY (without the prayer upon the Prophet), then stand with the Takbīr to complete the prayer. Fajr is two rakʿahs and has no middle Tashahhud.',
+    sayAr: 'التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ، السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ، السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ، أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ',
+    translit: 'At-taḥiyyātu lillāhi waṣ-ṣalawātu waṭ-ṭayyibāt … ashhadu an lā ilāha illa-llāh, wa ashhadu anna Muḥammadan ʿabduhu wa rasūluh',
+    sayEn: 'All greetings, prayers and good things are for Allah … I bear witness that there is no god but Allah, and that Muhammad is His servant and messenger.',
+  },
+  {
     id: 'tashahhud', pose: 'tashahhud',
-    titleAr: 'التشهّد', titleEn: 'The Tashahhud',
+    titleAr: 'التشهّد الأخير', titleEn: 'The Final Tashahhud',
     descAr: 'في الجلوس الأخير اجلس وارفع سبّابتك، واقرأ التشهّد ثمّ الصلاة الإبراهيمية على النبيّ ﷺ.',
     descEn: 'In the final sitting, raise your index finger and recite the Tashahhud, then the prayer upon the Prophet ﷺ.',
     sayAr: 'التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ، السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ، السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ، أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ',

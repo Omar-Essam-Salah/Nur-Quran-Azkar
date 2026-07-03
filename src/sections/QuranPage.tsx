@@ -150,7 +150,7 @@ export default function QuranPage({ onOpenSurah, onBack, onToggleSearch }: Quran
                   <button
                     key={surah.number}
                     onClick={() => onOpenSurah(surah.number)}
-                    className="glass-card-sm w-full p-4 flex items-center gap-4 text-left group"
+                    className="glass-card-sm cv-row w-full p-4 flex items-center gap-4 text-left group"
                     style={{
                       animationDelay: `${index * 20}ms`,
                     }}
