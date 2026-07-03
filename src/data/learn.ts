@@ -184,6 +184,35 @@ export const RAKAHS: { ar: string; en: string; n: string }[] = [
   { ar: 'العشاء', en: 'Isha', n: '٤' },
 ];
 
+// Kid-friendly one-liners for each step (shown when "Kids mode" is on). Simple,
+// warm, and short — so children get the idea without the detailed adult wording.
+export const KIDS_TEXT: Record<'wudu' | 'salah', Record<string, { ar: string; en: string }>> = {
+  wudu: {
+    niyyah: { ar: 'قول «بسم الله»، وخلّي في قلبك إنك بتتوضّأ عشان تصلّي لربنا. 🤍', en: 'Say “Bismillah,” and in your heart mean: I’m getting ready to pray to Allah.' },
+    hands: { ar: 'اغسِل إيديك ٣ مرّات. 💧', en: 'Wash your hands 3 times.' },
+    mouth: { ar: 'خُشّ شويّة ميّه في بُقّك وطهّره ٣ مرّات.', en: 'Swish a little water in your mouth 3 times.' },
+    nose: { ar: 'شمّ شويّة ميّه بمناخيرك وطلّعها ٣ مرّات.', en: 'Sniff a little water into your nose, then blow it out — 3 times.' },
+    face: { ar: 'اغسِل وشّك كله ٣ مرّات. 😊', en: 'Wash your whole face 3 times.' },
+    arms: { ar: 'اغسِل إيدك اليمين لحدّ الكوع ٣ مرّات، وبعدين الشمال.', en: 'Wash your right arm up to the elbow 3 times, then the left.' },
+    head: { ar: 'بلّل إيديك وامسح على شعرك مرّة واحدة.', en: 'With wet hands, wipe over your hair once.' },
+    ears: { ar: 'امسح وِدانك من جوّه وبرّه مرّة واحدة.', en: 'Wipe your ears, inside and outside, once.' },
+    feet: { ar: 'اغسِل رجلك اليمين لحدّ الكعب ٣ مرّات، وبعدين الشمال. 👣', en: 'Wash your right foot up to the ankle 3 times, then the left.' },
+    shahada: { ar: 'بُصّ لفوق وقول: أشهد أن لا إله إلا الله. ✨', en: 'Look up and say: “I bear witness there is no god but Allah.”' },
+  },
+  salah: {
+    niyyah: { ar: 'قِف ووشّك ناحية القبلة، وخلّي في قلبك إنك هتصلّي.', en: 'Stand facing the Qibla, and in your heart get ready to pray.' },
+    takbir: { ar: 'ارفع إيديك وقول: الله أكبر. 🙌', en: 'Raise your hands and say: Allahu Akbar.' },
+    qiyam: { ar: 'حُطّ إيدك اليمين على الشمال على صدرك، واقرأ الفاتحة.', en: 'Put your right hand over your left on your chest, and read Al-Fātiḥah.' },
+    ruku: { ar: 'انحني وحُطّ إيديك على رُكَبك، وقول: سبحان ربّي العظيم.', en: 'Bow, put your hands on your knees, and say: Subḥāna Rabbiyal-ʿAẓīm.' },
+    itidal: { ar: 'ارجع تقف تاني، وقول: ربّنا ولك الحمد.', en: 'Stand back up straight, and say: Rabbanā wa lakal-ḥamd.' },
+    sujud: { ar: 'اسجد وحُطّ جبهتك على الأرض، وقول: سبحان ربّي الأعلى.', en: 'Prostrate with your forehead on the ground, and say: Subḥāna Rabbiyal-Aʿlā.' },
+    julus: { ar: 'اقعُد شويّة وقول: ربّ اغفر لي، وبعدين اسجد تاني.', en: 'Sit for a moment and say: Rabbi-ghfir lī, then prostrate again.' },
+    'middle-tashahhud': { ar: 'بعد الركعة التانية اقعُد واقرأ التشهّد، وبعدين قوم تكمّل الصلاة.', en: 'After the 2nd unit, sit and say the Tashahhud, then stand to finish the prayer.' },
+    tashahhud: { ar: 'في آخر قعدة اقرأ التشهّد والصلاة على النبي ﷺ.', en: 'In the last sitting, say the Tashahhud and the prayer upon the Prophet ﷺ.' },
+    tasleem: { ar: 'لُفّ وشّك يمين وبعدين شمال وقول: السلام عليكم ورحمة الله. 🤲', en: 'Turn your face right, then left, saying: As-salāmu ʿalaykum wa raḥmatullāh.' },
+  },
+};
+
 // ── Muḥkamāt ──────────────────────────────────────────────────────────────
 export interface KeyVerse { surah: number; from: number; to: number; titleAr: string; titleEn: string; whyAr: string; whyEn: string }
 

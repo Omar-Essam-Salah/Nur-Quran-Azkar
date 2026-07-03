@@ -1,7 +1,21 @@
 import { useState } from 'react';
 import { ArrowLeft, ChevronDown, Droplets, Sun, Building2, Heart } from 'lucide-react';
-import { GUIDE, type GuideSection } from '@/data/guide';
+import { GUIDE, type GuideSection, type GuideTopic } from '@/data/guide';
+import { SpeakButton } from '@/components/SpeakButton';
 import { useI18n } from '@/i18n';
+
+// Compose the full readable text of a topic (intro + numbered steps + notes + ref)
+function topicSpeech(topic: GuideTopic, isAr: boolean): string {
+  const parts: string[] = [];
+  const intro = isAr ? topic.intro : (topic.introEn ?? topic.intro);
+  if (intro) parts.push(intro);
+  topic.steps.forEach((s) => {
+    parts.push(isAr ? s.text : (s.en ?? s.text));
+    const note = isAr ? s.note : (s.noteEn ?? s.note);
+    if (note) parts.push(note);
+  });
+  return parts.join('. ');
+}
 
 interface GuidePageProps { onBack: () => void }
 
@@ -84,6 +98,14 @@ function Section({ section, open, setOpen }: { section: GuideSection; open: stri
 
               {isOpen && (
                 <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3" dir={isAr ? 'rtl' : 'ltr'}>
+                  <div className="flex justify-end -mb-1">
+                    <SpeakButton
+                      text={topicSpeech(topic, isAr)}
+                      lang={isAr ? 'ar-SA' : 'en-US'}
+                      size={15}
+                      className="p-1.5 rounded-lg hover:bg-white/10 flex items-center gap-1.5 text-[color:var(--text-muted)]"
+                    />
+                  </div>
                   {(isAr ? topic.intro : (topic.introEn ?? topic.intro)) && (
                     <p className={`text-[13px] leading-loose ${isAr ? 'arabic-text' : ''}`} style={{ color: 'rgba(var(--text-strong-rgb), 0.85)' }}>
                       {isAr ? topic.intro : (topic.introEn ?? topic.intro)}

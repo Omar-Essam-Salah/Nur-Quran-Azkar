@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Star, Scale, BookOpenCheck, Loader2 } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { SpeakButton } from '@/components/SpeakButton';
 import { loadAyahRange, type SimpleAyah } from '@/lib/localQuran';
 import { surahList } from '@/data/surahList';
 import { KEY_VERSES, RULING_VERSES, MUHKAM_INTRO } from '@/data/learn';
@@ -78,9 +79,12 @@ export default function MuhkamatPage({ onBack }: Props) {
           <div className="space-y-2.5">
             {KEY_VERSES.map((v) => (
               <div key={`${v.surah}:${v.from}`} className="glass-card-sm p-4 space-y-2.5">
-                <div>
-                  <h3 className="text-sm font-semibold text-[#d4af37] arabic-text">{isAr ? v.titleAr : v.titleEn}</h3>
-                  <p className={`text-[11.5px] text-[color:var(--text-muted)] leading-relaxed mt-0.5 ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>{isAr ? v.whyAr : v.whyEn}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-[#d4af37] arabic-text">{isAr ? v.titleAr : v.titleEn}</h3>
+                    <p className={`text-[11.5px] text-[color:var(--text-muted)] leading-relaxed mt-0.5 ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>{isAr ? v.whyAr : v.whyEn}</p>
+                  </div>
+                  <SpeakButton text={`${isAr ? v.titleAr : v.titleEn}. ${isAr ? v.whyAr : v.whyEn}`} lang={isAr ? 'ar-SA' : 'en-US'} size={14} />
                 </div>
                 <div className="border-t border-white/5 pt-2.5"><VerseBlock surah={v.surah} from={v.from} to={v.to} showTranslation={!isAr} /></div>
               </div>
@@ -95,7 +99,8 @@ export default function MuhkamatPage({ onBack }: Props) {
               <div key={`${v.surah}:${v.from}`} className="glass-card-sm p-4 space-y-2.5">
                 <div className="flex items-center gap-2">
                   <span className="w-8 h-8 rounded-xl bg-[#14879c]/15 flex items-center justify-center flex-shrink-0"><Scale size={15} className="text-[#14879c]" /></span>
-                  <h3 className="text-sm font-semibold text-white arabic-text">{isAr ? v.topicAr : v.topicEn}</h3>
+                  <h3 className="text-sm font-semibold text-white arabic-text flex-1">{isAr ? v.topicAr : v.topicEn}</h3>
+                  <SpeakButton text={`${isAr ? v.topicAr : v.topicEn}. ${isAr ? v.explAr : v.explEn}`} lang={isAr ? 'ar-SA' : 'en-US'} size={14} />
                 </div>
                 <div className="border-t border-white/5 pt-2.5"><VerseBlock surah={v.surah} from={v.from} to={v.to} showTranslation={!isAr} /></div>
                 <p className={`text-[12px] leading-relaxed rounded-lg px-3 py-2 ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'}
@@ -111,6 +116,9 @@ export default function MuhkamatPage({ onBack }: Props) {
         {tab === 'concept' && (
           <div className="space-y-3">
             <div className="glass-card-sm p-5">
+              <div className="flex justify-end -mt-1 -mr-1 mb-1">
+                <SpeakButton text={isAr ? MUHKAM_INTRO.ar : MUHKAM_INTRO.en} lang={isAr ? 'ar-SA' : 'en-US'} size={15} />
+              </div>
               <p className={`text-[13.5px] leading-loose ${isAr ? 'arabic-text' : ''}`} dir={isAr ? 'rtl' : 'ltr'} style={{ color: 'rgba(var(--text-strong-rgb),0.9)' }}>
                 {isAr ? MUHKAM_INTRO.ar : MUHKAM_INTRO.en}
               </p>
