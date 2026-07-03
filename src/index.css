@@ -42,16 +42,19 @@
 
   /* ── Soft Daylight (LIGHT) — same design, inverted surfaces ── */
   html.light {
-    --app-bg: #e4edf0;
-    --app-bg-2: #d4e2e8;
+    --app-bg: #e7eef1;
+    --app-bg-2: #dbe7ec;
     --glass-1: 255, 255, 255;
     --glass-2: 224, 235, 240;
     --hair: 18, 52, 60;
     --text-strong-rgb: 8, 28, 35;
     --text-muted: #3f5860;
-    --starfield-grad: radial-gradient(ellipse at bottom, #cfe3ea 0%, #eef3f5 75%);
-    --snow-color: rgba(20, 135, 156, 0.28);
-    --snow-accent: rgba(20, 135, 156, 0.5);
+    /* A real daytime sky: soft blue overhead easing into a warm cream haze at the
+       horizon (so it sits under the warm sun instead of a flat grey wash). */
+    --starfield-grad: linear-gradient(180deg, #bfe0f2 0%, #d6e8f0 40%, #eaf1f0 72%, #f7f2e6 100%);
+    /* Gentle sunlit motes (soft slate + a few warm-gold), not teal specks. */
+    --snow-color: rgba(90, 120, 130, 0.15);
+    --snow-accent: rgba(212, 175, 55, 0.34);
     --moon-bg: #ffd27a;
     --moon-opacity: 0.85;
 
@@ -253,22 +256,27 @@
      Scoped to html.light only, so the night-mode moon is untouched. With the
      theme set to "auto" this gives sun by day and moon by night automatically. */
   html.light .moon-element {
-    background: radial-gradient(circle at 50% 42%, #fff8d6 0%, #ffe48f 34%, #ffbe52 70%, #ff9e2c 100%);
-    /* STATIC glow — painted once. (Animating box-shadow blur every frame was the
-       cause of day-mode lag; the pulse now lives on `transform` only.) */
+    /* A soft, luminous daytime sun: a hot near-white core easing through warm
+       gold to a FEATHERED transparent edge (no hard cartoon orange ring). */
+    background: radial-gradient(circle at 50% 46%,
+        #fffdf6 0%, #fff6d8 26%, #ffe7a6 50%, rgba(255,214,128,0.6) 74%, rgba(255,201,96,0) 100%);
+    /* STATIC diffuse bloom — painted once. (Animating box-shadow blur every frame
+       was the cause of day-mode lag; the pulse lives on `transform` only.) */
     box-shadow:
-      0 0 38px 8px rgba(255,184,64,0.58),
-      0 0 96px 28px rgba(255,150,40,0.32);
+      0 0 55px 18px rgba(255,227,150,0.42),
+      0 0 130px 56px rgba(255,205,120,0.20);
+    /* Slightly smaller + higher reads as the sun sitting in an open sky. */
+    width: 108px; height: 108px; top: 12%;
     /* Compositor-only animation (no repaint): a gentle float + breathe. */
-    animation: sun-breathe 6s ease-in-out infinite;
+    animation: sun-breathe 7s ease-in-out infinite;
     will-change: transform;
   }
-  /* No craters on the sun. */
+  /* No craters / inset shadow on the sun. */
   html.light .moon-element::after,
   html.light .moon-element::before { display: none; }
   @keyframes sun-breathe {
     0%, 100% { transform: translateY(0) scale(1); }
-    50%      { transform: translateY(-10px) scale(1.05); }
+    50%      { transform: translateY(-8px) scale(1.035); }
   }
 
   /* ── "Pampered" micro-interactions: a tactile press on tappable surfaces,
@@ -392,6 +400,24 @@ html.light .glass-card-sm {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(238, 243, 245, 0.94));
   box-shadow: 0 6px 20px rgba(18, 52, 60, 0.07);
 }
+
+/* ── Light-mode chrome fix ───────────────────────────────────────────────────
+   Every sticky header and the bottom nav were designed for a DARK sky: a
+   translucent white fill (rgba(--glass-1, 0.6)) plus WHITE hairline borders.
+   On a light background those borders disappear and the fill lets page content
+   scroll straight through, so the bars read as "transparent" and clash with the
+   sky. (Android WebView also can't be relied on to paint backdrop-filter.)
+   Force a crisp, near-opaque surface with a real dark-tinted hairline + soft
+   shadow so the chrome clearly sits above the page. The `> div` targets the one
+   styled card inside each `<header class="sticky …">` / `<nav class="fixed …">`. */
+html.light header.sticky > div,
+html.light nav.fixed > div {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(232, 240, 244, 0.97)) !important;
+  border-color: rgba(18, 52, 60, 0.10) !important;
+  border-top-color: rgba(18, 52, 60, 0.18) !important;
+}
+html.light header.sticky > div { box-shadow: 0 4px 20px rgba(18, 52, 60, 0.10) !important; }
+html.light nav.fixed > div     { box-shadow: 0 -6px 24px rgba(18, 52, 60, 0.10) !important; }
 
 /* ─── Toasts (sonner) ───────────────────────────────────────────────────────
    Force readable colours in BOTH themes. The default colours relied on raw HSL
