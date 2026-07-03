@@ -24,6 +24,7 @@ import AuthenticityPage from '@/sections/AuthenticityPage';
 import PrayerLearnPage from '@/sections/PrayerLearnPage';
 import MuhkamatPage from '@/sections/MuhkamatPage';
 import OccasionsPage from '@/sections/OccasionsPage';
+import PrayerTrackerPage from '@/sections/PrayerTrackerPage';
 import MorePage from '@/sections/MorePage';
 import TasbihPage from '@/sections/TasbihPage';
 import BookmarksPage from '@/sections/BookmarksPage';
@@ -367,6 +368,11 @@ function App() {
         {/* Islamic occasions + reminders */}
         {currentPage === 'occasions' && (
           <OccasionsPage onBack={goBack} />
+        )}
+
+        {/* Prayer tracker + verse of the day */}
+        {currentPage === 'tracker' && (
+          <PrayerTrackerPage onBack={goBack} onOpenSurah={openSurah} />
         )}
 
         {/* Ramadan mode */}

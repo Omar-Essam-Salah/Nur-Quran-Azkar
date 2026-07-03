@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
-import { X, Search, BookOpen, Sparkles, ArrowRight, Users, Compass } from 'lucide-react';
+import { X, Search, BookOpen, Sparkles, ArrowRight, Users, Compass, Loader2 } from 'lucide-react';
 import { surahList } from '@/data/surahList';
 import { azkarCategories } from '@/data/azkarData';
 import { PROPHETS } from '@/data/prophets';
+import { searchQuran, preloadQuranIndex, type QuranHit } from '@/lib/quranSearch';
 import type { Page } from '@/types';
 import { useI18n } from '@/i18n';
 
 interface SearchOverlayProps {
   onClose: () => void;
-  onOpenSurah: (surahNumber: number) => void;
+  onOpenSurah: (surahNumber: number, ayah?: number) => void;
   onOpenAzkar: (azkarId: string) => void;
   onNavigate: (page: Page) => void;
 }
@@ -90,7 +91,22 @@ export default function SearchOverlay({ onClose, onOpenSurah, onOpenAzkar, onNav
     return { surahs, azkar, prophets, features };
   }, [query]);
 
-  const hasResults = results.surahs.length || results.azkar.length || results.prophets.length || results.features.length;
+  // Offline full-text Qur'an search (async — the index loads once, precached).
+  const [verses, setVerses] = useState<QuranHit[]>([]);
+  const [vLoading, setVLoading] = useState(false);
+  useEffect(() => { preloadQuranIndex(); }, []);
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setVerses([]); setVLoading(false); return; }
+    setVLoading(true);
+    let active = true;
+    const id = window.setTimeout(() => {
+      searchQuran(q, 40).then((r) => { if (active) { setVerses(r); setVLoading(false); } }).catch(() => { if (active) setVLoading(false); });
+    }, 250);
+    return () => { active = false; clearTimeout(id); };
+  }, [query]);
+
+  const hasResults = results.surahs.length || results.azkar.length || results.prophets.length || results.features.length || verses.length;
   const go = (fn: () => void) => { fn(); onClose(); };
 
   return (
@@ -135,7 +151,7 @@ export default function SearchOverlay({ onClose, onOpenSurah, onOpenAzkar, onNav
           {!query.trim() ? (
             <div className="text-center py-12 space-y-3">
               <Search size={32} className="text-[color:var(--text-muted)]/30 mx-auto" />
-              <p className="text-sm text-[color:var(--text-muted)]">{t('Search surahs, adhkar, prophets, and every section', 'ابحث في السور والأذكار والأنبياء وكل الأقسام')}</p>
+              <p className="text-sm text-[color:var(--text-muted)]">{t('Search Quran verses, surahs, adhkar, prophets & every section', 'ابحث في آيات القرآن والسور والأذكار والأنبياء وكل الأقسام')}</p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {(lang === 'ar'
                   ? ['الفاتحة', 'الكهف', 'الرحمن', 'الصباح', 'الوضوء', 'يوسف']
@@ -147,7 +163,7 @@ export default function SearchOverlay({ onClose, onOpenSurah, onOpenAzkar, onNav
                 ))}
               </div>
             </div>
-          ) : !hasResults ? (
+          ) : (!hasResults && !vLoading) ? (
             <div className="text-center py-12">
               <p className="text-sm text-[color:var(--text-muted)]">{t('No results for', 'لا نتائج لـ')} &ldquo;{query}&rdquo;</p>
             </div>
@@ -160,6 +176,25 @@ export default function SearchOverlay({ onClose, onOpenSurah, onOpenAzkar, onNav
                       left={<span className="text-xs font-bold text-[#14879c]">{s.number}</span>} leftBg="#14879c"
                       title={s.englishName} titleAr={s.name} sub={`${s.verses} ${t('verses', 'آية')} · ${s.type}`} />
                   ))}
+                </Group>
+              )}
+
+              {(verses.length > 0 || vLoading) && (
+                <Group icon={<BookOpen size={12} className="text-[#d4af37]" />} title={`${t('Quran verses', 'آيات القرآن')}${verses.length ? ` (${verses.length})` : ''}`}>
+                  {vLoading && verses.length === 0 ? (
+                    <div className="flex justify-center py-4"><Loader2 size={18} className="animate-spin text-[#14879c]" /></div>
+                  ) : (
+                    verses.map((v) => {
+                      const nm = surahList.find((s) => s.number === v.s)?.name ?? String(v.s);
+                      return (
+                        <button key={`${v.s}:${v.a}`} onClick={() => go(() => onOpenSurah(v.s, v.a))} className="w-full glass-card-sm p-3 text-right space-y-1">
+                          <p className="arabic-text text-white text-[15px] leading-relaxed line-clamp-2" dir="rtl">{v.t}</p>
+                          {lang !== 'ar' && v.r && <p className="text-[11px] text-[color:var(--text-muted)] leading-snug line-clamp-2" dir="ltr">{v.r}</p>}
+                          <p className="text-[10px] text-[#14879c] arabic-text">{nm} · {t('Ayah', 'آية')} {v.a}</p>
+                        </button>
+                      );
+                    })
+                  )}
                 </Group>
               )}
 
