@@ -33,7 +33,7 @@ function StepCard({ step, index, isAr }: { step: LearnStep; index: number; isAr:
         </p>
         {step.sayAr && (
           <div className="mt-2 rounded-xl px-3 py-2" style={{ background: 'rgba(212,175,55,0.10)', border: '1px solid rgba(212,175,55,0.22)' }}>
-            <p className="arabic-text text-[15px] leading-loose text-[#d4af37]" dir="rtl">{step.sayAr}</p>
+            <p className="arabic-text text-[15px] leading-loose text-[#d4af37] whitespace-pre-line" dir="rtl">{step.sayAr}</p>
             {step.translit && <p className="text-[10.5px] text-[#14879c] italic mt-1 leading-snug">{step.translit}</p>}
             {step.sayEn && <p className="text-[11px] text-[color:var(--text-muted)] mt-0.5 leading-snug" dir="ltr">“{step.sayEn}”</p>}
           </div>
