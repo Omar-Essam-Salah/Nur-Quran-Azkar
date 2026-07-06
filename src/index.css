@@ -156,12 +156,12 @@
     line-height: 2;
     direction: rtl;
   }
-  /* When the UI language is English, page titles/labels that share the Arabic
+  /* For ANY non-Arabic UI language, page titles/labels that share the Arabic
      display font must still read left-to-right (the font renders Latin fine).
      Arabic CONTENT lives in <p>/<span> and keeps its own dir, so it's untouched. */
-  html[lang='en'] h1.arabic-text,
-  html[lang='en'] h2.arabic-text,
-  html[lang='en'] h3.arabic-text {
+  html:not([lang='ar']) h1.arabic-text,
+  html:not([lang='ar']) h2.arabic-text,
+  html:not([lang='ar']) h3.arabic-text {
     direction: ltr;
   }
 

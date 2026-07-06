@@ -10,6 +10,7 @@ import { exportData, importData } from '@/lib/backup';
 import { isPrayerDnd, setPrayerDnd } from '@/lib/reminders';
 import { salawatEnabled, salawatInterval, setSalawatEnabled, setSalawatInterval, scheduleSalawat, testSalawat, SALAWAT_INTERVALS } from '@/lib/salawat';
 import { VoiceSettings } from '@/components/VoiceSettings';
+import { LanguagePicker } from '@/components/LanguagePicker';
 import { StorageManager } from '@/components/StorageManager';
 import { TafsirPacks } from '@/components/TafsirPacks';
 import { useI18n } from '@/i18n';
@@ -22,7 +23,9 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ settings, setSettings, onBack }: SettingsPageProps) {
-  const { t: tr, lang, setLang } = useI18n();
+  const { t: tr, lang, languages } = useI18n();
+  const [showLang, setShowLang] = useState(false);
+  const currentLang = languages.find((l) => l.code === lang);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [trQuery, setTrQuery] = useState('');
   const { list: trCatalogue } = useTranslationsList();
@@ -177,21 +180,15 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
             <Globe size={12} />
             {tr('Language', 'اللغة')}
           </h3>
-          <div className="grid grid-cols-2 gap-2">
-            {([
-              { value: 'ar' as const, label: 'العربية' },
-              { value: 'en' as const, label: 'English' },
-            ]).map((o) => {
-              const on = lang === o.value;
-              return (
-                <button key={o.value} onClick={() => setLang(o.value)}
-                  className="py-2.5 rounded-xl text-sm transition-all"
-                  style={{ background: on ? 'rgba(20,135,156,0.15)' : 'rgba(var(--hair),0.03)', color: on ? '#14879c' : 'var(--text-muted)', border: on ? '1px solid rgba(20,135,156,0.3)' : '1px solid transparent' }}>
-                  {o.label}
-                </button>
-              );
-            })}
-          </div>
+          <button onClick={() => setShowLang(true)}
+            className="w-full flex items-center justify-between rounded-xl px-3.5 py-3"
+            style={{ background: 'rgba(var(--hair),0.04)', border: '1px solid rgba(var(--hair),0.08)' }}>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-white" dir={lang === 'ar' ? 'rtl' : 'ltr'}>{currentLang?.native ?? 'English'}</p>
+              <p className="text-[10px] text-[color:var(--text-muted)]">{tr('Tap to change · Quran stays Arabic', 'اضغط للتغيير · القرآن يبقى بالعربية')}</p>
+            </div>
+            <Languages size={16} className="text-[#14879c]" />
+          </button>
         </div>
 
         {/* Read-aloud voice (TTS) */}
@@ -655,6 +652,8 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
 
         <div className="h-8" />
       </div>
+
+      {showLang && <LanguagePicker onClose={() => setShowLang(false)} />}
     </div>
   );
 }

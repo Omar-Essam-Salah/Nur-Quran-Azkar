@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from 'react';
 import type { Page } from '@/types';
 import { useI18n } from '@/i18n';
+import { LanguagePicker } from '@/components/LanguagePicker';
 
 interface MorePageProps {
   onNavigate: (p: Page) => void;
@@ -65,7 +66,8 @@ const GROUPS: { en: string; ar: string; items: Item[] }[] = [
 const COLLAPSE_KEY = 'more-collapsed-groups';
 
 export default function MorePage({ onNavigate }: MorePageProps) {
-  const { t, lang, toggle } = useI18n();
+  const { t, lang } = useI18n();
+  const [showLang, setShowLang] = useState(false);
   const [query, setQuery] = useState('');
   const [collapsed, setCollapsed] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '[]')); } catch { return new Set(); }
@@ -130,12 +132,12 @@ export default function MorePage({ onNavigate }: MorePageProps) {
             <p className="text-[10px] text-[color:var(--text-muted)]">{t('All features', 'كل المزايا')}</p>
           </div>
           <button
-            onClick={toggle}
+            onClick={() => setShowLang(true)}
             className="px-2.5 py-2 rounded-xl transition-all hover:bg-white/10 flex items-center gap-1"
             title="Language / اللغة"
           >
             <Languages size={16} className="text-[#14879c]" />
-            <span className="text-[10px] font-bold text-[#14879c]">{lang === 'ar' ? 'EN' : 'ع'}</span>
+            <span className="text-[10px] font-bold text-[#14879c] uppercase">{lang === 'ar' ? 'ع' : lang}</span>
           </button>
         </div>
       </header>
@@ -196,6 +198,8 @@ export default function MorePage({ onNavigate }: MorePageProps) {
 
         <div className="h-8" />
       </div>
+
+      {showLang && <LanguagePicker onClose={() => setShowLang(false)} />}
     </div>
   );
 }
