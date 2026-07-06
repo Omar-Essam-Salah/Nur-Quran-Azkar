@@ -27,6 +27,10 @@ interface QuranReaderProps {
   settings: AppSettings;
 }
 
+// A tapped word, lifted to the page so its meaning shows in ONE bottom bar
+// (never a floating tooltip that covers the lines you're reading).
+interface WordSel { surah: number; ayah: number; position: number; text: string; translation?: string; transliteration?: string }
+
 // ── Memoized ayah row (only the reciting ayah re-renders on word change) ──────
 interface AyahViewProps {
   verse: NormVerse;
@@ -35,6 +39,7 @@ interface AyahViewProps {
   isActive: boolean;
   isPlaying: boolean;
   activeWord: number;
+  selectedWord: number;
   bookmarked: boolean;
   memorize: boolean;
   labelFor: (id: number) => string;
@@ -42,28 +47,18 @@ interface AyahViewProps {
   onTogglePlay: (ayah: number) => void;
   onOpenTafsir: (verse: NormVerse) => void;
   onShare: (verse: NormVerse) => void;
+  onWordTap: (w: WordSel) => void;
 }
 
 const AyahView = memo(function AyahView({
-  verse, fontSize, showTranslation, isActive, isPlaying, activeWord, bookmarked, memorize, labelFor, onToggleBookmark, onTogglePlay, onOpenTafsir, onShare
+  verse, fontSize, showTranslation, isActive, isPlaying, activeWord, selectedWord, bookmarked, memorize, labelFor, onToggleBookmark, onTogglePlay, onOpenTafsir, onShare, onWordTap
 }: AyahViewProps) {
   const words = verse.words.filter((w) => w.charType === 'word');
   const [surahNo, ayahNo] = verse.key.split(':').map(Number);
-  const [activeWordPopup, setActiveWordPopup] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
-  // Re-render the tapped word's speaker icon while its recitation is playing.
-  const [, forceWord] = useState(0);
-  useEffect(() => subscribeWordAudio(() => forceWord((n) => n + 1)), []);
   // When memorization mode is toggled, re-hide every ayah so you test fresh.
   useEffect(() => { setRevealed(false); }, [memorize]);
   const hidden = memorize && !revealed;
-
-  // Tap a word → show its meaning and recite that single word aloud.
-  const tapWord = (position: number) => {
-    const next = activeWordPopup === position ? null : position;
-    setActiveWordPopup(next);
-    if (next != null) void playWord(surahNo, ayahNo, position);
-  };
 
   return (
     <div id={`ayah-${verse.ayah}`} className="group relative">
@@ -137,44 +132,16 @@ const AyahView = memo(function AyahView({
           style={{ fontSize: `${fontSize}px`, filter: hidden ? 'blur(9px)' : undefined, opacity: hidden ? 0.55 : 1 }}>
           {words.map((w) => {
             const lit = isActive && activeWord === w.position;
-            const wordTranslation = w.translation;
-            const wordTransliteration = w.transliteration;
-
-            const open = activeWordPopup === w.position;
-            const sounding = wordPlaying() === `${surahNo}:${ayahNo}:${w.position}`;
+            const picked = selectedWord === w.position;
             return (
-              <div key={w.position} className="relative inline-block">
-                <span
-                  onClick={() => tapWord(w.position)}
-                  className="cursor-pointer rounded px-0.5 transition-colors"
-                  style={(lit || (open && sounding))
-                    ? { color: '#d4af37', background: 'rgba(212, 175, 55, 0.14)' }
-                    : open ? { background: 'rgba(20, 135, 156, 0.14)' } : undefined}
-                >
-                  {w.text}
-                </span>
-
-                {/* Word Meaning Popover — meaning + transliteration + replay */}
-                {open && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-max max-w-[180px] z-50 px-3 py-2 rounded-xl text-center shadow-lg"
-                       style={{ background: 'rgba(var(--glass-1), 0.97)', border: '1px solid rgba(212,175,55,0.3)', backdropFilter: 'blur(10px)' }}>
-                    <div className="flex items-center justify-center gap-1.5">
-                      {wordTranslation && <p className="text-[12px] font-semibold text-white leading-tight">{wordTranslation}</p>}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); void playWord(surahNo, ayahNo, w.position); }}
-                        className="p-1 rounded-lg hover:bg-white/10 flex-shrink-0" aria-label="Listen to word"
-                      >
-                        <Volume2 size={13} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
-                      </button>
-                    </div>
-                    {wordTransliteration && <p className="text-[9.5px] text-[#14879c] mt-0.5 tracking-wide italic">{wordTransliteration}</p>}
-                    {!wordTranslation && !wordTransliteration && <p className="text-[9px] text-[color:var(--text-muted)]">{'—'}</p>}
-                    {/* little arrow */}
-                    <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px w-2 h-2 rotate-45"
-                      style={{ background: 'rgba(var(--glass-1), 0.97)', borderRight: '1px solid rgba(212,175,55,0.3)', borderBottom: '1px solid rgba(212,175,55,0.3)' }} />
-                  </div>
-                )}
-              </div>
+              <span
+                key={w.position}
+                onClick={() => onWordTap({ surah: surahNo, ayah: ayahNo, position: w.position, text: w.text, translation: w.translation, transliteration: w.transliteration })}
+                className="cursor-pointer rounded px-0.5 transition-colors"
+                style={(lit || picked) ? { color: '#d4af37', background: 'rgba(212, 175, 55, 0.16)' } : undefined}
+              >
+                {w.text}
+              </span>
             );
           })}
         </p>
@@ -354,6 +321,31 @@ export default function QuranReader({
   audioApiRef.current = audio;
   const handleTogglePlay = useCallback((ayah: number) => audioApiRef.current.toggle(ayah), []);
   const handleOpenTafsir = useCallback((verse: NormVerse) => setTafsirVerse(verse), []);
+
+  // ── Word-by-word bottom bar (shared, single popup) ──
+  const [wordPopup, setWordPopup] = useState<WordSel | null>(null);
+  useEffect(() => { setWordPopup(null); }, [surahNumber]); // close it when the surah changes
+  const handleWordTap = useCallback((w: WordSel) => { setWordPopup(w); void playWord(w.surah, w.ayah, w.position); }, []);
+  // Step to the previous / next word — continues across ayah boundaries.
+  const stepWord = useCallback((delta: number) => {
+    if (!content) return;
+    setWordPopup((prev) => {
+      if (!prev) return prev;
+      const verses = content.verses;
+      let vi = verses.findIndex((v) => v.ayah === prev.ayah);
+      if (vi < 0) return prev;
+      let list = verses[vi].words.filter((w) => w.charType === 'word');
+      let pos = prev.position + delta;
+      while (pos < 1) { if (vi === 0) return prev; vi -= 1; list = verses[vi].words.filter((w) => w.charType === 'word'); pos += list.length; }
+      while (pos > list.length) { if (vi >= verses.length - 1) return prev; pos -= list.length; vi += 1; list = verses[vi].words.filter((w) => w.charType === 'word'); }
+      const w = list[pos - 1]; if (!w) return prev;
+      const v = verses[vi];
+      const surah = Number(v.key.split(':')[0]);
+      void playWord(surah, v.ayah, w.position);
+      if (v.ayah !== prev.ayah) document.getElementById(`ayah-${v.ayah}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return { surah, ayah: v.ayah, position: w.position, text: w.text, translation: w.translation, transliteration: w.transliteration };
+    });
+  }, [content]);
   const handleShare = useCallback((verse: NormVerse) => {
     const sName = surahList.find((s) => s.number === surahNumber)?.name ?? '';
     void shareVerseCard({
@@ -512,6 +504,7 @@ export default function QuranReader({
                   isActive={isActive}
                   isPlaying={isActive && audio.isPlaying}
                   activeWord={isActive ? audio.currentWord : 0}
+                  selectedWord={wordPopup?.ayah === v.ayah ? wordPopup.position : 0}
                   bookmarked={isBookmarked('ayah', surah.number, v.ayah)}
                   memorize={memorize}
                   labelFor={labelFor}
@@ -519,6 +512,7 @@ export default function QuranReader({
                   onTogglePlay={handleTogglePlay}
                   onOpenTafsir={handleOpenTafsir}
                   onShare={handleShare}
+                  onWordTap={handleWordTap}
                 />
               );
             })}
@@ -574,6 +568,9 @@ export default function QuranReader({
         </div>
       )}
 
+      {/* Word-by-word bar — pinned above the player so it never covers the āyāt. */}
+      {wordPopup && <ReaderWordPopup entry={wordPopup} onStep={stepWord} onClose={() => setWordPopup(null)} />}
+
       {/* Recitation player */}
       <AudioPlayer
         reciter={reciter}
@@ -583,6 +580,43 @@ export default function QuranReader({
         verses={playerVerses}
         audio={audio}
       />
+    </div>
+  );
+}
+
+// A single word-by-word bar pinned to the bottom (above the player). Shows the
+// tapped word's meaning + transliteration, replays it, and steps through the
+// words one by one (‹ prev · next ›), continuing across āyāt.
+function ReaderWordPopup({ entry, onStep, onClose }: { entry: WordSel; onStep: (d: number) => void; onClose: () => void }) {
+  const { t } = useI18n();
+  const [, force] = useState(0);
+  useEffect(() => subscribeWordAudio(() => force((n) => n + 1)), []);
+  const sounding = wordPlaying() === `${entry.surah}:${entry.ayah}:${entry.position}`;
+  return (
+    <div className="fixed inset-x-0 z-[60] px-3 pointer-events-none" style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}>
+      <div className="mx-auto max-w-lg rounded-2xl p-3 pointer-events-auto relative"
+        style={{ background: 'linear-gradient(135deg, rgb(var(--glass-1)), rgb(var(--glass-2)))', border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 -6px 26px rgba(0,0,0,0.4)' }}>
+        <button onClick={onClose} className="absolute top-2 left-2 p-1 rounded-lg hover:bg-white/10" aria-label={t('Close', 'إغلاق')}>
+          <X size={15} className="text-[color:var(--text-muted)]" />
+        </button>
+        <p className="arabic-text text-2xl text-[#d4af37] text-center leading-tight" dir="rtl">{entry.text}</p>
+        {entry.transliteration && <p className="text-[11px] text-[#14879c] italic text-center mt-0.5" dir="ltr">{entry.transliteration}</p>}
+        <p className="text-[13px] text-white text-center mt-0.5" dir="ltr">{entry.translation ?? t('Meaning needs a connection', 'المعنى يحتاج اتصالاً')}</p>
+        {/* prev · listen · next (RTL: next word is to the LEFT) */}
+        <div className="flex items-center justify-center gap-4 mt-2.5">
+          <button onClick={() => onStep(-1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Previous word', 'الكلمة السابقة')}>
+            <ChevronRight size={20} className="text-[color:var(--text-muted)]" />
+          </button>
+          <button onClick={() => void playWord(entry.surah, entry.ayah, entry.position)}
+            className="w-11 h-11 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+            style={{ background: 'rgba(212,175,55,0.16)', border: '1px solid rgba(212,175,55,0.35)' }} aria-label={t('Play word', 'انطق الكلمة')}>
+            <Volume2 size={19} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
+          </button>
+          <button onClick={() => onStep(1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Next word', 'الكلمة التالية')}>
+            <ChevronLeft size={20} className="text-[color:var(--text-muted)]" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

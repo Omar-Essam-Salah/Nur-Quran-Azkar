@@ -282,6 +282,20 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
     const [s, a] = key.split(':').map(Number);
     void playWord(s, a, pos);
   };
+  // Ordered word tokens on the page → step through them one at a time.
+  const wordSeq = useMemo(() => tokens.flatMap((tk) => tk.kind === 'word' ? [{ key: tk.key, pos: tk.pos }] : []), [tokens]);
+  const stepWord = (delta: number) => {
+    setWordPopup((prev) => {
+      if (!prev) return prev;
+      const i = wordSeq.findIndex((w) => w.key === prev.key && w.pos === prev.pos);
+      const j = i + delta;
+      if (i < 0 || j < 0 || j >= wordSeq.length) return prev;
+      const nx = wordSeq[j];
+      const [s, a] = nx.key.split(':').map(Number);
+      void playWord(s, a, nx.pos);
+      return nx;
+    });
+  };
   // "Recite from here" (the old tap-an-ayah behaviour), now reached from the popup.
   const reciteFrom = (key: string) => {
     setWordPopup(null);
@@ -495,7 +509,7 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
 
       {/* Word-by-word popup — meaning + hear the single word + recite from here. */}
       {wordPopup && (
-        <MushafWordPopup entry={wordPopup} onReciteFrom={reciteFrom} onClose={() => setWordPopup(null)} />
+        <MushafWordPopup entry={wordPopup} onStep={stepWord} onReciteFrom={reciteFrom} onClose={() => setWordPopup(null)} />
       )}
 
       {/* Floating tafsir window — opens on a word tap or follows recitation. */}
@@ -562,7 +576,7 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
 
 // Compact popup for a tapped word: its meaning + transliteration, a button to
 // hear the single word (word-by-word recitation), and one to recite from here.
-function MushafWordPopup({ entry, onReciteFrom, onClose }: { entry: { key: string; pos: number }; onReciteFrom: (key: string) => void; onClose: () => void }) {
+function MushafWordPopup({ entry, onStep, onReciteFrom, onClose }: { entry: { key: string; pos: number }; onStep: (d: number) => void; onReciteFrom: (key: string) => void; onClose: () => void }) {
   const { t } = useI18n();
   const [words, setWords] = useState<WbwWord[] | null>(null);
   const [, force] = useState(0);
@@ -581,23 +595,34 @@ function MushafWordPopup({ entry, onReciteFrom, onClose }: { entry: { key: strin
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-[60] px-3 pointer-events-none" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-      <div className="mx-auto max-w-sm rounded-2xl p-3.5 pointer-events-auto"
+      <div className="mx-auto max-w-sm rounded-2xl p-3.5 pointer-events-auto relative"
         style={{ background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.98), rgba(var(--glass-2), 0.98))', border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 12px 34px rgba(0,0,0,0.4)' }}>
-        <div className="flex items-start gap-3">
-          <button onClick={() => void playWord(s, a, entry.pos)}
-            className="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center active:scale-95 transition-transform"
-            style={{ background: 'rgba(212,175,55,0.14)', border: '1px solid rgba(212,175,55,0.3)' }} aria-label={t('Play word', 'انطق الكلمة')}>
-            <Volume2 size={22} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
-          </button>
-          <div className="flex-1 min-w-0 text-right">
-            <p className="arabic-text text-2xl text-[#d4af37] leading-tight" dir="rtl">{word?.text ?? '…'}</p>
-            {word?.transliteration && <p className="text-[11px] text-[#14879c] italic mt-0.5" dir="ltr">{word.transliteration}</p>}
-            {words === null
-              ? <p className="text-[11px] text-[color:var(--text-muted)] mt-0.5">{t('Loading…', 'جارٍ التحميل…')}</p>
-              : <p className="text-[13px] text-white mt-0.5" dir="ltr">{word?.translation ?? t('Meaning needs a connection', 'المعنى يحتاج اتصالاً')}</p>}
-          </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-white/10 flex-shrink-0" aria-label={t('Close', 'إغلاق')}><X size={16} className="text-[color:var(--text-muted)]" /></button>
+        <button onClick={onClose} className="absolute top-2 left-2 p-1 rounded-lg hover:bg-white/10" aria-label={t('Close', 'إغلاق')}><X size={16} className="text-[color:var(--text-muted)]" /></button>
+
+        {/* Word + meaning */}
+        <div className="text-center pt-1">
+          <p className="arabic-text text-2xl text-[#d4af37] leading-tight" dir="rtl">{word?.text ?? '…'}</p>
+          {word?.transliteration && <p className="text-[11px] text-[#14879c] italic mt-0.5" dir="ltr">{word.transliteration}</p>}
+          {words === null
+            ? <p className="text-[11px] text-[color:var(--text-muted)] mt-0.5">{t('Loading…', 'جارٍ التحميل…')}</p>
+            : <p className="text-[13px] text-white mt-0.5" dir="ltr">{word?.translation ?? t('Meaning needs a connection', 'المعنى يحتاج اتصالاً')}</p>}
         </div>
+
+        {/* prev · listen · next (RTL: next word is to the LEFT) */}
+        <div className="flex items-center justify-center gap-4 mt-2.5">
+          <button onClick={() => onStep(-1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Previous word', 'الكلمة السابقة')}>
+            <ChevronRight size={20} className="text-[color:var(--text-muted)]" />
+          </button>
+          <button onClick={() => void playWord(s, a, entry.pos)}
+            className="w-12 h-12 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+            style={{ background: 'rgba(212,175,55,0.16)', border: '1px solid rgba(212,175,55,0.35)' }} aria-label={t('Play word', 'انطق الكلمة')}>
+            <Volume2 size={21} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
+          </button>
+          <button onClick={() => onStep(1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Next word', 'الكلمة التالية')}>
+            <ChevronLeft size={20} className="text-[color:var(--text-muted)]" />
+          </button>
+        </div>
+
         <button onClick={() => onReciteFrom(entry.key)}
           className="mt-3 w-full py-2 rounded-xl text-[12px] font-semibold arabic-text flex items-center justify-center gap-2"
           style={{ background: 'rgba(20,135,156,0.16)', color: '#14879c', border: '1px solid rgba(20,135,156,0.3)' }}>
