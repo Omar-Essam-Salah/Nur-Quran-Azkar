@@ -36,6 +36,18 @@ const prayerArabic: Record<string, string> = {
 };
 const prayerNameAr = (n: string) => prayerArabic[n] ?? n;
 
+// The phrases of the adhan, cycled on the "adhan now" screen so it visually
+// calls the adhan (not just plays the sound).
+const ADHAN_PHRASES = [
+  'اللَّهُ أَكْبَرُ  اللَّهُ أَكْبَر',
+  'أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّه',
+  'أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّه',
+  'حَيَّ عَلَى الصَّلَاة',
+  'حَيَّ عَلَى الْفَلَاح',
+  'اللَّهُ أَكْبَرُ  اللَّهُ أَكْبَر',
+  'لَا إِلٰهَ إِلَّا اللَّه',
+];
+
 // قائمة أصوات المؤذنين — ملفات محلية بأسماء إنجليزية (تشتغل أوفلاين بلا مشاكل ترميز)
 const adhanOptions = [
   { id: 'makkah', name: 'أذان الحرم المكي', local: '/adhan/makkah.mp3', fallback: '' },
@@ -118,6 +130,12 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   // When the adhan is sounding in the foreground we show a full-screen minaret
   // "adhan now" screen. Holds the prayer's names (or a preview marker) or null.
   const [adhanNow, setAdhanNow] = useState<{ ar: string; en: string } | null>(null);
+  const [adhanPhrase, setAdhanPhrase] = useState(0); // cycles the adhan phrases
+  useEffect(() => {
+    if (!adhanNow) { setAdhanPhrase(0); return; }
+    const id = setInterval(() => setAdhanPhrase((i) => (i + 1) % ADHAN_PHRASES.length), 3600);
+    return () => clearInterval(id);
+  }, [adhanNow]);
   const ownerRef = useRef(0); // our claim on the shared audio element
   const adhanSoundingRef = useRef(false); // true while the adhan itself is audible
   const [audioSrc, setAudioSrc] = useState<string>('');
@@ -428,20 +446,27 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
           the preview). Tap Silence — or a volume key — to stop. */}
       {adhanNow && (
         <div className="fixed inset-0 z-[90] flex flex-col items-center justify-between text-center overflow-hidden" style={{ animation: 'adhan-fade 0.5s ease both' }}>
-          <style>{`@keyframes adhan-fade{from{opacity:0}to{opacity:1}}@keyframes adhan-halo{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.12);opacity:.85}}`}</style>
+          <style>{`@keyframes adhan-fade{from{opacity:0}to{opacity:1}}@keyframes adhan-halo{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.12);opacity:.85}}@keyframes adhan-phrase{0%{opacity:0;transform:translateY(8px)}12%{opacity:1;transform:translateY(0)}88%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-8px)}}`}</style>
           <img src="/adhan/minaret.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,18,58,0.45) 0%, rgba(10,16,52,0.28) 34%, rgba(6,10,38,0.94) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,18,58,0.48) 0%, rgba(10,16,52,0.34) 40%, rgba(6,10,38,0.94) 100%)' }} />
 
-          <div className="relative z-10" style={{ paddingTop: 'calc(3.2rem + env(safe-area-inset-top))' }}>
-            <p className="arabic-text text-white text-xl tracking-wide" style={{ textShadow: '0 2px 14px rgba(0,0,0,0.7)' }}>اللّٰهُ أَكْبَر</p>
+          {/* Top: which prayer is being called */}
+          <div className="relative z-10 px-6" style={{ paddingTop: 'calc(3rem + env(safe-area-inset-top))' }}>
+            <span className="text-[11px] uppercase tracking-[0.3em] text-[#f3e3b4]">{t('It is time for', 'حان الآن موعد')}</span>
+            <h2 className="arabic-text text-4xl font-bold text-white mt-1" style={{ textShadow: '0 2px 18px rgba(0,0,0,0.8)' }}>{t(adhanNow.en, 'صلاة ' + adhanNow.ar)}</h2>
           </div>
 
-          <div className="relative z-10 px-6 flex flex-col items-center gap-6" style={{ paddingBottom: 'calc(3rem + env(safe-area-inset-bottom))' }}>
-            <div className="flex flex-col items-center gap-1.5">
-              <span className="text-[11px] uppercase tracking-[0.3em] text-[#f3e3b4]">{t('It is time for', 'حان الآن موعد')}</span>
-              <h2 className="arabic-text text-4xl font-bold text-white" style={{ textShadow: '0 2px 18px rgba(0,0,0,0.75)' }}>{t(adhanNow.en, 'صلاة ' + adhanNow.ar)}</h2>
-              <p className="arabic-text text-[#f3e3b4] text-base mt-1" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.65)' }}>حيَّ على الصلاة · حيَّ على الفلاح</p>
-            </div>
+          {/* Middle: the adhan being CALLED — phrases cycle as it sounds */}
+          <div className="relative z-10 px-6 flex-1 flex items-center justify-center">
+            <p key={adhanPhrase} className="arabic-text text-white leading-relaxed" dir="rtl"
+              style={{ fontSize: 'clamp(26px, 8vw, 40px)', textShadow: '0 2px 20px rgba(0,0,0,0.85)', animation: 'adhan-phrase 3.6s ease-in-out' }}>
+              {ADHAN_PHRASES[adhanPhrase]}
+            </p>
+          </div>
+
+          {/* Bottom: muezzin + silence */}
+          <div className="relative z-10 px-6 flex flex-col items-center gap-4" style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}>
+            <p className="arabic-text text-[#f3e3b4] text-[13px]" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.7)' }}>{adhanOptions.find((a) => a.id === selectedAdhan)?.name ?? ''}</p>
             <button onClick={stopAdhanNow} className="relative flex items-center gap-2 px-7 py-3 rounded-full active:scale-95 transition-transform"
               style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}>
               <span className="absolute inset-0 rounded-full" style={{ border: '1px solid rgba(243,227,180,0.6)', animation: 'adhan-halo 2.4s ease-in-out infinite' }} />

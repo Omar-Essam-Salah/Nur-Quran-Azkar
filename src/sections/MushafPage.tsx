@@ -275,10 +275,13 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
   // Tap a WORD → show its meaning + hear it alone (word-by-word). A button in
   // that popup recites the whole ayah from here. Swipe → turn the page; tap a
   // blank area → toggle the bars.
-  const [wordPopup, setWordPopup] = useState<{ key: string; pos: number } | null>(null);
-  const openWord = (key: string, pos: number) => {
+  const [wordPopup, setWordPopup] = useState<{ key: string; pos: number; atTop: boolean } | null>(null);
+  const openWord = (key: string, pos: number, clientY: number) => {
     haptic.light();
-    setWordPopup({ key, pos });
+    // If the tapped word is in the lower part of the screen, show the popup at
+    // the TOP so it doesn't cover the word (the page doesn't scroll).
+    const atTop = clientY > window.innerHeight * 0.52;
+    setWordPopup({ key, pos, atTop });
     const [s, a] = key.split(':').map(Number);
     void playWord(s, a, pos);
   };
@@ -293,7 +296,7 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
       const nx = wordSeq[j];
       const [s, a] = nx.key.split(':').map(Number);
       void playWord(s, a, nx.pos);
-      return nx;
+      return { ...nx, atTop: prev.atTop };
     });
   };
   // "Recite from here" (the old tap-an-ayah behaviour), now reached from the popup.
@@ -436,7 +439,7 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
                     data-active={active ? 'true' : undefined}
                     data-reciting={reciting ? 'true' : undefined}
                     data-reciting-word={(recitingWord || picked) ? 'true' : undefined}
-                    onClick={() => openWord(tk.key, tk.pos)}
+                    onClick={(e) => openWord(tk.key, tk.pos, e.clientY)}
                   >
                     {tk.text}{' '}
                   </span>
@@ -576,7 +579,7 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
 
 // Compact popup for a tapped word: its meaning + transliteration, a button to
 // hear the single word (word-by-word recitation), and one to recite from here.
-function MushafWordPopup({ entry, onStep, onReciteFrom, onClose }: { entry: { key: string; pos: number }; onStep: (d: number) => void; onReciteFrom: (key: string) => void; onClose: () => void }) {
+function MushafWordPopup({ entry, onStep, onReciteFrom, onClose }: { entry: { key: string; pos: number; atTop: boolean }; onStep: (d: number) => void; onReciteFrom: (key: string) => void; onClose: () => void }) {
   const { t } = useI18n();
   const [words, setWords] = useState<WbwWord[] | null>(null);
   const [, force] = useState(0);
@@ -594,7 +597,8 @@ function MushafWordPopup({ entry, onStep, onReciteFrom, onClose }: { entry: { ke
   const sounding = wordPlaying() === `${s}:${a}:${entry.pos}`;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[60] px-3 pointer-events-none" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+    <div className={`fixed inset-x-0 z-[60] px-3 pointer-events-none ${entry.atTop ? 'top-0' : 'bottom-0'}`}
+      style={entry.atTop ? { paddingTop: 'calc(1rem + env(safe-area-inset-top))' } : { paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
       <div className="mx-auto max-w-sm rounded-2xl p-3.5 pointer-events-auto relative"
         style={{ background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.98), rgba(var(--glass-2), 0.98))', border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 12px 34px rgba(0,0,0,0.4)' }}>
         <button onClick={onClose} className="absolute top-2 left-2 p-1 rounded-lg hover:bg-white/10" aria-label={t('Close', 'إغلاق')}><X size={16} className="text-[color:var(--text-muted)]" /></button>
@@ -608,10 +612,10 @@ function MushafWordPopup({ entry, onStep, onReciteFrom, onClose }: { entry: { ke
             : <p className="text-[13px] text-white mt-0.5" dir="ltr">{word?.translation ?? t('Meaning needs a connection', 'المعنى يحتاج اتصالاً')}</p>}
         </div>
 
-        {/* prev · listen · next (RTL: next word is to the LEFT) */}
+        {/* ◀ previous · listen · next ▶ (media-style, so the arrows read naturally) */}
         <div className="flex items-center justify-center gap-4 mt-2.5">
           <button onClick={() => onStep(-1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Previous word', 'الكلمة السابقة')}>
-            <ChevronRight size={20} className="text-[color:var(--text-muted)]" />
+            <ChevronLeft size={20} className="text-[color:var(--text-muted)]" />
           </button>
           <button onClick={() => void playWord(s, a, entry.pos)}
             className="w-12 h-12 rounded-full flex items-center justify-center active:scale-95 transition-transform"
@@ -619,7 +623,7 @@ function MushafWordPopup({ entry, onStep, onReciteFrom, onClose }: { entry: { ke
             <Volume2 size={21} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
           </button>
           <button onClick={() => onStep(1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Next word', 'الكلمة التالية')}>
-            <ChevronLeft size={20} className="text-[color:var(--text-muted)]" />
+            <ChevronRight size={20} className="text-[color:var(--text-muted)]" />
           </button>
         </div>
 

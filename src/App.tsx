@@ -11,6 +11,7 @@ import AzkarDetail from '@/sections/AzkarDetail';
 import PrayerTimesPage from '@/sections/PrayerTimesPage';
 import QiblaPage from '@/sections/QiblaPage';
 import MushafPage from '@/sections/MushafPage';
+import { startPageForSurah } from '@/data/mushafPages';
 import FastingPage from '@/sections/FastingPage';
 import ProphetsPage from '@/sections/ProphetsPage';
 import HadithPage from '@/sections/HadithPage';
@@ -89,6 +90,15 @@ function App() {
     setSelectedSurah(surahNumber);
     setSelectedAyah(ayahNumber || null); // تصفير الآية لو مش مبعوتة عشان ميروحش لآية قديمة
     setHistory(prev => prev[prev.length - 1] === 'quran-reader' ? prev : [...prev, 'quran-reader']);
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Open the PAPER MUSHAF at a surah's page (Home "continue reading" / popular
+  // surahs open the physical mushaf, not the verse-by-verse reader). The Mushaf
+  // reads its page from localStorage on mount, so we set it, then navigate.
+  const openMushafAtSurah = useCallback((surahNumber: number) => {
+    try { localStorage.setItem('nur-mushaf-page', String(startPageForSurah(surahNumber))); } catch { /* ignore */ }
+    setHistory(prev => prev[prev.length - 1] === 'mushaf' ? prev : [...prev, 'mushaf']);
     window.scrollTo(0, 0);
   }, []);
 
@@ -230,7 +240,7 @@ function App() {
         {currentPage === 'home' && (
           <HomePage
             onNavigate={navigateTo}
-            onOpenSurah={openSurah}
+            onOpenMushaf={openMushafAtSurah}
             onOpenAzkar={openAzkar}
             lastRead={lastRead}
             bookmarksCount={bookmarks.length}

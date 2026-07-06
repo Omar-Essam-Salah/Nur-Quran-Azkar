@@ -602,10 +602,10 @@ function ReaderWordPopup({ entry, onStep, onClose }: { entry: WordSel; onStep: (
         <p className="arabic-text text-2xl text-[#d4af37] text-center leading-tight" dir="rtl">{entry.text}</p>
         {entry.transliteration && <p className="text-[11px] text-[#14879c] italic text-center mt-0.5" dir="ltr">{entry.transliteration}</p>}
         <p className="text-[13px] text-white text-center mt-0.5" dir="ltr">{entry.translation ?? t('Meaning needs a connection', 'المعنى يحتاج اتصالاً')}</p>
-        {/* prev · listen · next (RTL: next word is to the LEFT) */}
+        {/* ◀ previous · listen · next ▶ (media-style, so the arrows read naturally) */}
         <div className="flex items-center justify-center gap-4 mt-2.5">
           <button onClick={() => onStep(-1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Previous word', 'الكلمة السابقة')}>
-            <ChevronRight size={20} className="text-[color:var(--text-muted)]" />
+            <ChevronLeft size={20} className="text-[color:var(--text-muted)]" />
           </button>
           <button onClick={() => void playWord(entry.surah, entry.ayah, entry.position)}
             className="w-11 h-11 rounded-full flex items-center justify-center active:scale-95 transition-transform"
@@ -613,7 +613,7 @@ function ReaderWordPopup({ entry, onStep, onClose }: { entry: WordSel; onStep: (
             <Volume2 size={19} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
           </button>
           <button onClick={() => onStep(1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Next word', 'الكلمة التالية')}>
-            <ChevronLeft size={20} className="text-[color:var(--text-muted)]" />
+            <ChevronRight size={20} className="text-[color:var(--text-muted)]" />
           </button>
         </div>
       </div>

@@ -8,18 +8,18 @@ import type { Page } from '@/types';
 
 interface HomePageProps {
   onNavigate: (page: Page) => void;
-  onOpenSurah: (surahNumber: number, ayahNumber?: number) => void;
+  onOpenMushaf: (surahNumber: number) => void;
   onOpenAzkar: (azkarId: string) => void;
   lastRead: { surahNumber: number; ayahNumber: number; timestamp: number } | null;
   bookmarksCount: number;
   onToggleSearch: () => void;
 }
 
-export default function HomePage({ 
-  onNavigate, 
-  onOpenSurah, 
-  onOpenAzkar, 
-  lastRead, 
+export default function HomePage({
+  onNavigate,
+  onOpenMushaf,
+  onOpenAzkar,
+  lastRead,
   bookmarksCount,
   onToggleSearch
 }: HomePageProps) {
@@ -225,7 +225,7 @@ export default function HomePage({
           <div>
             <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider mb-3 px-1">{t('Continue Reading', 'متابعة القراءة')}</h3>
             <button
-              onClick={() => onOpenSurah(lastRead.surahNumber, lastRead.ayahNumber)}
+              onClick={() => onOpenMushaf(lastRead.surahNumber)}
               className="glass-card w-full p-4 flex items-center gap-4 text-left group"
             >
               <div className="w-12 h-12 rounded-xl bg-[#14879c]/20 flex items-center justify-center flex-shrink-0">
@@ -257,7 +257,7 @@ export default function HomePage({
             {popularSurahs.map((surah) => (
               <button
                 key={surah.number}
-                onClick={() => onOpenSurah(surah.number)}
+                onClick={() => onOpenMushaf(surah.number)}
                 className="glass-card-sm p-4 text-left group"
               >
                 <div className="flex items-center gap-3">
