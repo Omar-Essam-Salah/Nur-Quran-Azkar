@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import {
   ArrowLeft, Bookmark, BookmarkCheck, Share2, ChevronLeft, ChevronRight,
-  Type, Languages, Play, Pause, Loader2, RefreshCw, WifiOff, BookOpen, X, Brain
+  Type, Languages, Play, Pause, Loader2, RefreshCw, WifiOff, BookOpen, X, Brain, Volume2
 } from 'lucide-react';
+import { playWord, subscribeWordAudio, wordPlaying } from '@/lib/wordByWord';
 import { shareVerseCard } from '@/lib/shareVerse';
 import { surahList } from '@/data/surahList';
 import { getReciter, everyayahUrl } from '@/data/reciters';
@@ -47,11 +48,22 @@ const AyahView = memo(function AyahView({
   verse, fontSize, showTranslation, isActive, isPlaying, activeWord, bookmarked, memorize, labelFor, onToggleBookmark, onTogglePlay, onOpenTafsir, onShare
 }: AyahViewProps) {
   const words = verse.words.filter((w) => w.charType === 'word');
+  const [surahNo, ayahNo] = verse.key.split(':').map(Number);
   const [activeWordPopup, setActiveWordPopup] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
+  // Re-render the tapped word's speaker icon while its recitation is playing.
+  const [, forceWord] = useState(0);
+  useEffect(() => subscribeWordAudio(() => forceWord((n) => n + 1)), []);
   // When memorization mode is toggled, re-hide every ayah so you test fresh.
   useEffect(() => { setRevealed(false); }, [memorize]);
   const hidden = memorize && !revealed;
+
+  // Tap a word → show its meaning and recite that single word aloud.
+  const tapWord = (position: number) => {
+    const next = activeWordPopup === position ? null : position;
+    setActiveWordPopup(next);
+    if (next != null) void playWord(surahNo, ayahNo, position);
+  };
 
   return (
     <div id={`ayah-${verse.ayah}`} className="group relative">
@@ -125,25 +137,41 @@ const AyahView = memo(function AyahView({
           style={{ fontSize: `${fontSize}px`, filter: hidden ? 'blur(9px)' : undefined, opacity: hidden ? 0.55 : 1 }}>
           {words.map((w) => {
             const lit = isActive && activeWord === w.position;
-            const wordTranslation = (w as any).translation?.text;
-            const wordTransliteration = (w as any).transliteration?.text;
-            
+            const wordTranslation = w.translation;
+            const wordTransliteration = w.transliteration;
+
+            const open = activeWordPopup === w.position;
+            const sounding = wordPlaying() === `${surahNo}:${ayahNo}:${w.position}`;
             return (
               <div key={w.position} className="relative inline-block">
                 <span
-                  onClick={() => setActiveWordPopup(activeWordPopup === w.position ? null : w.position)}
+                  onClick={() => tapWord(w.position)}
                   className="cursor-pointer rounded px-0.5 transition-colors"
-                  style={lit ? { color: '#d4af37', background: 'rgba(212, 175, 55, 0.14)' } : undefined}
+                  style={(lit || (open && sounding))
+                    ? { color: '#d4af37', background: 'rgba(212, 175, 55, 0.14)' }
+                    : open ? { background: 'rgba(20, 135, 156, 0.14)' } : undefined}
                 >
                   {w.text}
                 </span>
-                
-                {/* Word Meaning Popover */}
-                {activeWordPopup === w.position && (wordTranslation || wordTransliteration) && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-max max-w-[140px] z-50 p-2 rounded-lg text-center"
-                       style={{ background: 'rgba(var(--glass-1), 0.95)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}>
-                    {wordTranslation && <p className="text-[11px] font-semibold text-white leading-tight">{wordTranslation}</p>}
-                    {wordTransliteration && <p className="text-[9px] text-[#14879c] mt-1 uppercase tracking-wider">{wordTransliteration}</p>}
+
+                {/* Word Meaning Popover — meaning + transliteration + replay */}
+                {open && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-max max-w-[180px] z-50 px-3 py-2 rounded-xl text-center shadow-lg"
+                       style={{ background: 'rgba(var(--glass-1), 0.97)', border: '1px solid rgba(212,175,55,0.3)', backdropFilter: 'blur(10px)' }}>
+                    <div className="flex items-center justify-center gap-1.5">
+                      {wordTranslation && <p className="text-[12px] font-semibold text-white leading-tight">{wordTranslation}</p>}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); void playWord(surahNo, ayahNo, w.position); }}
+                        className="p-1 rounded-lg hover:bg-white/10 flex-shrink-0" aria-label="Listen to word"
+                      >
+                        <Volume2 size={13} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
+                      </button>
+                    </div>
+                    {wordTransliteration && <p className="text-[9.5px] text-[#14879c] mt-0.5 tracking-wide italic">{wordTransliteration}</p>}
+                    {!wordTranslation && !wordTransliteration && <p className="text-[9px] text-[color:var(--text-muted)]">{'—'}</p>}
+                    {/* little arrow */}
+                    <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px w-2 h-2 rotate-45"
+                      style={{ background: 'rgba(var(--glass-1), 0.97)', borderRight: '1px solid rgba(212,175,55,0.3)', borderBottom: '1px solid rgba(212,175,55,0.3)' }} />
                   </div>
                 )}
               </div>

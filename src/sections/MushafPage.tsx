@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, Search, BookOpen, GripHorizontal, Mic2, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, ListTree, X, Play, Pause, Search, BookOpen, GripHorizontal, Mic2, Check, Volume2 } from 'lucide-react';
 import { getReciter, everyayahUrl, RECITERS } from '@/data/reciters';
 import { absoluteAudioUrl } from '@/lib/quranApi';
 import { getTafsirText } from '@/lib/contentCache';
+import { fetchVerseWords, playWord, subscribeWordAudio, wordPlaying, type WbwWord } from '@/lib/wordByWord';
 import { audioEl, claimAudio, isOwner } from '@/lib/audioBus';
 import { pushBack } from '@/lib/backStack';
 import { loadAyahRange } from '@/lib/localQuran';
@@ -271,14 +272,24 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
   const goNext = () => turn(1);
   const goPrev = () => turn(-1);
 
-  // Tap an ayah → recite FROM it; swipe → turn the page; tap a blank area → bars.
-  // (Tafsir is the toolbar's book button; it follows the selected/recited ayah.)
-  const onWord = (key: string) => {
+  // Tap a WORD → show its meaning + hear it alone (word-by-word). A button in
+  // that popup recites the whole ayah from here. Swipe → turn the page; tap a
+  // blank area → toggle the bars.
+  const [wordPopup, setWordPopup] = useState<{ key: string; pos: number } | null>(null);
+  const openWord = (key: string, pos: number) => {
     haptic.light();
+    setWordPopup({ key, pos });
+    const [s, a] = key.split(':').map(Number);
+    void playWord(s, a, pos);
+  };
+  // "Recite from here" (the old tap-an-ayah behaviour), now reached from the popup.
+  const reciteFrom = (key: string) => {
+    setWordPopup(null);
     setCurrentVerseKey(key);
     setPageVerseKeys((prev) => (prev.length ? prev : keysFromTokens(tokens)));
     void loadAndPlayPage(page, key);
   };
+  useEffect(() => { if (wordPopup) return pushBack(() => { setWordPopup(null); return true; }); }, [wordPopup]);
 
   // The side bar can be dragged up/down (by its grip) so it's never in the way.
   const [sideY, setSideY] = useState(0);
@@ -403,14 +414,15 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
                 const active = tafsirFollow && tk.key === currentVerseKey;
                 const reciting = audioPlaying && tk.key === currentVerseKey;
                 const recitingWord = reciting && currentWord > 0 && tk.pos === currentWord;
+                const picked = wordPopup?.key === tk.key && wordPopup?.pos === tk.pos;
                 return (
                   <span
                     key={i}
                     className="mushaf-word"
                     data-active={active ? 'true' : undefined}
                     data-reciting={reciting ? 'true' : undefined}
-                    data-reciting-word={recitingWord ? 'true' : undefined}
-                    onClick={() => onWord(tk.key)}
+                    data-reciting-word={(recitingWord || picked) ? 'true' : undefined}
+                    onClick={() => openWord(tk.key, tk.pos)}
                   >
                     {tk.text}{' '}
                   </span>
@@ -481,6 +493,11 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
         </div>
       )}
 
+      {/* Word-by-word popup — meaning + hear the single word + recite from here. */}
+      {wordPopup && (
+        <MushafWordPopup entry={wordPopup} onReciteFrom={reciteFrom} onClose={() => setWordPopup(null)} />
+      )}
+
       {/* Floating tafsir window — opens on a word tap or follows recitation. */}
       {tafsirFollow && currentVerseKey && (
         <MushafTafsirPanel verseKey={currentVerseKey} keys={pageVerseKeys} onSelect={setCurrentVerseKey} onClose={() => setTafsirFollow(false)} playing={audioPlaying} onToggleAudio={toggleAudio} />
@@ -539,6 +556,54 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Compact popup for a tapped word: its meaning + transliteration, a button to
+// hear the single word (word-by-word recitation), and one to recite from here.
+function MushafWordPopup({ entry, onReciteFrom, onClose }: { entry: { key: string; pos: number }; onReciteFrom: (key: string) => void; onClose: () => void }) {
+  const { t } = useI18n();
+  const [words, setWords] = useState<WbwWord[] | null>(null);
+  const [, force] = useState(0);
+  useEffect(() => subscribeWordAudio(() => force((n) => n + 1)), []);
+  const [s, a] = entry.key.split(':').map(Number);
+
+  useEffect(() => {
+    let active = true;
+    setWords(null);
+    fetchVerseWords(entry.key, 'en').then((w) => { if (active) setWords(w); }).catch(() => { if (active) setWords([]); });
+    return () => { active = false; };
+  }, [entry.key]);
+
+  const word = words?.find((w) => w.position === entry.pos);
+  const sounding = wordPlaying() === `${s}:${a}:${entry.pos}`;
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-[60] px-3 pointer-events-none" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+      <div className="mx-auto max-w-sm rounded-2xl p-3.5 pointer-events-auto"
+        style={{ background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.98), rgba(var(--glass-2), 0.98))', border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 12px 34px rgba(0,0,0,0.4)' }}>
+        <div className="flex items-start gap-3">
+          <button onClick={() => void playWord(s, a, entry.pos)}
+            className="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center active:scale-95 transition-transform"
+            style={{ background: 'rgba(212,175,55,0.14)', border: '1px solid rgba(212,175,55,0.3)' }} aria-label={t('Play word', 'انطق الكلمة')}>
+            <Volume2 size={22} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
+          </button>
+          <div className="flex-1 min-w-0 text-right">
+            <p className="arabic-text text-2xl text-[#d4af37] leading-tight" dir="rtl">{word?.text ?? '…'}</p>
+            {word?.transliteration && <p className="text-[11px] text-[#14879c] italic mt-0.5" dir="ltr">{word.transliteration}</p>}
+            {words === null
+              ? <p className="text-[11px] text-[color:var(--text-muted)] mt-0.5">{t('Loading…', 'جارٍ التحميل…')}</p>
+              : <p className="text-[13px] text-white mt-0.5" dir="ltr">{word?.translation ?? t('Meaning needs a connection', 'المعنى يحتاج اتصالاً')}</p>}
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-white/10 flex-shrink-0" aria-label={t('Close', 'إغلاق')}><X size={16} className="text-[color:var(--text-muted)]" /></button>
+        </div>
+        <button onClick={() => onReciteFrom(entry.key)}
+          className="mt-3 w-full py-2 rounded-xl text-[12px] font-semibold arabic-text flex items-center justify-center gap-2"
+          style={{ background: 'rgba(20,135,156,0.16)', color: '#14879c', border: '1px solid rgba(20,135,156,0.3)' }}>
+          <Play size={13} fill="currentColor" /> {t('Recite from here', 'اقرأ من هنا')}
+        </button>
+      </div>
     </div>
   );
 }
