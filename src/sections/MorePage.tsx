@@ -2,7 +2,7 @@ import {
   Compass, Hash, BookMarked, Moon, Target, CalendarDays, Sparkles, BookOpen, ScrollText,
   Bookmark, Settings as SettingsIcon, Languages, ChevronLeft, ChevronDown, HeartHandshake, BookText,
   Coins, Star, MessageSquarePlus, ShieldCheck, PersonStanding, BookOpenCheck, CalendarClock, ListChecks,
-  Search, X,
+  Search, X, HandHeart,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Page } from '@/types';
@@ -27,6 +27,7 @@ const GROUPS: { en: string; ar: string; items: Item[] }[] = [
       { page: 'occasions', en: 'Islamic Occasions', ar: 'المناسبات الإسلامية', icon: CalendarClock, color: '#d4af37' },
       { page: 'tracker', en: 'Prayer Tracker', ar: 'متابعة الصلوات', icon: ListChecks, color: '#34d399' },
       { page: 'guide', en: 'Muslim Guide', ar: 'دليل المسلم', icon: BookText, color: '#10b981' },
+      { page: 'duas', en: 'Duʿāʾ Library', ar: 'أدعية لكل موقف', icon: HandHeart, color: '#f472b6' },
       { page: 'tasbih', en: 'Tasbih', ar: 'السبحة', icon: Hash, color: '#14879c' },
       { page: 'qibla', en: 'Qibla', ar: 'القبلة', icon: Compass, color: '#f472b6' },
       { page: 'fasting', en: 'Fasting', ar: 'صيام التطوّع', icon: CalendarDays, color: '#10b981' },

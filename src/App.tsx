@@ -39,6 +39,7 @@ import DailyReminder from '@/components/DailyReminder';
 import Onboarding from '@/components/Onboarding';
 import LedgerPage from '@/sections/LedgerPage';
 import GuidePage from '@/sections/GuidePage';
+import DuasPage from '@/sections/DuasPage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
 import { scheduleSalawat } from '@/lib/salawat';
 import { schedulePrayerReminders } from '@/lib/prayerReminders';
@@ -411,6 +412,11 @@ function App() {
         {/* Muslim Guide — purification, prayers, Hajj & Umrah */}
         {currentPage === 'guide' && (
           <GuidePage onBack={goBack} />
+        )}
+
+        {/* Duʿāʾ library — supplications by situation */}
+        {currentPage === 'duas' && (
+          <DuasPage onBack={goBack} />
         )}
 
         {/* Tasbih Counter */}
