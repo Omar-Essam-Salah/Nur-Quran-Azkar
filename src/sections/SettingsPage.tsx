@@ -1,4 +1,4 @@
-import { ArrowLeft, Moon, Sun, Monitor, Type, Languages, BookOpen, Trash2, AlertTriangle, AudioLines, Globe, Search, Check, X, Play, Square, Loader2, DatabaseBackup, Copy, Upload } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Monitor, Type, Languages, BookOpen, Trash2, AlertTriangle, AudioLines, Globe, Search, Check, X, Play, Square, Loader2, DatabaseBackup, Copy, Upload, Heart } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { RECITERS, everyayahUrl, type Reciter } from '@/data/reciters';
@@ -8,6 +8,7 @@ import { absoluteAudioUrl } from '@/lib/quranApi';
 import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
 import { exportData, importData } from '@/lib/backup';
 import { isPrayerDnd, setPrayerDnd } from '@/lib/reminders';
+import { salawatEnabled, salawatInterval, setSalawatEnabled, setSalawatInterval, scheduleSalawat, testSalawat, SALAWAT_INTERVALS } from '@/lib/salawat';
 import { VoiceSettings } from '@/components/VoiceSettings';
 import { StorageManager } from '@/components/StorageManager';
 import { TafsirPacks } from '@/components/TafsirPacks';
@@ -101,6 +102,10 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
   };
 
   const [dnd, setDnd] = useState(isPrayerDnd());
+  // Optional periodic "send blessings on the Prophet ﷺ" reminder.
+  const [salawatOn, setSalawatOn] = useState(salawatEnabled());
+  const [salawatEvery, setSalawatEvery] = useState(salawatInterval());
+  const intervalLabel = (min: number) => min < 60 ? tr(`${min} min`, `كل ${min} دقيقة`) : tr(`${min / 60} h`, `كل ${min / 60} ساعة`);
 
   // ── Backup & restore (move data to a new phone) ──
   const [exportCode, setExportCode] = useState('');
@@ -503,6 +508,51 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
               <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: dnd ? '22px' : '4px' }} />
             </button>
           </div>
+        </div>
+
+        {/* Salawat reminder — periodic "send blessings on the Prophet ﷺ" */}
+        <div className="glass-card-sm p-4 space-y-3">
+          <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+            <Heart size={12} />
+            {tr('Salawat reminder', 'تذكير الصلاة على النبي ﷺ')}
+          </h3>
+          <div className="flex items-center justify-between">
+            <div className="flex-1 pr-3">
+              <label className="text-xs text-white/80 arabic-text block" dir={tr('ltr', 'rtl')}>{tr('Remind me to send blessings on the Prophet ﷺ', 'ذكّرني بالصلاة على النبي ﷺ')}</label>
+              <p className="text-[10px] text-[color:var(--text-muted)] arabic-text mt-0.5" dir={tr('ltr', 'rtl')}>{tr('A gentle notification with a short salawat sound. Works fully offline; night hours (23:30–06:00) are skipped.', 'إشعار لطيف بصوت صلاةٍ قصير. يعمل دون إنترنت، ويتوقف ليلاً (١١:٣٠م–٦ص).')}</p>
+            </div>
+            <button onClick={async () => { const v = !salawatOn; setSalawatOn(v); await setSalawatEnabled(v); }}
+              className="w-10 h-6 rounded-full transition-all relative flex-shrink-0"
+              style={{ background: salawatOn ? 'rgba(212,175,55,0.45)' : 'rgba(255,255,255,0.1)' }}>
+              <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: salawatOn ? '22px' : '4px' }} />
+            </button>
+          </div>
+
+          {salawatOn && (
+            <>
+              <div>
+                <p className="text-[10px] text-[color:var(--text-muted)] arabic-text mb-1.5" dir={tr('ltr', 'rtl')}>{tr('Every', 'التكرار')}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {SALAWAT_INTERVALS.map((min) => (
+                    <button key={min}
+                      onClick={() => { setSalawatEvery(min); setSalawatInterval(min); void scheduleSalawat(); }}
+                      className="px-3 py-1.5 rounded-lg text-[11px] arabic-text transition-all"
+                      style={salawatEvery === min
+                        ? { background: 'rgba(212,175,55,0.22)', color: '#d4af37', border: '1px solid rgba(212,175,55,0.4)' }
+                        : { background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)', border: '1px solid transparent' }}>
+                      {intervalLabel(min)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={async () => { const ok = await testSalawat(); toast[ok ? 'success' : 'error'](ok ? tr('A test reminder will arrive in a few seconds.', 'سيصلك تذكير تجريبي خلال ثوانٍ.') : tr('Enable notifications first.', 'فعّل إذن الإشعارات أولًا.')); }}
+                className="w-full py-2 rounded-lg text-[11px] font-semibold arabic-text flex items-center justify-center gap-1.5"
+                style={{ background: 'rgba(20,135,156,0.14)', color: '#14879c', border: '1px solid rgba(20,135,156,0.3)' }}>
+                <Play size={12} fill="currentColor" /> {tr('Test the reminder now', 'جرّب التذكير الآن')}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Backup & Restore */}

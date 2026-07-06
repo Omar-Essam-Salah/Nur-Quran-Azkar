@@ -31,6 +31,11 @@ const prayerColors: Record<string, string> = {
   Isha: '#8b5cf6',
 };
 
+const prayerArabic: Record<string, string> = {
+  Fajr: 'الفجر', Sunrise: 'الشروق', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء',
+};
+const prayerNameAr = (n: string) => prayerArabic[n] ?? n;
+
 // قائمة أصوات المؤذنين — ملفات محلية بأسماء إنجليزية (تشتغل أوفلاين بلا مشاكل ترميز)
 const adhanOptions = [
   { id: 'makkah', name: 'أذان الحرم المكي', local: '/adhan/makkah.mp3', fallback: '' },
@@ -110,6 +115,9 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
     return localStorage.getItem('nur-adhan-voice') || 'makkah';
   });
   const [lastPlayedPrayer, setLastPlayedPrayer] = useState<string | null>(null);
+  // When the adhan is sounding in the foreground we show a full-screen minaret
+  // "adhan now" screen. Holds the prayer's names (or a preview marker) or null.
+  const [adhanNow, setAdhanNow] = useState<{ ar: string; en: string } | null>(null);
   const ownerRef = useRef(0); // our claim on the shared audio element
   const adhanSoundingRef = useRef(false); // true while the adhan itself is audible
   const [audioSrc, setAudioSrc] = useState<string>('');
@@ -131,16 +139,19 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   // Stop the adhan if it's still playing (e.g. a preview) when leaving the page.
   useEffect(() => () => { if (isOwner(ownerRef.current)) { try { audioEl().pause(); } catch { /* ignore */ } } }, []);
 
+  // Stop a sounding adhan (button on the minaret screen, or a physical volume key).
+  const stopAdhanNow = () => {
+    try { audioEl().pause(); } catch { /* ignore */ }
+    adhanSoundingRef.current = false;
+    setPreviewing(false);
+    setAdhanNow(null);
+  };
+
   // A physical volume button silences a sounding adhan (the native side fires
   // this). It only acts while the adhan itself is audible, so adjusting volume
   // during recitation never interrupts the reciter.
   useEffect(() => {
-    const stop = () => {
-      if (!adhanSoundingRef.current) return;
-      try { audioEl().pause(); } catch { /* ignore */ }
-      adhanSoundingRef.current = false;
-      setPreviewing(false);
-    };
+    const stop = () => { if (adhanSoundingRef.current) stopAdhanNow(); };
     window.addEventListener('nur-volume-key', stop);
     return () => window.removeEventListener('nur-volume-key', stop);
   }, []);
@@ -268,7 +279,8 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
             const a = audioEl();
             a.src = audioSrc; a.volume = 1;
             adhanSoundingRef.current = true;
-            a.onended = () => { adhanSoundingRef.current = false; };
+            setAdhanNow({ ar: prayerNameAr(prayer), en: prayer });
+            a.onended = () => { adhanSoundingRef.current = false; setAdhanNow(null); };
             a.play().catch(e => console.log("Autoplay blocked:", e));
             setLastPlayedPrayer(prayer);
             break;
@@ -348,7 +360,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
 
   const previewAdhan = async () => {
     // Tap again while previewing → stop.
-    if (previewing) { try { audioEl().pause(); } catch { /* ignore */ } adhanSoundingRef.current = false; setPreviewing(false); return; }
+    if (previewing) { stopAdhanNow(); return; }
     if (!audioSrc) {
       alert(t('The adhan file is still loading, please wait a moment…', 'جاري تحميل ملف الأذان، انتظر قليلاً...'));
       return;
@@ -357,15 +369,17 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
       unlockAudio();
       ownerRef.current = claimAudio(); // take the shared element (frees any other sound)
       const a = audioEl();
-      a.onended = () => { setPreviewing(false); adhanSoundingRef.current = false; };
-      a.onerror = () => { setPreviewing(false); adhanSoundingRef.current = false; };
+      a.onended = () => { setPreviewing(false); adhanSoundingRef.current = false; setAdhanNow(null); };
+      a.onerror = () => { setPreviewing(false); adhanSoundingRef.current = false; setAdhanNow(null); };
       a.src = audioSrc;
       a.volume = 1;
       adhanSoundingRef.current = true;
+      setAdhanNow({ ar: nextPrayerData ? prayerNameAr(nextPrayerData.prayer.name) : 'الأذان', en: nextPrayerData?.prayer.name ?? 'Adhan' });
       await a.play();
       setPreviewing(true);
     } catch {
       setPreviewing(false);
+      setAdhanNow(null);
       alert(t('Could not play the adhan. Please try again.', 'تعذّر تشغيل الأذان. حاول مرّة أخرى.'));
     }
   };
@@ -397,6 +411,35 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
 
   return (
     <div className="page-enter min-h-screen">
+      {/* ── Full-screen "adhan is now" minaret screen ─────────────────────────
+          Shown while the adhan sounds in the foreground (a real prayer time or
+          the preview). Tap Silence — or a volume key — to stop. */}
+      {adhanNow && (
+        <div className="fixed inset-0 z-[90] flex flex-col items-center justify-between text-center overflow-hidden" style={{ animation: 'adhan-fade 0.5s ease both' }}>
+          <style>{`@keyframes adhan-fade{from{opacity:0}to{opacity:1}}@keyframes adhan-halo{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.12);opacity:.85}}`}</style>
+          <img src="/adhan/minaret.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(18,28,86,0.20) 0%, rgba(14,22,74,0.32) 42%, rgba(7,12,46,0.90) 100%)' }} />
+
+          <div className="relative z-10" style={{ paddingTop: 'calc(3.2rem + env(safe-area-inset-top))' }}>
+            <p className="arabic-text text-white text-xl tracking-wide" style={{ textShadow: '0 2px 14px rgba(0,0,0,0.7)' }}>اللّٰهُ أَكْبَر</p>
+          </div>
+
+          <div className="relative z-10 px-6 flex flex-col items-center gap-6" style={{ paddingBottom: 'calc(3rem + env(safe-area-inset-bottom))' }}>
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="text-[11px] uppercase tracking-[0.3em] text-[#f3e3b4]">{t('It is time for', 'حان الآن موعد')}</span>
+              <h2 className="arabic-text text-4xl font-bold text-white" style={{ textShadow: '0 2px 18px rgba(0,0,0,0.75)' }}>{t(adhanNow.en, 'صلاة ' + adhanNow.ar)}</h2>
+              <p className="arabic-text text-[#f3e3b4] text-base mt-1" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.65)' }}>حيَّ على الصلاة · حيَّ على الفلاح</p>
+            </div>
+            <button onClick={stopAdhanNow} className="relative flex items-center gap-2 px-7 py-3 rounded-full active:scale-95 transition-transform"
+              style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}>
+              <span className="absolute inset-0 rounded-full" style={{ border: '1px solid rgba(243,227,180,0.6)', animation: 'adhan-halo 2.4s ease-in-out infinite' }} />
+              <Square size={15} className="text-white" fill="currentColor" />
+              <span className="arabic-text text-white text-sm font-semibold">{t('Silence the adhan', 'إسكات الأذان')}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       <header className="sticky top-0 z-40 px-4 py-3">
         <div 
           className="mx-auto max-w-lg flex items-center gap-3 rounded-2xl px-4 py-3"

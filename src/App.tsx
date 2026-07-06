@@ -39,6 +39,7 @@ import Onboarding from '@/components/Onboarding';
 import LedgerPage from '@/sections/LedgerPage';
 import GuidePage from '@/sections/GuidePage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
+import { scheduleSalawat } from '@/lib/salawat';
 import { runBack } from '@/lib/backStack';
 import { initDailySync } from '@/lib/dailySync';
 import { recordDeed } from '@/lib/ledger';
@@ -141,6 +142,7 @@ function App() {
     // later launches re-check permissions silently.
     if (onboarded) void requestStartupPermissions();
     void scheduleSpiritualNudges();
+    void scheduleSalawat(); // top up the optional salawat reminders (no-op if off)
     initDailySync(); // once-a-day refresh on (re)connect
     recordDeed('open');
   }, [onboarded]);
