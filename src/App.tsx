@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Page, BottomNavPage } from '@/types';
+import { LANG_TRANSLATION } from '@/data/translations';
 import { useBookmarks, useLastRead, useSettings, useTasbih } from '@/hooks/useLocalStorage';
 import Starfield from '@/components/Starfield';
 import BottomNav from '@/components/BottomNav';
@@ -66,7 +67,21 @@ function App() {
   const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks();
   const { lastRead, updateLastRead } = useLastRead();
   const { settings, setSettings } = useSettings();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+
+  // Switching the UI language re-links the Quran TRANSLATION shown alongside the
+  // (always-Arabic) text — e.g. French UI → French translation. Only on an actual
+  // language switch (not on mount), so a manual translation choice still sticks.
+  const prevLangRef = useRef(lang);
+  useEffect(() => {
+    if (prevLangRef.current === lang) return;
+    prevLangRef.current = lang;
+    const tid = LANG_TRANSLATION[lang];
+    if (!tid) return;
+    setSettings((s) => (s.translationIds?.length === 1 && s.translationIds[0] === tid ? s : { ...s, translationIds: [tid] }));
+    toast(t('Quran translation updated', 'تم تحديث ترجمة القرآن'), { description: t('Matched to the app language — the Quran stays Arabic.', 'مطابقة للغة التطبيق — والقرآن يبقى بالعربية.') });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
   const { counts, activeDhikr, setActiveDhikr, increment, reset, getCount } = useTasbih();
 
   // Navigation handler

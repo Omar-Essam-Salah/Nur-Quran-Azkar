@@ -10,6 +10,21 @@ export interface TranslationInfo {
 
 export const DEFAULT_TRANSLATION_IDS = [131]; // Dr. Mustafa Khattab — The Clear Quran (English)
 
+// When the user picks a UI language, the Quran TRANSLATION shown alongside the
+// (always-Arabic) text switches to a well-regarded translation in that language.
+// IDs verified against api.quran.com /resources/translations.
+export const LANG_TRANSLATION: Record<string, number> = {
+  en: 131, // Dr. Mustafa Khattab — The Clear Quran
+  fr: 136, // Montada Islamic Foundation
+  es: 83,  // Sheikh Isa Garcia
+  de: 27,  // Bubenheim & Nadeem
+  tr: 77,  // Diyanet İşleri
+  id: 33,  // Indonesian Ministry of Religious Affairs (Kemenag)
+  ms: 39,  // Abdullah Muhammad Basmeih
+  ru: 45,  // Elmir Kuliev
+  pt: 43,  // Samir El-Hayek
+};
+
 // Verified against api.quran.com /resources/translations.
 export const POPULAR_TRANSLATIONS: TranslationInfo[] = [
   { id: 131, name: 'Dr. Mustafa Khattab — The Clear Quran', language: 'english' },
