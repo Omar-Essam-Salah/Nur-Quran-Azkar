@@ -41,6 +41,7 @@ import LedgerPage from '@/sections/LedgerPage';
 import GuidePage from '@/sections/GuidePage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
 import { scheduleSalawat } from '@/lib/salawat';
+import { schedulePrayerReminders } from '@/lib/prayerReminders';
 import { runBack } from '@/lib/backStack';
 import { initDailySync } from '@/lib/dailySync';
 import { recordDeed } from '@/lib/ledger';
@@ -153,6 +154,7 @@ function App() {
     if (onboarded) void requestStartupPermissions();
     void scheduleSpiritualNudges();
     void scheduleSalawat(); // top up the optional salawat reminders (no-op if off)
+    void schedulePrayerReminders(); // pre-prayer reminders + next-prayer status (no-op if off)
     initDailySync(); // once-a-day refresh on (re)connect
     recordDeed('open');
   }, [onboarded]);

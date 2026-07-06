@@ -1,4 +1,4 @@
-import { ArrowLeft, Moon, Sun, Monitor, Type, Languages, BookOpen, Trash2, AlertTriangle, AudioLines, Globe, Search, Check, X, Play, Square, Loader2, DatabaseBackup, Copy, Upload, Heart } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Monitor, Type, Languages, BookOpen, Trash2, AlertTriangle, AudioLines, Globe, Search, Check, X, Play, Square, Loader2, DatabaseBackup, Copy, Upload, Heart, Bell } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { RECITERS, everyayahUrl, type Reciter } from '@/data/reciters';
@@ -9,6 +9,7 @@ import { audioEl, claimAudio, isOwner, unlockAudio } from '@/lib/audioBus';
 import { exportData, importData } from '@/lib/backup';
 import { isPrayerDnd, setPrayerDnd } from '@/lib/reminders';
 import { salawatEnabled, salawatInterval, setSalawatEnabled, setSalawatInterval, scheduleSalawat, testSalawat, SALAWAT_INTERVALS } from '@/lib/salawat';
+import { prayerReminderEnabled, prayerStatusEnabled, prayerReminderLead, setPrayerReminderEnabled, setPrayerStatusEnabled, setPrayerReminderLead, schedulePrayerReminders, testPrayerReminder, LEAD_OPTIONS } from '@/lib/prayerReminders';
 import { VoiceSettings } from '@/components/VoiceSettings';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { StorageManager } from '@/components/StorageManager';
@@ -108,6 +109,10 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
   // Optional periodic "send blessings on the Prophet ﷺ" reminder.
   const [salawatOn, setSalawatOn] = useState(salawatEnabled());
   const [salawatEvery, setSalawatEvery] = useState(salawatInterval());
+  // Prayer-time reminders (before-adhan reminder + ongoing next-prayer status).
+  const [prayerRemOn, setPrayerRemOn] = useState(prayerReminderEnabled());
+  const [prayerLead, setPrayerLead] = useState(prayerReminderLead());
+  const [prayerStatusOn, setPrayerStatusOn] = useState(prayerStatusEnabled());
   const intervalLabel = (min: number) => min < 60 ? tr(`${min} min`, `كل ${min} دقيقة`) : tr(`${min / 60} h`, `كل ${min / 60} ساعة`);
 
   // ── Backup & restore (move data to a new phone) ──
@@ -497,6 +502,61 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
             <p className="arabic-text leading-loose text-[15px]" dir="rtl" style={{ color: 'rgba(var(--text-strong-rgb), 0.92)' }}>
               اللَّهُمَّ كُنْ لِإخوانِنا في غزةَ وفِلَسطين، اللَّهُمَّ انصُرْهُم وثبِّت أقدامَهُم، وارحَمْ شُهداءَهُم، واشْفِ جَرحاهُم، وفُكَّ أسْراهُم، واحفَظ أطفالَهُم ونِساءَهُم، وارفَع عنهُمُ البلاءَ، وارزُقهُمُ الأمنَ والنَّصرَ يا ربَّ العالمين.
             </p>
+          </div>
+        </div>
+
+        {/* Prayer reminders — before-adhan reminder + ongoing next-prayer status */}
+        <div className="glass-card-sm p-4 space-y-3">
+          <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+            <Bell size={12} />
+            {tr('Prayer reminders', 'تذكير الصلاة')}
+          </h3>
+          {/* Pre-prayer reminder */}
+          <div className="flex items-center justify-between">
+            <div className="flex-1 pr-3">
+              <label className="text-xs text-white/80 arabic-text block" dir={tr('ltr', 'rtl')}>{tr('Remind me before each prayer', 'ذكّرني قبل كل صلاة')}</label>
+              <p className="text-[10px] text-[color:var(--text-muted)] arabic-text mt-0.5" dir={tr('ltr', 'rtl')}>{tr('A gentle notice before the adhan (needs location). Fully offline.', 'تنبيه لطيف قبل الأذان (يحتاج الموقع). يعمل دون إنترنت.')}</p>
+            </div>
+            <button onClick={async () => { const v = !prayerRemOn; setPrayerRemOn(v); await setPrayerReminderEnabled(v); }}
+              className="w-10 h-6 rounded-full transition-all relative flex-shrink-0"
+              style={{ background: prayerRemOn ? 'rgba(20,135,156,0.4)' : 'rgba(255,255,255,0.1)' }}>
+              <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: prayerRemOn ? '22px' : '4px' }} />
+            </button>
+          </div>
+          {prayerRemOn && (
+            <div>
+              <p className="text-[10px] text-[color:var(--text-muted)] arabic-text mb-1.5" dir={tr('ltr', 'rtl')}>{tr('How long before', 'قبل الصلاة بـ')}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {LEAD_OPTIONS.map((m) => (
+                  <button key={m}
+                    onClick={() => { setPrayerLead(m); setPrayerReminderLead(m); void schedulePrayerReminders(); }}
+                    className="px-3 py-1.5 rounded-lg text-[11px] arabic-text transition-all"
+                    style={prayerLead === m
+                      ? { background: 'rgba(20,135,156,0.2)', color: '#14879c', border: '1px solid rgba(20,135,156,0.4)' }
+                      : { background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)', border: '1px solid transparent' }}>
+                    {tr(`${m} min`, `${m} دقيقة`)}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={async () => { const ok = await testPrayerReminder(); toast[ok ? 'success' : 'error'](ok ? tr('A test reminder will arrive shortly.', 'سيصلك تذكير تجريبي بعد لحظات.') : tr('Enable notifications first.', 'فعّل إذن الإشعارات أولًا.')); }}
+                className="w-full mt-2.5 py-2 rounded-lg text-[11px] font-semibold arabic-text flex items-center justify-center gap-1.5"
+                style={{ background: 'rgba(20,135,156,0.12)', color: '#14879c', border: '1px solid rgba(20,135,156,0.3)' }}>
+                <Play size={12} fill="currentColor" /> {tr('Test the reminder now', 'جرّب التذكير الآن')}
+              </button>
+            </div>
+          )}
+          {/* Ongoing next-prayer status */}
+          <div className="flex items-center justify-between pt-2 border-t border-white/5">
+            <div className="flex-1 pr-3">
+              <label className="text-xs text-white/80 arabic-text block" dir={tr('ltr', 'rtl')}>{tr('Ongoing “next prayer” notification', 'إشعار دائم بالصلاة القادمة')}</label>
+              <p className="text-[10px] text-[color:var(--text-muted)] arabic-text mt-0.5" dir={tr('ltr', 'rtl')}>{tr('A quiet, pinned note showing the next prayer & time (updates when you open the app).', 'إشعار هادئ مثبّت يعرض الصلاة القادمة ووقتها (يتحدّث عند فتح التطبيق).')}</p>
+            </div>
+            <button onClick={async () => { const v = !prayerStatusOn; setPrayerStatusOn(v); await setPrayerStatusEnabled(v); }}
+              className="w-10 h-6 rounded-full transition-all relative flex-shrink-0"
+              style={{ background: prayerStatusOn ? 'rgba(20,135,156,0.4)' : 'rgba(255,255,255,0.1)' }}>
+              <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: prayerStatusOn ? '22px' : '4px' }} />
+            </button>
           </div>
         </div>
 
