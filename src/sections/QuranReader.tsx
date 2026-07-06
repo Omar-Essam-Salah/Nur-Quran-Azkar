@@ -602,9 +602,10 @@ function ReaderWordPopup({ entry, onStep, onClose }: { entry: WordSel; onStep: (
         <p className="arabic-text text-2xl text-[#d4af37] text-center leading-tight" dir="rtl">{entry.text}</p>
         {entry.transliteration && <p className="text-[11px] text-[#14879c] italic text-center mt-0.5" dir="ltr">{entry.transliteration}</p>}
         <p className="text-[13px] text-white text-center mt-0.5" dir="ltr">{entry.translation ?? t('Meaning needs a connection', 'المعنى يحتاج اتصالاً')}</p>
-        {/* ◀ previous · listen · next ▶ (media-style, so the arrows read naturally) */}
+        {/* RTL reading: the LEFT arrow advances (next word is to the left), the
+            RIGHT arrow goes back (previous word is to the right). */}
         <div className="flex items-center justify-center gap-4 mt-2.5">
-          <button onClick={() => onStep(-1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Previous word', 'الكلمة السابقة')}>
+          <button onClick={() => onStep(1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Next word', 'الكلمة التالية')}>
             <ChevronLeft size={20} className="text-[color:var(--text-muted)]" />
           </button>
           <button onClick={() => void playWord(entry.surah, entry.ayah, entry.position)}
@@ -612,7 +613,7 @@ function ReaderWordPopup({ entry, onStep, onClose }: { entry: WordSel; onStep: (
             style={{ background: 'rgba(212,175,55,0.16)', border: '1px solid rgba(212,175,55,0.35)' }} aria-label={t('Play word', 'انطق الكلمة')}>
             <Volume2 size={19} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
           </button>
-          <button onClick={() => onStep(1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Next word', 'الكلمة التالية')}>
+          <button onClick={() => onStep(-1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Previous word', 'الكلمة السابقة')}>
             <ChevronRight size={20} className="text-[color:var(--text-muted)]" />
           </button>
         </div>

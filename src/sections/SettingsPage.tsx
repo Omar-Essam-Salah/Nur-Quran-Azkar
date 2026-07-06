@@ -497,7 +497,6 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
             <p className="arabic-text leading-loose text-[15px]" dir="rtl" style={{ color: 'rgba(var(--text-strong-rgb), 0.92)' }}>
               اللَّهُمَّ كُنْ لِإخوانِنا في غزةَ وفِلَسطين، اللَّهُمَّ انصُرْهُم وثبِّت أقدامَهُم، وارحَمْ شُهداءَهُم، واشْفِ جَرحاهُم، وفُكَّ أسْراهُم، واحفَظ أطفالَهُم ونِساءَهُم، وارفَع عنهُمُ البلاءَ، وارزُقهُمُ الأمنَ والنَّصرَ يا ربَّ العالمين.
             </p>
-            <p className="mt-3.5 text-[15px] tracking-widest">🤍 🍉</p>
           </div>
         </div>
 

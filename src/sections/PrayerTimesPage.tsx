@@ -36,13 +36,19 @@ const prayerArabic: Record<string, string> = {
 };
 const prayerNameAr = (n: string) => prayerArabic[n] ?? n;
 
-// The phrases of the adhan, cycled on the "adhan now" screen so it visually
-// calls the adhan (not just plays the sound).
+// The phrases of the adhan, in order (with the usual repetitions), shown on the
+// "adhan now" screen. The index is driven by the AUDIO's own progress (below),
+// so the words follow the muezzin instead of running ahead of him.
 const ADHAN_PHRASES = [
   'اللَّهُ أَكْبَرُ  اللَّهُ أَكْبَر',
+  'اللَّهُ أَكْبَرُ  اللَّهُ أَكْبَر',
+  'أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّه',
   'أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّه',
   'أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّه',
+  'أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّه',
   'حَيَّ عَلَى الصَّلَاة',
+  'حَيَّ عَلَى الصَّلَاة',
+  'حَيَّ عَلَى الْفَلَاح',
   'حَيَّ عَلَى الْفَلَاح',
   'اللَّهُ أَكْبَرُ  اللَّهُ أَكْبَر',
   'لَا إِلٰهَ إِلَّا اللَّه',
@@ -130,11 +136,24 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   // When the adhan is sounding in the foreground we show a full-screen minaret
   // "adhan now" screen. Holds the prayer's names (or a preview marker) or null.
   const [adhanNow, setAdhanNow] = useState<{ ar: string; en: string } | null>(null);
-  const [adhanPhrase, setAdhanPhrase] = useState(0); // cycles the adhan phrases
+  const [adhanPhrase, setAdhanPhrase] = useState(0); // which adhan phrase is showing
   useEffect(() => {
     if (!adhanNow) { setAdhanPhrase(0); return; }
-    const id = setInterval(() => setAdhanPhrase((i) => (i + 1) % ADHAN_PHRASES.length), 3600);
-    return () => clearInterval(id);
+    // Follow the muezzin: map the audio's own progress → phrase index, so the
+    // words never get ahead of the actual recitation (works for any recording
+    // length). Falls back to a slow timer only until the duration is known.
+    const a = audioEl();
+    let t0 = Date.now();
+    const id = setInterval(() => {
+      const d = a.duration;
+      if (d && isFinite(d) && d > 0) {
+        setAdhanPhrase(Math.min(ADHAN_PHRASES.length - 1, Math.floor((a.currentTime / d) * ADHAN_PHRASES.length)));
+      } else {
+        // metadata not ready yet — advance gently (~9s each) so it isn't static
+        setAdhanPhrase(Math.min(ADHAN_PHRASES.length - 1, Math.floor((Date.now() - t0) / 9000)));
+      }
+    }, 400);
+    return () => { clearInterval(id); t0 = 0; };
   }, [adhanNow]);
   const ownerRef = useRef(0); // our claim on the shared audio element
   const adhanSoundingRef = useRef(false); // true while the adhan itself is audible
@@ -450,10 +469,10 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
           <img src="/adhan/minaret.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,18,58,0.48) 0%, rgba(10,16,52,0.34) 40%, rgba(6,10,38,0.94) 100%)' }} />
 
-          {/* Top: which prayer is being called */}
-          <div className="relative z-10 px-6" style={{ paddingTop: 'calc(3rem + env(safe-area-inset-top))' }}>
-            <span className="text-[11px] uppercase tracking-[0.3em] text-[#f3e3b4]">{t('It is time for', 'حان الآن موعد')}</span>
-            <h2 className="arabic-text text-4xl font-bold text-white mt-1" style={{ textShadow: '0 2px 18px rgba(0,0,0,0.8)' }}>{t(adhanNow.en, 'صلاة ' + adhanNow.ar)}</h2>
+          {/* Top: which prayer is being called (kept small + high) */}
+          <div className="relative z-10 px-6" style={{ paddingTop: 'calc(1.4rem + env(safe-area-inset-top))' }}>
+            <span className="text-[10px] uppercase tracking-[0.28em] text-[#f3e3b4]">{t('It is time for', 'حان الآن موعد')}</span>
+            <h2 className="arabic-text text-2xl font-bold text-white mt-0.5" style={{ textShadow: '0 2px 16px rgba(0,0,0,0.8)' }}>{t(adhanNow.en, 'صلاة ' + adhanNow.ar)}</h2>
           </div>
 
           {/* Middle: the adhan being CALLED — phrases cycle as it sounds */}
