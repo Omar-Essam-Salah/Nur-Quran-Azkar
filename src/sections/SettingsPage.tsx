@@ -491,6 +491,19 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
           </div>
         </div>
 
+        {/* دعاء لأهل غزة — a prayer for the people of Gaza */}
+        <div className="glass-card-sm p-5 text-center relative overflow-hidden" style={{ border: '1px solid rgba(31,157,87,0.35)' }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% -10%, rgba(31,157,87,0.16), transparent 62%), radial-gradient(ellipse at 50% 120%, rgba(212,175,55,0.10), transparent 60%)' }} />
+          <div className="relative">
+            <p className="arabic-text text-[11px] tracking-[0.28em] text-[color:var(--text-muted)] mb-1">{tr('A prayer for', 'دعاءٌ لأهل')}</p>
+            <p className="arabic-text leading-none mb-3.5" style={{ fontSize: 'clamp(48px, 17vw, 76px)', fontWeight: 700, background: 'linear-gradient(135deg, #1f9d57 0%, #d4af37 52%, #c0392b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 3px 14px rgba(0,0,0,0.30))' }}>غزة</p>
+            <p className="arabic-text leading-loose text-[15px]" dir="rtl" style={{ color: 'rgba(var(--text-strong-rgb), 0.92)' }}>
+              اللَّهُمَّ كُنْ لِإخوانِنا في غزةَ وفِلَسطين، اللَّهُمَّ انصُرْهُم وثبِّت أقدامَهُم، وارحَمْ شُهداءَهُم، واشْفِ جَرحاهُم، وفُكَّ أسْراهُم، واحفَظ أطفالَهُم ونِساءَهُم، وارفَع عنهُمُ البلاءَ، وارزُقهُمُ الأمنَ والنَّصرَ يا ربَّ العالمين.
+            </p>
+            <p className="mt-3.5 text-[15px] tracking-widest">🤍 🍉</p>
+          </div>
+        </div>
+
         {/* Prayer Focus — in-app Do Not Disturb */}
         <div className="glass-card-sm p-4 space-y-3">
           <h3 className="text-xs text-[color:var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">

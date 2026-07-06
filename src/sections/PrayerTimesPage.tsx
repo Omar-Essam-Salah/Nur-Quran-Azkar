@@ -84,7 +84,7 @@ async function ensureAdhanChannel(): Promise<void> {
 }
 
 export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   // Seed from the cached location so prayer times compute instantly on every
   // mount (the calculation is local/instant) — no GPS wait, no loading hang.
   const cachedGeo = useMemo(() => getCachedGeo(), []);
@@ -350,6 +350,18 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
     return -1;
   }, [prayerList, currentTime]);
 
+  // Open the nearest mosques in Google Maps, centred on the user's location
+  // (from the same cached geo used for prayer times); falls back to a plain
+  // "mosque near me" search when we don't have coordinates yet.
+  const openNearestMosque = () => {
+    const geo = getCachedGeo();
+    const term = lang === 'ar' ? 'مسجد' : 'mosque';
+    const url = geo
+      ? `https://www.google.com/maps/search/${encodeURIComponent(term)}/@${geo.lat},${geo.lng},15z`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lang === 'ar' ? 'أقرب مسجد' : 'mosque near me')}`;
+    try { window.open(url, '_blank'); } catch { /* ignore */ }
+  };
+
   const toggleAdhan = () => {
     // Unlock audio on this tap so the prayer-time auto-play later isn't blocked.
     if (!adhanEnabled) unlockAudio();
@@ -418,7 +430,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
         <div className="fixed inset-0 z-[90] flex flex-col items-center justify-between text-center overflow-hidden" style={{ animation: 'adhan-fade 0.5s ease both' }}>
           <style>{`@keyframes adhan-fade{from{opacity:0}to{opacity:1}}@keyframes adhan-halo{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.12);opacity:.85}}`}</style>
           <img src="/adhan/minaret.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(18,28,86,0.20) 0%, rgba(14,22,74,0.32) 42%, rgba(7,12,46,0.90) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,18,58,0.45) 0%, rgba(10,16,52,0.28) 34%, rgba(6,10,38,0.94) 100%)' }} />
 
           <div className="relative z-10" style={{ paddingTop: 'calc(3.2rem + env(safe-area-inset-top))' }}>
             <p className="arabic-text text-white text-xl tracking-wide" style={{ textShadow: '0 2px 14px rgba(0,0,0,0.7)' }}>اللّٰهُ أَكْبَر</p>
@@ -676,6 +688,19 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
             <p className="text-xs text-[color:var(--text-muted)]">{t('Find the direction to the Kaaba', 'اتجاه الكعبة المشرّفة')}</p>
           </div>
           <Navigation size={16} className="text-[#14879c]" />
+        </button>
+
+        {/* Nearest mosque — opens Google Maps centred on the user's location. */}
+        <button
+          onClick={openNearestMosque}
+          className="glass-card w-full p-4 flex items-center gap-4 text-left mt-3"
+        >
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl" style={{ background: 'rgba(31,157,87,0.15)' }}>🕌</div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-white arabic-text">{t('Nearest Mosque', 'أقرب مسجد')}</p>
+            <p className="text-xs text-[color:var(--text-muted)] arabic-text" dir={lang === 'ar' ? 'rtl' : 'ltr'}>{t('Show the closest mosques on Google Maps', 'اعرض أقرب المساجد على خرائط جوجل')}</p>
+          </div>
+          <MapPin size={16} className="text-[#1f9d57]" />
         </button>
 
         <button
