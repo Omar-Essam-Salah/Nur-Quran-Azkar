@@ -25,6 +25,7 @@ export default function HomePage({
 }: HomePageProps) {
   const { lang, toggle, t } = useI18n();
   const isAr = lang === 'ar';
+  const isFriday = new Date().getDay() === 5; // Jumuʿah highlights on Fridays
   // Selected language goes on top (large); the other below (small).
   const primary = (en: string, ar: string) => (isAr ? ar : en);
   const secondary = (en: string, ar: string) => (isAr ? en : ar);
@@ -219,6 +220,29 @@ export default function HomePage({
             <ChevronLeft size={16} className="text-[#14879c]" />
           </div>
         </button>
+
+        {/* Friday essentials — only shown on Jumuʿah */}
+        {isFriday && (
+          <div className="glass-card p-5 space-y-3" style={{ border: '1px solid rgba(16,185,129,0.3)', background: 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(20,135,156,0.05))' }}>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📖</span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-white arabic-text">{t('It’s Friday — Jumuʿah', 'يوم الجمعة')}</p>
+                <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Sunnahs of the blessed day', 'من سنن اليوم المبارك')}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[t('Ṣalawāt on the Prophet ﷺ', 'الصلاة على النبي ﷺ'), t('Ghusl & good scent', 'الاغتسال والتطيّب'), t('Come early', 'التبكير'), t('Duʿāʾ in the last hour', 'الدعاء في آخر ساعة')].map((s, i) => (
+                <span key={i} className="text-[10px] arabic-text px-2 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.12)', color: '#34d399' }} dir={isAr ? 'rtl' : 'ltr'}>{s}</span>
+              ))}
+            </div>
+            <button onClick={() => onOpenMushaf(18)}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold arabic-text flex items-center justify-center gap-2"
+              style={{ background: 'rgba(16,185,129,0.18)', color: '#34d399', border: '1px solid rgba(16,185,129,0.35)' }}>
+              {t('Read Sūrat al-Kahf', 'اقرأ سورة الكهف')}
+            </button>
+          </div>
+        )}
 
         {/* Last Read */}
         {lastRead && lastReadSurah && (

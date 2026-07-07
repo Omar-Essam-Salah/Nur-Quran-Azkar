@@ -10,6 +10,7 @@ import { exportData, importData } from '@/lib/backup';
 import { isPrayerDnd, setPrayerDnd } from '@/lib/reminders';
 import { salawatEnabled, salawatInterval, setSalawatEnabled, setSalawatInterval, scheduleSalawat, testSalawat, SALAWAT_INTERVALS } from '@/lib/salawat';
 import { prayerReminderEnabled, prayerStatusEnabled, prayerReminderLead, setPrayerReminderEnabled, setPrayerStatusEnabled, setPrayerReminderLead, schedulePrayerReminders, testPrayerReminder, LEAD_OPTIONS } from '@/lib/prayerReminders';
+import { fridayEnabled, setFridayEnabled } from '@/lib/friday';
 import { VoiceSettings } from '@/components/VoiceSettings';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { StorageManager } from '@/components/StorageManager';
@@ -113,6 +114,7 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
   const [prayerRemOn, setPrayerRemOn] = useState(prayerReminderEnabled());
   const [prayerLead, setPrayerLead] = useState(prayerReminderLead());
   const [prayerStatusOn, setPrayerStatusOn] = useState(prayerStatusEnabled());
+  const [fridayOn, setFridayOn] = useState(fridayEnabled());
   const intervalLabel = (min: number) => min < 60 ? tr(`${min} min`, `كل ${min} دقيقة`) : tr(`${min / 60} h`, `كل ${min / 60} ساعة`);
 
   // ── Backup & restore (move data to a new phone) ──
@@ -556,6 +558,18 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
               className="w-10 h-6 rounded-full transition-all relative flex-shrink-0"
               style={{ background: prayerStatusOn ? 'rgba(20,135,156,0.4)' : 'rgba(255,255,255,0.1)' }}>
               <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: prayerStatusOn ? '22px' : '4px' }} />
+            </button>
+          </div>
+          {/* Friday (al-Kahf + hour of response) */}
+          <div className="flex items-center justify-between pt-2 border-t border-white/5">
+            <div className="flex-1 pr-3">
+              <label className="text-xs text-white/80 arabic-text block" dir={tr('ltr', 'rtl')}>{tr('Friday reminder (Sūrat al-Kahf)', 'تذكير الجمعة (سورة الكهف)')}</label>
+              <p className="text-[10px] text-[color:var(--text-muted)] arabic-text mt-0.5" dir={tr('ltr', 'rtl')}>{tr('A weekly reminder to read al-Kahf, and for the hour of response before Maghrib.', 'تذكير أسبوعي بقراءة الكهف، وبساعة الإجابة قبل المغرب.')}</p>
+            </div>
+            <button onClick={async () => { const v = !fridayOn; setFridayOn(v); await setFridayEnabled(v); }}
+              className="w-10 h-6 rounded-full transition-all relative flex-shrink-0"
+              style={{ background: fridayOn ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)' }}>
+              <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: fridayOn ? '22px' : '4px' }} />
             </button>
           </div>
         </div>

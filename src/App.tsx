@@ -44,6 +44,7 @@ import DuasPage from '@/sections/DuasPage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
 import { scheduleSalawat } from '@/lib/salawat';
 import { schedulePrayerReminders } from '@/lib/prayerReminders';
+import { scheduleFriday } from '@/lib/friday';
 import { runBack } from '@/lib/backStack';
 import { initDailySync } from '@/lib/dailySync';
 import { recordDeed } from '@/lib/ledger';
@@ -171,6 +172,7 @@ function App() {
     void scheduleSpiritualNudges();
     void scheduleSalawat(); // top up the optional salawat reminders (no-op if off)
     void schedulePrayerReminders(); // pre-prayer reminders + next-prayer status (no-op if off)
+    void scheduleFriday(); // weekly Friday (al-Kahf + hour of response) reminders
     initDailySync(); // once-a-day refresh on (re)connect
     recordDeed('open');
   }, [onboarded]);
