@@ -2,7 +2,7 @@ import {
   Compass, Hash, BookMarked, Moon, Target, CalendarDays, Sparkles, BookOpen, ScrollText,
   Bookmark, Settings as SettingsIcon, Languages, ChevronLeft, ChevronDown, HeartHandshake, BookText,
   Coins, Star, MessageSquarePlus, ShieldCheck, PersonStanding, BookOpenCheck, CalendarClock, ListChecks,
-  Search, X, HandHeart,
+  Search, X, HandHeart, Brain,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Page } from '@/types';
@@ -40,6 +40,7 @@ const GROUPS: { en: string; ar: string; items: Item[] }[] = [
     items: [
       { page: 'mushaf', en: 'Paper Mushaf', ar: 'المصحف الورقي', icon: BookMarked, color: '#14879c' },
       { page: 'muhkamat', en: 'Clear Verses', ar: 'الآيات المحكمات', icon: BookOpenCheck, color: '#d4af37' },
+      { page: 'hifz', en: 'Memorization', ar: 'رفيق الحفظ', icon: Brain, color: '#34d399' },
       { page: 'khatma', en: 'Khatma Plan', ar: 'خطة الختمة', icon: Target, color: '#14879c' },
       { page: 'kids', en: "Kids' Corner", ar: 'ركن الأطفال', icon: Star, color: '#f59e0b' },
     ],

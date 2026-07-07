@@ -41,6 +41,7 @@ import Onboarding from '@/components/Onboarding';
 import LedgerPage from '@/sections/LedgerPage';
 import GuidePage from '@/sections/GuidePage';
 import DuasPage from '@/sections/DuasPage';
+import HifzPage from '@/sections/HifzPage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
 import { scheduleSalawat } from '@/lib/salawat';
 import { schedulePrayerReminders } from '@/lib/prayerReminders';
@@ -434,6 +435,11 @@ function App() {
         {/* Duʿāʾ library — supplications by situation */}
         {currentPage === 'duas' && (
           <DuasPage onBack={goBack} />
+        )}
+
+        {/* Ḥifẓ companion — memorization tracker */}
+        {currentPage === 'hifz' && (
+          <HifzPage onBack={goBack} onOpenSurah={openSurah} />
         )}
 
         {/* Tasbih Counter */}
