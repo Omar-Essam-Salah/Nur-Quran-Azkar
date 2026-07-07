@@ -43,6 +43,7 @@ import GuidePage from '@/sections/GuidePage';
 import DuasPage from '@/sections/DuasPage';
 import HifzPage from '@/sections/HifzPage';
 import GettingStartedPage from '@/sections/GettingStartedPage';
+import TajweedPage from '@/sections/TajweedPage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
 import { scheduleSalawat } from '@/lib/salawat';
 import { schedulePrayerReminders } from '@/lib/prayerReminders';
@@ -446,6 +447,11 @@ function App() {
         {/* Welcome to Islam — a gentle first guide for new Muslims */}
         {currentPage === 'getting-started' && (
           <GettingStartedPage onBack={goBack} onNavigate={navigateTo} />
+        )}
+
+        {/* Tajwīd colour guide */}
+        {currentPage === 'tajweed' && (
+          <TajweedPage onBack={goBack} />
         )}
 
         {/* Tasbih Counter */}
