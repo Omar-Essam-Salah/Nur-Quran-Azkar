@@ -225,12 +225,20 @@ export default function LearnFigure({ pose, className }: Props) {
         <path d="M30 22 Q34 38 40 46" stroke={C.water} strokeWidth="3" fill="none" opacity="0.8" strokeLinecap="round" />
       </>);
 
-    case 'shahada': // testimony — raise the index finger
+    case 'shahada': // testimony after wudūʾ — a clear raised index finger
       return svg(<>
-        <path d="M50 20 l1.8 4.5 4.8 0.4 -3.6 3.2 1.1 4.7 -4.1 -2.5 -4.1 2.5 1.1 -4.7 -3.6 -3.2 4.8 -0.4 z" fill={C.mat} />
-        <rect x="43" y="46" width="14" height="36" rx="7" fill={C.skin} />
-        <circle cx="50" cy="56" r="9" fill={C.skinD} />
-        <rect x="46" y="30" width="7.5" height="24" rx="3.7" fill={C.skin} />
+        {/* a gentle light above (bearing witness) */}
+        <circle cx="50" cy="14" r="2.6" fill={C.mat} />
+        <path d="M50 7 v4 M50 17 v4 M43 14 h4 M53 14 h4 M45 9 l2.5 2.5 M55 9 l-2.5 2.5" stroke={C.mat} strokeWidth="1.5" strokeLinecap="round" />
+        {/* forearm */}
+        <path d="M42 92 L42 66 Q42 60 50 60 Q58 60 58 66 L58 92 Z" fill={C.skin} />
+        {/* fist (folded fingers) + thumb */}
+        <path d="M38 62 Q38 49 50 49 Q62 49 62 62 Q62 71 50 72 Q38 71 38 62 Z" fill={C.skinD} />
+        <path d="M40 57 Q34 55 35 49" stroke={C.skinD} strokeWidth="6" fill="none" strokeLinecap="round" />
+        <path d="M43 55 h14 M43 61 h14" stroke={C.skin} strokeWidth="1" opacity="0.35" />
+        {/* the raised index finger */}
+        <rect x="46.3" y="26" width="7.4" height="28" rx="3.7" fill={C.skin} />
+        <circle cx="50" cy="27" r="3.7" fill={C.skin} />
       </>);
 
     default:

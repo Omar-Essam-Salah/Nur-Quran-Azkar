@@ -612,19 +612,19 @@ function MushafWordPopup({ entry, onStep, onReciteFrom, onClose }: { entry: { ke
             : <p className="text-[13px] text-white mt-0.5" dir="ltr">{word?.translation ?? t('Meaning needs a connection', 'المعنى يحتاج اتصالاً')}</p>}
         </div>
 
-        {/* RTL reading: the LEFT arrow advances (next word is to the left), the
-            RIGHT arrow goes back (previous word is to the right). */}
-        <div className="flex items-center justify-center gap-4 mt-2.5">
-          <button onClick={() => onStep(1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Next word', 'الكلمة التالية')}>
-            <ChevronLeft size={20} className="text-[color:var(--text-muted)]" />
+        {/* Labelled so the direction is unmistakable: LEFT = next word (Arabic
+            reads right-to-left, so the next word is to the left). */}
+        <div className="flex items-center justify-center gap-3 mt-2.5">
+          <button onClick={() => onStep(1)} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center gap-1 text-[color:var(--text-muted)]" aria-label={t('Next word', 'الكلمة التالية')}>
+            <ChevronLeft size={16} /> <span className="text-[10px] arabic-text">{t('Next', 'التالية')}</span>
           </button>
           <button onClick={() => void playWord(s, a, entry.pos)}
-            className="w-12 h-12 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+            className="w-12 h-12 rounded-full flex items-center justify-center active:scale-95 transition-transform flex-shrink-0"
             style={{ background: 'rgba(212,175,55,0.16)', border: '1px solid rgba(212,175,55,0.35)' }} aria-label={t('Play word', 'انطق الكلمة')}>
             <Volume2 size={21} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
           </button>
-          <button onClick={() => onStep(-1)} className="p-2 rounded-xl hover:bg-white/10" aria-label={t('Previous word', 'الكلمة السابقة')}>
-            <ChevronRight size={20} className="text-[color:var(--text-muted)]" />
+          <button onClick={() => onStep(-1)} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center gap-1 text-[color:var(--text-muted)]" aria-label={t('Previous word', 'الكلمة السابقة')}>
+            <span className="text-[10px] arabic-text">{t('Prev', 'السابقة')}</span> <ChevronRight size={16} />
           </button>
         </div>
 

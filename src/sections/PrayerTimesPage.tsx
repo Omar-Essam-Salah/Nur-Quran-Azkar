@@ -139,21 +139,21 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   const [adhanPhrase, setAdhanPhrase] = useState(0); // which adhan phrase is showing
   useEffect(() => {
     if (!adhanNow) { setAdhanPhrase(0); return; }
-    // Follow the muezzin: map the audio's own progress → phrase index, so the
-    // words never get ahead of the actual recitation (works for any recording
-    // length). Falls back to a slow timer only until the duration is known.
+    // Follow the muezzin: drive the phrase from the AUDIO's own playback time
+    // (currentTime), never a wall-clock timer — currentTime is 0 until the sound
+    // actually starts, so the text can't run ahead of the recitation during the
+    // load delay. When the duration is known we map proportionally; otherwise we
+    // advance ~10s of real playback per phrase (a typical drawn-out adhan line).
     const a = audioEl();
-    let t0 = Date.now();
     const id = setInterval(() => {
+      const ct = a.currentTime || 0;
       const d = a.duration;
-      if (d && isFinite(d) && d > 0) {
-        setAdhanPhrase(Math.min(ADHAN_PHRASES.length - 1, Math.floor((a.currentTime / d) * ADHAN_PHRASES.length)));
-      } else {
-        // metadata not ready yet — advance gently (~9s each) so it isn't static
-        setAdhanPhrase(Math.min(ADHAN_PHRASES.length - 1, Math.floor((Date.now() - t0) / 9000)));
-      }
+      const idx = (d && isFinite(d) && d > 0)
+        ? Math.floor((ct / d) * ADHAN_PHRASES.length)
+        : Math.floor(ct / 10);
+      setAdhanPhrase(Math.max(0, Math.min(ADHAN_PHRASES.length - 1, idx)));
     }, 400);
-    return () => { clearInterval(id); t0 = 0; };
+    return () => clearInterval(id);
   }, [adhanNow]);
   const ownerRef = useRef(0); // our claim on the shared audio element
   const adhanSoundingRef = useRef(false); // true while the adhan itself is audible
@@ -314,7 +314,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
           if (timings[prayer] === nowHHMM && lastPlayedPrayer !== prayer) {
             ownerRef.current = claimAudio();
             const a = audioEl();
-            a.src = audioSrc; a.volume = 1;
+            a.src = audioSrc; a.load(); a.volume = 1; // load(): Android WebView needs it on src change
             adhanSoundingRef.current = true;
             setAdhanNow({ ar: prayerNameAr(prayer), en: prayer });
             a.onended = () => { adhanSoundingRef.current = false; setAdhanNow(null); };

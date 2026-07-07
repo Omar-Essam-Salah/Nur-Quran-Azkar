@@ -300,6 +300,10 @@
   .tilt-fg { transform: translateZ(40px); transition: transform 0.1s ease-out; }
 
   /* Scrollbar */
+  /* Keep scrolling inside sheets/panels — when the inner list reaches its end,
+     the page behind must NOT start scrolling (fixes the language picker & other
+     bottom sheets dragging the background). */
+  .custom-scrollbar { overscroll-behavior: contain; }
   .custom-scrollbar::-webkit-scrollbar { width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: rgba(var(--hair), 0.02); }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--hair), 0.1); border-radius: 2px; }
