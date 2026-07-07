@@ -2,7 +2,7 @@ import {
   Compass, Hash, BookMarked, Moon, Target, CalendarDays, Sparkles, BookOpen, ScrollText,
   Bookmark, Settings as SettingsIcon, Languages, ChevronLeft, ChevronDown, HeartHandshake, BookText,
   Coins, Star, MessageSquarePlus, ShieldCheck, PersonStanding, BookOpenCheck, CalendarClock, ListChecks,
-  Search, X, HandHeart, Brain,
+  Search, X, HandHeart, Brain, Sun,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Page } from '@/types';
@@ -48,6 +48,7 @@ const GROUPS: { en: string; ar: string; items: Item[] }[] = [
   {
     en: 'Knowledge', ar: 'العلم',
     items: [
+      { page: 'getting-started', en: 'Welcome to Islam', ar: 'مرحبًا بك في الإسلام', icon: Sun, color: '#f59e0b' },
       { page: 'asma', en: '99 Names', ar: 'الأسماء الحسنى', icon: Sparkles, color: '#14879c' },
       { page: 'prophets', en: 'Stories of the Prophets', ar: 'قصص الأنبياء', icon: BookOpen, color: '#d4af37' },
       { page: 'hadith', en: '40 Hadith', ar: 'الأربعون النووية', icon: ScrollText, color: '#d4af37' },

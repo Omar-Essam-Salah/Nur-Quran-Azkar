@@ -42,6 +42,7 @@ import LedgerPage from '@/sections/LedgerPage';
 import GuidePage from '@/sections/GuidePage';
 import DuasPage from '@/sections/DuasPage';
 import HifzPage from '@/sections/HifzPage';
+import GettingStartedPage from '@/sections/GettingStartedPage';
 import { scheduleSpiritualNudges } from '@/lib/reminders';
 import { scheduleSalawat } from '@/lib/salawat';
 import { schedulePrayerReminders } from '@/lib/prayerReminders';
@@ -440,6 +441,11 @@ function App() {
         {/* Ḥifẓ companion — memorization tracker */}
         {currentPage === 'hifz' && (
           <HifzPage onBack={goBack} onOpenSurah={openSurah} />
+        )}
+
+        {/* Welcome to Islam — a gentle first guide for new Muslims */}
+        {currentPage === 'getting-started' && (
+          <GettingStartedPage onBack={goBack} onNavigate={navigateTo} />
         )}
 
         {/* Tasbih Counter */}
