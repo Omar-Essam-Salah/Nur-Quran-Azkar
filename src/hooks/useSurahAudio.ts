@@ -65,14 +65,22 @@ function offlineAudioToast(): void {
   });
 }
 
+// Small lookahead so the highlight leads the audio slightly instead of lagging
+// behind it (WebView audio position + the ~4 Hz timeupdate both add latency).
+const HL_LOOKAHEAD_MS = 140;
+
+// Map an audio position (ms) to a word position. Return the last word whose start
+// has passed and HOLD it through gaps and long madd (melodic stretches, very
+// common in Mujawwad) so the highlight never blinks off between words.
 function wordPositionAt(segments: number[][], ms: number): number {
+  let cur = 0;
   for (const seg of segments) {
     if (seg.length < 2) continue;
     const start = seg[seg.length - 2];
-    const end = seg[seg.length - 1];
-    if (ms >= start && ms < end) return seg[0] + 1;
+    if (ms >= start) cur = seg[0] + 1;
+    else break;
   }
-  return 0;
+  return cur;
 }
 
 export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPlayer {
@@ -308,7 +316,7 @@ export function useSurahAudio({ reciterApiId, chapter, verses }: Args): SurahPla
       const ayah = latest.current.playingAyah;
       const verse = ayah != null ? verseFor(ayah) : undefined;
       if (verse && verse.segments.length) {
-        setCurrentWord(wordPositionAt(verse.segments, audio.currentTime * 1000));
+        setCurrentWord(wordPositionAt(verse.segments, audio.currentTime * 1000 + HL_LOOKAHEAD_MS));
       }
     };
     const onEnded = () => {

@@ -58,7 +58,7 @@ export async function scheduleFriday(): Promise<void> {
       if (morning.getTime() > now + 60000) {
         notifs.push({
           id: id++,
-          title: ar ? '📖 يوم الجمعة' : '📖 It’s Friday',
+          title: ar ? 'يوم الجمعة' : 'It’s Friday',
           body: ar ? 'لا تنسَ قراءة سورة الكهف اليوم' : 'Don’t forget to read Sūrat al-Kahf today',
           channelId: CH, smallIcon: 'ic_stat_nur', largeIcon: 'nur_logo',
           schedule: { at: morning, allowWhileIdle: true },
@@ -72,7 +72,7 @@ export async function scheduleFriday(): Promise<void> {
         if (lastHour.getTime() > now + 60000) {
           notifs.push({
             id: id++,
-            title: ar ? '🤲 ساعة الإجابة' : '🤲 The hour of response',
+            title: ar ? 'ساعة الإجابة' : 'The hour of response',
             body: ar ? 'في آخر ساعة من الجمعة ساعةُ إجابة — أكثِر من الدعاء والصلاة على النبي ﷺ' : 'The last hour of Friday is an hour of response — make abundant duʿāʾ and ṣalawāt',
             channelId: CH, smallIcon: 'ic_stat_nur', largeIcon: 'nur_logo',
             schedule: { at: lastHour, allowWhileIdle: true },

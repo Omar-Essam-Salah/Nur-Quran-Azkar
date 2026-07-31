@@ -25,7 +25,7 @@ export default function KidsPage({ onBack, onOpenSurah, onNavigate }: KidsPagePr
             <ArrowLeft size={18} className="text-[color:var(--text-muted)]" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-white arabic-text">{t("Kids' Corner", 'ركن الأطفال')} 🌙</h1>
+            <h1 className="text-base font-semibold text-white arabic-text">{t("Kids' Corner", 'ركن الأطفال')} </h1>
             <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir={t('ltr', 'rtl')}>{t('Short surahs to learn & repeat', 'سور قصيرة نتعلّمها ونردّدها')}</p>
           </div>
           <Star size={20} className="text-[#d4af37]" fill="currentColor" />
@@ -34,7 +34,6 @@ export default function KidsPage({ onBack, onOpenSurah, onNavigate }: KidsPagePr
 
       <div className="px-4 pt-2 pb-10 max-w-lg mx-auto space-y-5">
         <div className="glass-card p-5 text-center space-y-1">
-          <p className="text-2xl">🤍📖</p>
           <p className="text-sm text-white arabic-text">{t('Tap a surah to listen and repeat after the reciter.', 'اضغط على السورة عشان تسمعها وتردّد ورا الشيخ.')}</p>
           <p className="text-[11px] text-[color:var(--text-muted)] arabic-text" dir={t('ltr', 'rtl')}>{t('Tip: use the repeat button to loop an ayah.', 'فكرة: استخدم زر التكرار عشان يعيد الآية.')}</p>
         </div>

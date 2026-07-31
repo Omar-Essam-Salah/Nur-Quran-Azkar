@@ -225,7 +225,7 @@ export default function HomePage({
         {isFriday && (
           <div className="glass-card p-5 space-y-3" style={{ border: '1px solid rgba(16,185,129,0.3)', background: 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(20,135,156,0.05))' }}>
             <div className="flex items-center gap-2">
-              <span className="text-xl">📖</span>
+              <BookOpen size={20} className="text-[#10b981]" />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-white arabic-text">{t('It’s Friday — Jumuʿah', 'يوم الجمعة')}</p>
                 <p className="text-[10px] text-[color:var(--text-muted)] arabic-text" dir={isAr ? 'rtl' : 'ltr'}>{t('Sunnahs of the blessed day', 'من سنن اليوم المبارك')}</p>

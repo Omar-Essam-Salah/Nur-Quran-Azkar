@@ -117,8 +117,19 @@ function App() {
   // Open the PAPER MUSHAF at a surah's page (Home "continue reading" / popular
   // surahs open the physical mushaf, not the verse-by-verse reader). The Mushaf
   // reads its page from localStorage on mount, so we set it, then navigate.
-  const openMushafAtSurah = useCallback((surahNumber: number) => {
-    try { localStorage.setItem('nur-mushaf-page', String(startPageForSurah(surahNumber))); } catch { /* ignore */ }
+  const openMushafAtSurah = useCallback(async (surahNumber: number, ayahNumber?: number) => {
+    // Default to the surah's first page. If a specific ayah is asked for (e.g.
+    // from search), resolve the exact Mushaf page it sits on; fall back to the
+    // surah's start page when offline.
+    let page = startPageForSurah(surahNumber);
+    if (ayahNumber) {
+      try {
+        const res = await fetch(`https://api.quran.com/api/v4/verses/by_key/${surahNumber}:${ayahNumber}?fields=page_number`);
+        const pn = Number((await res.json())?.verse?.page_number);
+        if (pn >= 1 && pn <= 604) page = pn;
+      } catch { /* offline → surah start page */ }
+    }
+    try { localStorage.setItem('nur-mushaf-page', String(page)); } catch { /* ignore */ }
     setHistory(prev => prev[prev.length - 1] === 'mushaf' ? prev : [...prev, 'mushaf']);
     window.scrollTo(0, 0);
   }, []);
@@ -492,7 +503,7 @@ function App() {
       {showSearch && (
         <SearchOverlay
           onClose={() => setShowSearch(false)}
-          onOpenSurah={openSurah}
+          onOpenSurah={openMushafAtSurah} /* search always opens the paper Mushaf, not the reader */
           onOpenAzkar={openAzkar}
           onNavigate={navigateTo}
         />

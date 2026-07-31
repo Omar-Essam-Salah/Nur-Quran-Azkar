@@ -84,7 +84,7 @@ export default function FeedbackPage({ onBack }: FeedbackPageProps) {
           <button onClick={submit} disabled={!msg.trim() || sending}
             className="glass-btn w-full py-3 flex items-center justify-center gap-2 text-sm disabled:opacity-40">
             {sending ? <Loader2 size={16} className="animate-spin" /> : sent ? <Check size={16} className="text-emerald-400" /> : <Send size={16} />}
-            {sent ? t('Sent ✓', 'تم الإرسال ✓') : t('Send', 'إرسال')}
+            {sent ? t('Sent ', 'تم الإرسال ') : t('Send', 'إرسال')}
           </button>
           <button onClick={openGithub} disabled={!msg.trim()}
             className="w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs disabled:opacity-40"
@@ -93,7 +93,7 @@ export default function FeedbackPage({ onBack }: FeedbackPageProps) {
           </button>
 
           <p className="text-[10px] text-[color:var(--text-muted)] arabic-text leading-relaxed text-center" dir={t('ltr', 'rtl')}>
-            {t('Your message reaches the developer directly — no account or email needed. Jazak Allahu khayran 🤍', 'رسالتك بتوصل للمطوّر مباشرةً — من غير حساب ولا إيميل. جزاك الله خيرًا 🤍')}
+            {t('Your message reaches the developer directly — no account or email needed. Jazak Allahu khayran ', 'رسالتك بتوصل للمطوّر مباشرةً — من غير حساب ولا إيميل. جزاك الله خيرًا ')}
           </p>
         </div>
       </div>

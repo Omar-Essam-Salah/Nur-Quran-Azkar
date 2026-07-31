@@ -102,7 +102,7 @@ export async function schedulePrayerReminders(): Promise<void> {
           if (at.getTime() <= now + 30000) continue; // skip past
           notifs.push({
             id: id++,
-            title: ar ? '🕌 اقترب وقت الصلاة' : '🕌 Prayer is near',
+            title: ar ? 'اقترب وقت الصلاة' : 'Prayer is near',
             body: ar ? `صلاة ${NAMES[i].ar} بعد ${lead} دقيقة (${fmt12(dates[i])})` : `${NAMES[i].en} in ${lead} minutes (${fmt12(dates[i])})`,
             channelId: CH_REMIND,
             smallIcon: 'ic_stat_nur',
@@ -163,7 +163,7 @@ export async function testPrayerReminder(): Promise<boolean> {
     const ar = isAr();
     await LocalNotifications.schedule({ notifications: [{
       id: ID_REMIND_BASE + 99,
-      title: ar ? '🕌 اقترب وقت الصلاة' : '🕌 Prayer is near',
+      title: ar ? 'اقترب وقت الصلاة' : 'Prayer is near',
       body: ar ? 'مثال: صلاة الظهر بعد ١٥ دقيقة' : 'Example: Dhuhr in 15 minutes',
       channelId: CH_REMIND, smallIcon: 'ic_stat_nur', largeIcon: 'nur_logo',
       schedule: { at: new Date(Date.now() + 4000), allowWhileIdle: true },

@@ -93,7 +93,7 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
         notifications: [{
           id: 2003,
           title: 'نُور · موعد زكاتك',
-          body: 'حال الحول على مالك — احسب زكاتك وأخرِجها، طُهرةً لمالك ونماءً 🤍',
+          body: 'حال الحول على مالك — احسب زكاتك وأخرِجها، طُهرةً لمالك ونماءً ',
           schedule: { at, allowWhileIdle: true },
           smallIcon: 'ic_stat_nur', largeIcon: 'nur_logo',
         }],
@@ -130,11 +130,11 @@ export default function ZakatPage({ onBack }: ZakatPageProps) {
             <>
               <p className="text-[10px] uppercase tracking-wider text-[#d4af37]">{t('Zakat due on you', 'الزكاة الواجبة عليك')}</p>
               <p className="text-4xl font-light text-white tabular-nums">{fmt(zakat)} <span className="text-base text-[#d4af37]">{currency}</span></p>
-              <p className="text-[12px] text-[#10b981] arabic-text" dir={dir}>💰 {t('Your wealth reached the nisab — zakat is due.', 'بلغ مالك النِّصاب — تجب عليك الزكاة.')}</p>
+              <p className="text-[12px] text-[#10b981] arabic-text" dir={dir}>{t('Your wealth reached the nisab — zakat is due.', 'بلغ مالك النِّصاب — تجب عليك الزكاة.')}</p>
             </>
           ) : (
             <>
-              <p className="text-2xl font-bold text-[#10b981] arabic-text">✅ {t('No zakat due on you', 'لا زكاة عليك')}</p>
+              <p className="text-2xl font-bold text-[#10b981] arabic-text">{t('No zakat due on you', 'لا زكاة عليك')}</p>
               <p className="text-[12px] text-[color:var(--text-muted)] arabic-text" dir={dir}>{t('Your zakatable wealth is below the nisab, so you are exempt.', 'مالك الذي تجب فيه الزكاة أقلّ من النِّصاب، فأنت غير مُلزَم.')}</p>
             </>
           )}

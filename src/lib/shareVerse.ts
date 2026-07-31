@@ -100,7 +100,7 @@ export async function shareVerseCard({ arabic, translation, reference }: CardDat
     a.href = url; a.download = 'nur-ayah.png';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 3000);
-    toast('تم حفظ صورة الآية', { description: 'شاركها من معرض الصور 🤍' });
+    toast('تم حفظ صورة الآية', { description: 'شاركها من معرض الصور ' });
   } catch {
     try { await navigator.clipboard.writeText(`${arabic}\n\n${translation}\n${reference}`); toast('تم نسخ الآية'); }
     catch { /* ignore */ }

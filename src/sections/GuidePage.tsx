@@ -126,7 +126,7 @@ function Section({ section, open, setOpen }: { section: GuideSection; open: stri
                   </ol>
                   {(isAr ? topic.ref : (topic.refEn ?? topic.ref)) && (
                     <p className={`text-[11px] text-[#d4af37] leading-relaxed border-t border-white/5 pt-2 mt-1 ${isAr ? 'arabic-text' : ''}`}>
-                      ⚑ {isAr ? topic.ref : (topic.refEn ?? topic.ref)}
+                      {isAr ? topic.ref : (topic.refEn ?? topic.ref)}
                     </p>
                   )}
                 </div>

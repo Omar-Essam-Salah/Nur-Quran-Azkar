@@ -172,7 +172,7 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
     const offsetY = e.clientY - rect.top;
     const x = (offsetX - rect.width / 2) / 16;
     const y = (offsetY - rect.height / 2) / 16;
-    
+
     if (cardRef.current) {
       cardRef.current.style.transform = `rotateY(${x}deg) rotateX(${-y}deg)`;
     }
@@ -216,7 +216,7 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
       )}
       {/* Header */}
       <header className="sticky top-0 z-40 px-4 py-3">
-        <div 
+        <div
           className="mx-auto max-w-lg flex items-center gap-3 rounded-2xl px-4 py-3"
           style={{
             background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.6), rgba(var(--glass-2), 0.7))',
@@ -266,14 +266,14 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
             </div>
           ) : (
             <p className="text-[10px] text-[#34d399] arabic-text" dir="rtl">
-              {t('Compass active ✓ — if the needle drifts, wave the phone in a figure-8.',
-                 'البوصلة تعمل ✓ — لو المؤشر غير مستقر، حرّكه على شكل رقم ٨.')}
+              {t('Compass active — if the needle drifts, wave the phone in a figure-8.',
+                 'البوصلة تعمل — لو المؤشر غير مستقر، حرّكه على شكل رقم ٨.')}
             </p>
           )}
         </div>
 
         {/* 3D Tilt Compass Card */}
-        <div 
+        <div
           className="tilt-card-wrap mx-auto"
           style={{ maxWidth: '320px' }}
         >
@@ -291,7 +291,7 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
             onMouseLeave={handleMouseLeave}
           >
             {/* Background Pattern Layer */}
-            <div 
+            <div
               ref={bgRef}
               className="tilt-bg absolute inset-0 opacity-30"
               style={{
@@ -301,7 +301,7 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
             />
 
             {/* Main Content Layer */}
-            <div 
+            <div
               ref={fgRef}
               className="tilt-fg absolute inset-0 flex flex-col items-center justify-center p-6"
             >
@@ -335,7 +335,10 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
                     <div className="absolute left-1/2 top-1/2 rounded-full" style={{ width: '3px', height: '40%', transform: 'translate(-50%, -100%)', transformOrigin: 'bottom', background: `linear-gradient(to top, transparent, ${aligned ? '#34d399' : '#d4af37'})` }} />
                     <div className="absolute left-1/2 -top-1 flex flex-col items-center" style={{ transform: `translateX(-50%) rotate(${-qiblaScreen}deg)` }}>
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: aligned ? '#34d399' : '#d4af37', boxShadow: `0 0 16px ${aligned ? 'rgba(52,211,153,0.8)' : 'rgba(212,175,55,0.7)'}`, transition: 'all 0.3s' }}>
-                        <span style={{ fontSize: '17px', lineHeight: 1 }}>🕋</span>
+                        {/* Kaaba mark (drawn, not an emoji): dark cube + gold band. */}
+                        <div style={{ width: '15px', height: '15px', borderRadius: '3px', background: '#141414', position: 'relative' }}>
+                          <div style={{ position: 'absolute', left: '1px', right: '1px', top: '3.5px', height: '2px', background: '#e9d38a', borderRadius: '1px' }} />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -362,7 +365,7 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
                     <p className="text-3xl font-light text-[#34d399] tabular-nums">0°</p>
                     <div className="flex items-center justify-center gap-1.5">
                       <Navigation size={12} className="text-[#34d399]" />
-                      <span className="text-[11px] font-semibold text-[#34d399] arabic-text">{t('You are facing the Qibla ✓', 'أنت تواجه القبلة ✓')}</span>
+                      <span className="text-[11px] font-semibold text-[#34d399] arabic-text">{t('You are facing the Qibla ', 'أنت تواجه القبلة ')}</span>
                     </div>
                   </>
                 ) : (
@@ -415,9 +418,9 @@ export default function QiblaPage({ onBack }: QiblaPageProps) {
 
         {/* Kaaba Image */}
         <div className="glass-card-sm p-4 text-center space-y-3">
-          <img 
-            src="/assets/kaaba.jpg" 
-            alt="The Kaaba" 
+          <img
+            src="/assets/kaaba.jpg"
+            alt="The Kaaba"
             className="w-full h-40 object-cover rounded-xl"
           />
           <p className="text-xs text-[color:var(--text-muted)]">

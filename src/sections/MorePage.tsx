@@ -196,7 +196,7 @@ export default function MorePage({ onNavigate }: MorePageProps) {
           <p className="text-[11px] text-[color:var(--text-muted)] arabic-text leading-relaxed">
             اللهم اجعله في ميزان حسناتي ووالديَّ وأهلي، وتقبّله بقبولٍ حسن، وانفع به المسلمين.
             <br />
-            ولا تنسَ من برمجه ومن نشره بدعوةٍ بظهر الغيب 🤍
+            ولا تنسَ من برمجه ومن نشره بدعوةٍ بظهر الغيب
           </p>
         </div>
 

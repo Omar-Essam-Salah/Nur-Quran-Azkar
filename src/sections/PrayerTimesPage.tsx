@@ -392,10 +392,15 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
   // "mosque near me" search when we don't have coordinates yet.
   const openNearestMosque = () => {
     const geo = getCachedGeo();
-    const term = lang === 'ar' ? 'مسجد' : 'mosque';
+    // Search Google Maps' "mosque" place CATEGORY, not the Arabic word. The
+    // category is name-agnostic, so it also returns places named جامع / مصلى /
+    // زاوية — a plain "مسجد" text search misses those. English "mosque" is the
+    // most reliable trigger for the category filter, and the map still shows
+    // every place under its own (Arabic) name.
+    const query = 'mosque';
     const url = geo
-      ? `https://www.google.com/maps/search/${encodeURIComponent(term)}/@${geo.lat},${geo.lng},15z`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lang === 'ar' ? 'أقرب مسجد' : 'mosque near me')}`;
+      ? `https://www.google.com/maps/search/${query}/@${geo.lat},${geo.lng},16z`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('mosque near me')}`;
     try { window.open(url, '_blank'); } catch { /* ignore */ }
   };
 
@@ -739,7 +744,7 @@ export default function PrayerTimesPage({ onBack, onNavigate }: PrayerTimesPageP
           onClick={openNearestMosque}
           className="glass-card w-full p-4 flex items-center gap-4 text-left mt-3"
         >
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl" style={{ background: 'rgba(31,157,87,0.15)' }}>🕌</div>
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(31,157,87,0.15)' }}><MapPin size={22} className="text-[#1f9d57]" /></div>
           <div className="flex-1">
             <p className="text-sm font-medium text-white arabic-text">{t('Nearest Mosque', 'أقرب مسجد')}</p>
             <p className="text-xs text-[color:var(--text-muted)] arabic-text" dir={lang === 'ar' ? 'rtl' : 'ltr'}>{t('Show the closest mosques on Google Maps', 'اعرض أقرب المساجد على خرائط جوجل')}</p>

@@ -26,7 +26,7 @@ export function TafsirPacks() {
     const c = new AbortController(); abortRef.current = c; setBusy(id); setProg(0);
     try {
       await downloadTafsirPack(id, (p) => setProg(Math.round((p.done / p.total) * 100)), c.signal);
-      toast(t('Tafsir saved offline ✓', 'تم حفظ التفسير للعمل دون إنترنت ✓'));
+      toast(t('Tafsir saved offline ', 'تم حفظ التفسير للعمل دون إنترنت '));
       refresh();
     } catch (e) { if ((e as Error)?.name !== 'AbortError') toast(t('Download failed', 'فشل التحميل'), { description: t('Check your connection and try again.', 'تحقّق من اتصالك وحاول مجددًا.') }); }
     finally { setBusy(null); abortRef.current = null; }

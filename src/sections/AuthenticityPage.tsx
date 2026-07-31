@@ -54,7 +54,7 @@ export default function AuthenticityPage({ onBack }: AuthenticityPageProps) {
             <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.35)' }}>
               <ShieldCheck size={18} className="text-[#10b981] flex-shrink-0 mt-0.5" />
               <p className="text-[12px] text-[#10b981] arabic-text leading-relaxed" dir={dir}>
-                {t('Verified ✓ — the Quran text is authentic and unaltered.', 'موثّق ✓ — نص القرآن أصليٌّ وغير محرّف.')}
+                {t('Verified — the Quran text is authentic and unaltered.', 'موثّق — نص القرآن أصليٌّ وغير محرّف.')}
               </p>
             </div>
           )}

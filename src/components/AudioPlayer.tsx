@@ -87,7 +87,7 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, surahN
         toast(t('Partly saved', 'تم حفظ جزء'), { description: t(`${r.saved}/${r.total} ayat saved. Tap download again to finish.`, `تم حفظ ${r.saved}/${r.total} آية. اضغط تحميل مرّة أخرى لإكمال الباقي.`) });
       } else {
         setDownloaded(true);
-        toast(t('Saved for offline ✓', 'تم الحفظ للاستماع دون إنترنت ✓'), { description: `${surahLabel} — ${reciterName}` });
+        toast(t('Saved for offline ', 'تم الحفظ للاستماع دون إنترنت '), { description: `${surahLabel} — ${reciterName}` });
       }
     } catch (err) {
       if ((err as Error)?.name !== 'AbortError') toast(t('Download failed', 'فشل التحميل'), { description: t('Check your connection and try again.', 'تحقّق من اتصالك وحاول مرّة أخرى.') });
@@ -198,7 +198,7 @@ export default function AudioPlayer({ reciter, chapter, surahEnglishName, surahN
               {downloading
                 ? `${t('Downloading…', 'جارٍ التحميل…')} ${dlProgress.done}/${dlProgress.total} (${pct}%)`
                 : audio.playingAyah
-                  ? `${surahLabel} · ${t('Ayah', 'آية')} ${audio.playingAyah}${rpt ? ' · 🔁' : ''}${audio.rate !== 1 ? ` · ${audio.rate}×` : ''}`
+                  ? `${surahLabel} · ${t('Ayah', 'آية')} ${audio.playingAyah}${rpt ? ` · ${t('repeat', 'تكرار')}` : ''}${audio.rate !== 1 ? ` · ${audio.rate}×` : ''}`
                   : `${surahLabel} · ${reciter.style ?? 'Murattal'}`}
             </p>
           </div>

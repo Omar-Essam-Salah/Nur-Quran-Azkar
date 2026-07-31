@@ -11,6 +11,7 @@ import { surahList } from '@/data/surahList';
 import { startPageForSurah } from '@/data/mushafPages';
 import { loadPageTokens, keysFromTokens, type PageToken } from '@/lib/mushafText';
 import { haptic } from '@/lib/haptics';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { useI18n } from '@/i18n';
 
 interface MushafPageProps {
@@ -35,13 +36,23 @@ const toArabicDigits = (n: number) => String(n).replace(/\d/g, (d) => '٠١٢٣�
 
 // Which word (1-based) is sounding at `ms`, from the reciter's timing segments.
 // Each segment is [wordIndex, …, startMs, endMs]; returns 0 if none/between.
+// Small lookahead so the highlight leads the audio slightly instead of lagging
+// behind it (WebView audio position + the ~4 Hz timeupdate both add latency).
+const HL_LOOKAHEAD_MS = 140;
+
+// Map an audio position (ms) to a word position. Segments are time-ordered as
+// [wordIndex, …, startMs, endMs]. Return the last word whose start has passed and
+// HOLD it through gaps and long madd (melodic stretches, very common in Mujawwad)
+// so the highlight never blinks off between words.
 function wordAt(segments: number[][], ms: number): number {
+  let cur = 0;
   for (const seg of segments) {
     if (seg.length < 2) continue;
-    const start = seg[seg.length - 2], end = seg[seg.length - 1];
-    if (ms >= start && ms < end) return seg[0] + 1;
+    const start = seg[seg.length - 2];
+    if (ms >= start) cur = seg[0] + 1;
+    else break;
   }
-  return 0;
+  return cur;
 }
 
 export default function MushafPage({ initialPage }: MushafPageProps) {
@@ -92,6 +103,7 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
     setShowReciters(false);
   };
   const audioElRef = useRef<HTMLAudioElement | null>(null);
+  const rafRef = useRef(0); // requestAnimationFrame id for the word-highlight loop
   const ownerRef = useRef(0); // our claim on the app-wide shared audio element
   const playlistRef = useRef<{ url: string; key?: string; segments?: number[][] }[]>([]);
   const idxRef = useRef(0);
@@ -152,15 +164,32 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
     } catch { setAudioLoading(false); setAudioPlaying(false); }
   };
 
+  // Push the highlight to the word at the current audio position (with lookahead).
+  const syncHighlight = (a: HTMLAudioElement) => {
+    const seg = playlistRef.current[idxRef.current]?.segments;
+    setCurrentWord(seg && seg.length ? wordAt(seg, a.currentTime * 1000 + HL_LOOKAHEAD_MS) : 0);
+  };
+  // A rAF loop keeps the highlight in step with the audio (~60 Hz) instead of the
+  // ~4 Hz `timeupdate` event, which is what made it feel out of sync.
+  const runHighlightLoop = () => {
+    cancelAnimationFrame(rafRef.current);
+    const tick = () => {
+      const a = audioElRef.current;
+      if (!a || a.paused || !isOwner(ownerRef.current)) return;
+      syncHighlight(a);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+  };
+
   const ensureAudioEl = (): HTMLAudioElement => {
     const a = audioEl();
-    a.onplay = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.add('reciting'); };
-    a.onpause = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.remove('reciting'); };
-    a.onerror = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.remove('reciting'); setAudioPlaying(false); setAudioLoading(false); };
+    a.onplay = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.add('reciting'); runHighlightLoop(); };
+    a.onpause = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.remove('reciting'); cancelAnimationFrame(rafRef.current); };
+    a.onerror = () => { if (!isOwner(ownerRef.current)) return; document.body.classList.remove('reciting'); cancelAnimationFrame(rafRef.current); setAudioPlaying(false); setAudioLoading(false); };
     a.ontimeupdate = () => {
       if (!isOwner(ownerRef.current)) return;
-      const seg = playlistRef.current[idxRef.current]?.segments;
-      setCurrentWord(seg && seg.length ? wordAt(seg, a.currentTime * 1000) : 0);
+      syncHighlight(a); // keeps highlighting alive even if rAF is throttled in bg
     };
     a.onended = () => {
       if (!isOwner(ownerRef.current)) return;
@@ -184,11 +213,18 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
   const toggleAudio = () => {
     const a = audioEl();
     if (audioPlaying) { a.pause(); setAudioPlaying(false); return; }
+    // Still own the shared element, paused on THIS page's audio → resume exactly
+    // where we paused (down to the millisecond).
     if (isOwner(ownerRef.current) && a.src && a.paused && playingPageRef.current === page && playlistRef.current.length) {
       ensureAudioEl();
       void a.play(); setAudioPlaying(true); return;
     }
-    void loadAndPlayPage(page);
+    // Something else used the shared audio in between (a tapped word, a reciter
+    // preview, the adhan…). Resume from the verse we were on — NOT the page top.
+    const resumeKey = (playingPageRef.current === page && playlistRef.current.length)
+      ? playlistRef.current[idxRef.current]?.key
+      : undefined;
+    void loadAndPlayPage(page, resumeKey);
   };
 
   // If the user navigates to another page mid-recitation, follow them.
@@ -204,7 +240,7 @@ export default function MushafPage({ initialPage }: MushafPageProps) {
   }, [reciterId]);
 
   // Stop audio on unmount (only if we still own the shared element).
-  useEffect(() => () => { if (isOwner(ownerRef.current)) { try { audioEl().pause(); } catch { /* ignore */ } document.body.classList.remove('reciting'); } }, []);
+  useEffect(() => () => { cancelAnimationFrame(rafRef.current); if (isOwner(ownerRef.current)) { try { audioEl().pause(); } catch { /* ignore */ } document.body.classList.remove('reciting'); } }, []);
 
   // Load the page's text tokens (offline) and keep the tafsir ayah-keys in sync.
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -612,19 +648,21 @@ function MushafWordPopup({ entry, onStep, onReciteFrom, onClose }: { entry: { ke
             : <p className="text-[13px] text-white mt-0.5" dir="ltr">{word?.translation ?? t('Meaning needs a connection', 'المعنى يحتاج اتصالاً')}</p>}
         </div>
 
-        {/* Labelled so the direction is unmistakable: LEFT = next word (Arabic
-            reads right-to-left, so the next word is to the left). */}
-        <div className="flex items-center justify-center gap-3 mt-2.5">
-          <button onClick={() => onStep(1)} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center gap-1 text-[color:var(--text-muted)]" aria-label={t('Next word', 'الكلمة التالية')}>
-            <ChevronLeft size={16} /> <span className="text-[10px] arabic-text">{t('Next', 'التالية')}</span>
+        {/* Physical arrows: the LEFT arrow selects the word to the left, the
+            RIGHT arrow the word to the right. The page reads right-to-left, so
+            the word on the left is the next one and the word on the right is the
+            previous one. dir=ltr pins each arrow to its real side. */}
+        <div dir="ltr" className="flex items-center justify-center gap-4 mt-2.5">
+          <button onClick={() => onStep(1)} className="p-1.5 rounded-lg hover:bg-white/10 text-[color:var(--text-muted)]" aria-label={t('Word to the left', 'الكلمة على اليسار')}>
+            <ChevronLeft size={20} />
           </button>
           <button onClick={() => void playWord(s, a, entry.pos)}
             className="w-12 h-12 rounded-full flex items-center justify-center active:scale-95 transition-transform flex-shrink-0"
             style={{ background: 'rgba(212,175,55,0.16)', border: '1px solid rgba(212,175,55,0.35)' }} aria-label={t('Play word', 'انطق الكلمة')}>
             <Volume2 size={21} className={sounding ? 'text-[#d4af37]' : 'text-[#14879c]'} />
           </button>
-          <button onClick={() => onStep(-1)} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center gap-1 text-[color:var(--text-muted)]" aria-label={t('Previous word', 'الكلمة السابقة')}>
-            <span className="text-[10px] arabic-text">{t('Prev', 'السابقة')}</span> <ChevronRight size={16} />
+          <button onClick={() => onStep(-1)} className="p-1.5 rounded-lg hover:bg-white/10 text-[color:var(--text-muted)]" aria-label={t('Word to the right', 'الكلمة على اليمين')}>
+            <ChevronRight size={20} />
           </button>
         </div>
 
@@ -748,7 +786,7 @@ function MushafTafsirPanel({ verseKey, keys, onSelect, onClose, playing, onToggl
           {loading
             ? <div className="flex justify-center py-4"><Loader2 size={18} className="animate-spin text-[#14879c]" /></div>
             : text
-              ? <span dangerouslySetInnerHTML={{ __html: text }} />
+              ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }} />
               : <p className="text-[color:var(--text-muted)] py-2">{t('Tafsir is unavailable right now (needs an internet connection).', 'التفسير غير متاح الآن (يتطلب اتصالًا بالإنترنت).')}</p>}
         </div>
       </div>

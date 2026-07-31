@@ -60,7 +60,7 @@ export default function KhatmaPage({ onBack, onNavigate }: KhatmaPageProps) {
         notifications: [{
           id: 2001,
           title: 'نُور · وِرد اليوم',
-          body: 'حان وقت وِردك من القرآن — اجعل لقلبك نصيبًا اليوم 🤍',
+          body: 'حان وقت وِردك من القرآن — اجعل لقلبك نصيبًا اليوم ',
           schedule: { on: { hour: h, minute: m }, allowWhileIdle: true },
           smallIcon: 'ic_stat_nur', largeIcon: 'nur_logo',
         }],
@@ -110,7 +110,7 @@ export default function KhatmaPage({ onBack, onNavigate }: KhatmaPageProps) {
             </div>
           </div>
           {done ? (
-            <p className="text-sm text-[#d4af37] arabic-text">{t('Ma sha Allah — you completed the Khatma!', 'ما شاء الله، أتممت الختمة!')} 🌙</p>
+            <p className="text-sm text-[#d4af37] arabic-text">{t('Ma sha Allah — you completed the Khatma!', 'ما شاء الله، أتممت الختمة!')} </p>
           ) : (
             <p className="text-sm text-white arabic-text">{t("Today's portion: pages", 'وِرد اليوم: من صفحة')} <b className="text-[#14879c]">{from}</b> {t('to', 'إلى')} <b className="text-[#14879c]">{to}</b></p>
           )}

@@ -95,7 +95,7 @@ export default function PrayerLearnPage({ onBack }: Props) {
 
         <p className="text-[11px] text-[color:var(--text-muted)] arabic-text leading-relaxed px-1 mb-3" dir={isAr ? 'rtl' : 'ltr'}>
           {kids
-            ? t('Simple steps for children — tap the speaker to listen. 🌱', 'خطوات بسيطة للأطفال — اضغط زر الصوت عشان تسمع. 🌱')
+            ? t('Simple steps for children — tap the speaker to listen. ', 'خطوات بسيطة للأطفال — اضغط زر الصوت عشان تسمع. ')
             : tab === 'wudu'
               ? t('Wudū is purifying yourself with water before prayer. Follow the steps in order.', 'الوضوء هو التطهّر بالماء قبل الصلاة. اتبع الخطوات بالترتيب.')
               : t('This is one rakʿah (unit). Repeat it for the number of rakʿahs of each prayer.', 'هذه ركعة واحدة، كرّرها بعدد ركعات كلّ صلاة.')}

@@ -89,7 +89,7 @@ function DuaBlock({ dua, isAr }: { dua: Dua; isAr: boolean }) {
       </div>
       {dua.translit && <p className="text-[11px] text-[#14879c] italic mt-1.5 leading-snug" dir="ltr">{dua.translit}</p>}
       <p className="text-[12px] text-[color:var(--text-muted)] mt-1.5 leading-relaxed" dir="ltr">{dua.en}</p>
-      <p className="text-[11px] text-[#d4af37] arabic-text mt-2 pt-1.5 border-t border-white/5">⚑ {isAr ? dua.ref : dua.refEn}</p>
+      <p className="text-[11px] text-[#d4af37] arabic-text mt-2 pt-1.5 border-t border-white/5">{isAr ? dua.ref : dua.refEn}</p>
     </div>
   );
 }

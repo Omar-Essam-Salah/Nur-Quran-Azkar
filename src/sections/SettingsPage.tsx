@@ -154,7 +154,7 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
         const req = indexedDB.deleteDatabase('nur-quran');
         req.onsuccess = req.onerror = req.onblocked = () => resolve();
       });
-      toast(tr('Cache cleared ✓', 'تم تفريغ الكاش ✓'), { description: tr('Freed downloaded audio & pages. Settings & bookmarks kept.', 'تم تفريغ الصوت والصفحات المحمّلة. إعداداتك ومحفوظاتك محفوظة.') });
+      toast(tr('Cache cleared ', 'تم تفريغ الكاش '), { description: tr('Freed downloaded audio & pages. Settings & bookmarks kept.', 'تم تفريغ الصوت والصفحات المحمّلة. إعداداتك ومحفوظاتك محفوظة.') });
     } catch { /* ignore */ }
     setClearingCache(false);
   };
@@ -163,7 +163,7 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
     <div className="page-enter min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-40 px-4 py-3">
-        <div 
+        <div
           className="mx-auto max-w-lg flex items-center gap-3 rounded-2xl px-4 py-3"
           style={{
             background: 'linear-gradient(135deg, rgba(var(--glass-1), 0.6), rgba(var(--glass-2), 0.7))',
@@ -247,7 +247,7 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
             <Type size={12} />
             {tr('Display', 'العرض')}
           </h3>
-          
+
           {/* Arabic Font Size */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -298,7 +298,7 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
                 background: settings.showTranslation ? 'rgba(20, 135, 156, 0.4)' : 'rgba(255, 255, 255, 0.1)',
               }}
             >
-              <div 
+              <div
                 className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all"
                 style={{
                   left: settings.showTranslation ? '22px' : '4px',
@@ -505,7 +505,7 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% -10%, rgba(31,157,87,0.16), transparent 62%), radial-gradient(ellipse at 50% 120%, rgba(212,175,55,0.10), transparent 60%)' }} />
           <div className="relative">
             <p className="arabic-text text-[11px] tracking-[0.28em] text-[color:var(--text-muted)] mb-1">{tr('A prayer for', 'دعاءٌ لأهل')}</p>
-            <p className="arabic-text leading-none mb-3" style={{ fontSize: 'clamp(38px, 12vw, 56px)', fontWeight: 700, background: 'linear-gradient(135deg, #1f9d57 0%, #d4af37 52%, #c0392b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 3px 14px rgba(0,0,0,0.30))' }}>غزة</p>
+            <p className="arabic-text mb-3" style={{ fontSize: 'clamp(38px, 12vw, 56px)', lineHeight: 1.32, paddingTop: '0.16em', fontWeight: 700, background: 'linear-gradient(135deg, #1f9d57 0%, #d4af37 52%, #c0392b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 3px 14px rgba(0,0,0,0.30))' }}>غزة</p>
             <p className="arabic-text leading-loose text-[15px]" dir="rtl" style={{ color: 'rgba(var(--text-strong-rgb), 0.92)' }}>
               اللَّهُمَّ كُنْ لِإخوانِنا في غزةَ وفِلَسطين، اللَّهُمَّ انصُرْهُم وثبِّت أقدامَهُم، وارحَمْ شُهداءَهُم، واشْفِ جَرحاهُم، وفُكَّ أسْراهُم، واحفَظ أطفالَهُم ونِساءَهُم، وارفَع عنهُمُ البلاءَ، وارزُقهُمُ الأمنَ والنَّصرَ يا ربَّ العالمين.
             </p>
@@ -695,7 +695,7 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
             <AlertTriangle size={12} />
             {tr('Data Management', 'إدارة البيانات')}
           </h3>
-          
+
           {!showClearConfirm ? (
             <button
               onClick={() => setShowClearConfirm(true)}
@@ -707,7 +707,7 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
           ) : (
             <div className="space-y-3">
               <p className="text-xs text-[color:var(--text-muted)]">
-                This will delete all bookmarks, reading progress, and tasbih counts. 
+                This will delete all bookmarks, reading progress, and tasbih counts.
                 This action cannot be undone.
               </p>
               <div className="flex gap-2">

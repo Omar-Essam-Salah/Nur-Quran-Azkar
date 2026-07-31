@@ -14,6 +14,7 @@ import AudioPlayer from '@/components/AudioPlayer';
 import { fetchSurahContent, type NormVerse, type SurahContent } from '@/lib/quranApi';
 import { getContent, putContent, contentKey, getTafsirText } from '@/lib/contentCache';
 import { loadLocalSurah } from '@/lib/localQuran';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { useI18n } from '@/i18n';
 import type { AppSettings } from '@/types';
 
@@ -559,7 +560,7 @@ export default function QuranReader({
               {tafsirLoading ? (
                 <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#14879c]" size={28} /></div>
               ) : tafsirData ? (
-                <div dangerouslySetInnerHTML={{ __html: tafsirData.text }} className="tafsir-html" />
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(tafsirData.text) }} className="tafsir-html" />
               ) : (
                 <p className="text-center py-10 arabic-text">{t('Tafsir not available. Check your connection.', 'التفسير غير متاح. تحقّق من اتصالك بالإنترنت.')}</p>
               )}

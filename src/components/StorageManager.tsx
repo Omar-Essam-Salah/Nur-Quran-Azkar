@@ -59,7 +59,7 @@ export function StorageManager() {
           if (urls.length) await downloadSurahAudio(savedReciter.apiId, ch, urls, undefined, controller.signal);
         } catch (e) { if ((e as Error)?.name === 'AbortError') break; /* skip this surah, continue */ }
       }
-      if (!controller.signal.aborted) toast(t('Quran download finished ✓', 'اكتمل تحميل المصحف ✓'));
+      if (!controller.signal.aborted) toast(t('Quran download finished ', 'اكتمل تحميل المصحف '));
     } finally {
       setFull(null); abortRef.current = null; refresh();
     }

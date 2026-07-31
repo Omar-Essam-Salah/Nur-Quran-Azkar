@@ -17,14 +17,14 @@ export default function LedgerPage({ onBack }: LedgerPageProps) {
   const dash = (pct / 100) * C;
 
   const encouragement = pct >= 100
-    ? t('You reached today’s goal — may Allah accept it 🤍', 'بلغت هدف اليوم — تقبّل الله منك 🤍')
+    ? t('You reached today’s goal — may Allah accept it ', 'بلغت هدف اليوم — تقبّل الله منك ')
     : pct >= 70
-      ? t('So close — your heart is almost there 🌟', 'ما شاء الله، أنت قريبٌ جدًا 🌟')
+      ? t('So close — your heart is almost there ', 'ما شاء الله، أنت قريبٌ جدًا ')
       : pct >= 40
-        ? t('Beautiful — you are drawing nearer and nearer ✨', 'أحسنت، تقترب أكثر فأكثر… ✨')
+        ? t('Beautiful — you are drawing nearer and nearer ', 'أحسنت، تقترب أكثر فأكثر… ')
         : pct > 0
-          ? t('A blessed beginning — every step brings you closer 🌱', 'بدايةٌ مباركة — كلّ خطوةٍ تُقرّبك أكثر 🌱')
-          : t('Open your heart with a single ayah, and begin 🤲', 'افتح قلبك بآيةٍ واحدة، وابدأ القُرب 🤲');
+          ? t('A blessed beginning — every step brings you closer ', 'بدايةٌ مباركة — كلّ خطوةٍ تُقرّبك أكثر ')
+          : t('Open your heart with a single ayah, and begin ', 'افتح قلبك بآيةٍ واحدة، وابدأ القُرب ');
 
   const stats = data ? [
     { icon: BookOpen, color: '#14879c', label: t('Ayat read', 'آيات قُرئت'), value: data.totalAyahs },

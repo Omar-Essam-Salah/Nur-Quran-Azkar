@@ -104,11 +104,14 @@ export default function TasbihPage({
             <button
               key={dhikr.id}
               onClick={() => setActiveDhikr(dhikr.id)}
-              className="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-medium transition-all whitespace-nowrap"
+              className="flex-shrink-0 px-4 py-2 rounded-xl text-xs transition-all whitespace-nowrap"
               style={{
-                background: activeDhikr === dhikr.id ? `${dhikr.color}20` : 'rgba(255, 255, 255, 0.02)',
-                color: activeDhikr === dhikr.id ? dhikr.color : 'var(--text-muted)',
-                border: activeDhikr === dhikr.id ? `1px solid ${dhikr.color}40` : '1px solid rgba(255, 255, 255, 0.05)',
+                // Tint with the dhikr's OWN color (not a white overlay) so the
+                // pills stay readable on both the light and dark themes.
+                background: `${dhikr.color}${activeDhikr === dhikr.id ? '2e' : '14'}`,
+                color: dhikr.color,
+                border: `1px solid ${dhikr.color}${activeDhikr === dhikr.id ? '80' : '3a'}`,
+                fontWeight: activeDhikr === dhikr.id ? 700 : 500,
               }}
             >
               <span className="block arabic-text text-sm">{dhikr.arabic}</span>
@@ -239,8 +242,8 @@ export default function TasbihPage({
                   onClick={() => setActiveDhikr(dhikr.id)}
                   className="p-3 rounded-xl text-left transition-all"
                   style={{
-                    background: activeDhikr === dhikr.id ? `${dhikr.color}10` : 'rgba(255, 255, 255, 0.02)',
-                    border: activeDhikr === dhikr.id ? `1px solid ${dhikr.color}20` : '1px solid transparent',
+                    background: `${dhikr.color}${activeDhikr === dhikr.id ? '22' : '10'}`,
+                    border: `1px solid ${dhikr.color}${activeDhikr === dhikr.id ? '55' : '22'}`,
                   }}
                 >
                   <div className="flex items-center justify-between mb-1">
