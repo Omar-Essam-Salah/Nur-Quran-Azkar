@@ -491,6 +491,11 @@ export default function SettingsPage({ settings, setSettings, onBack }: Settings
                 {tr('Quran text, recitations & translations are from sources published freely for the sake of Allah; rights belong to their owners.',
                     'نصوص القرآن والتلاوات والترجمات من مصادر نشرها أصحابها مجانًا لوجه الله، والحقوق لأصحابها.')}
               </p>
+              <button
+                onClick={() => { try { window.open('https://omar-essam-salah.github.io/Nur-Quran-Azkar/privacy-policy.html', '_blank'); } catch { /* ignore */ } }}
+                className="mt-1 text-[10px] text-[#14879c] hover:underline arabic-text" dir={tr('ltr', 'rtl')}>
+                {tr('Privacy Policy', 'سياسة الخصوصية')}
+              </button>
             </div>
           </div>
         </div>

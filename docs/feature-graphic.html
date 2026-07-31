@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8" />
+<title>Nur — Feature Graphic 1024×500</title>
+<style>
+  html, body { margin: 0; background: #333; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: "Segoe UI", system-ui, "Noto Naskh Arabic", sans-serif; }
+  /* Google Play feature graphic is exactly 1024 x 500. Open in Chrome, then
+     screenshot THIS box (or right-click → Inspect → the .fg node → "Capture node screenshot"). */
+  .fg {
+    width: 1024px; height: 500px; position: relative; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 78% 30%, rgba(20,135,156,.35), transparent 55%),
+      radial-gradient(ellipse at 20% 80%, rgba(212,175,55,.16), transparent 55%),
+      linear-gradient(135deg, #06171d 0%, #0b2b3a 60%, #0a1f2e 100%);
+    color: #eaf2f4;
+  }
+  .stars { position: absolute; inset: 0; }
+  .star { position: absolute; background: #fff; border-radius: 50%; opacity: .5; }
+  .content { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 70px; box-sizing: border-box; }
+  .text { flex: 1; }
+  .ar { font-size: 118px; font-weight: 800; color: #f4e6b0;
+        text-shadow: 0 4px 30px rgba(212,175,55,.35); line-height: 1; margin: 0; }
+  .en { font-size: 40px; font-weight: 700; letter-spacing: .5px; margin: 10px 0 0; color: #fff; }
+  .sub { font-size: 21px; color: #bfe0ea; margin: 14px 0 22px; }
+  .pills { display: flex; gap: 10px; }
+  .pill { font-size: 15px; font-weight: 600; padding: 8px 15px; border-radius: 999px;
+          background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color: #dff1f5; }
+  /* Crescent + dome emblem */
+  .art { width: 300px; height: 300px; position: relative; flex-shrink: 0; }
+  .halo { position: absolute; inset: 20px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(212,175,55,.28), transparent 68%); }
+  .crescent { position: absolute; top: 26px; left: 60px; width: 150px; height: 150px; border-radius: 50%;
+              box-shadow: 26px 20px 0 4px #f4e6b0; }
+  .dome { position: absolute; bottom: 44px; left: 88px; width: 120px; height: 84px;
+          background: linear-gradient(180deg, #e9d38a, #c9a227); border-radius: 60px 60px 8px 8px; }
+  .dome::before { content: ""; position: absolute; left: 50%; top: -26px; transform: translateX(-50%);
+                  width: 8px; height: 28px; background: #f4e6b0; border-radius: 4px; }
+  .base { position: absolute; bottom: 30px; left: 74px; width: 148px; height: 14px; background: #b8901f; border-radius: 4px; }
+</style>
+</head>
+<body>
+  <div class="fg">
+    <div class="stars" id="stars"></div>
+    <div class="content">
+      <div class="text">
+        <p class="ar" dir="rtl">نُور</p>
+        <p class="en">Nur — Quran &amp; Azkar</p>
+        <p class="sub">Free · Ad‑free · Works offline · No tracking</p>
+        <div class="pills">
+          <span class="pill">📖 Quran</span>
+          <span class="pill">🕌 Prayer times</span>
+          <span class="pill">🧭 Qibla</span>
+          <span class="pill">🤲 Azkar</span>
+        </div>
+      </div>
+      <div class="art">
+        <div class="halo"></div>
+        <div class="crescent"></div>
+        <div class="base"></div>
+        <div class="dome"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const s = document.getElementById('stars');
+    for (let i = 0; i < 40; i++) {
+      const d = document.createElement('div'); d.className = 'star';
+      const sz = Math.random() * 2 + 1;
+      d.style.width = d.style.height = sz + 'px';
+      d.style.left = Math.random() * 100 + '%'; d.style.top = Math.random() * 100 + '%';
+      d.style.opacity = (Math.random() * 0.5 + 0.2).toFixed(2);
+      s.appendChild(d);
+    }
+  </script>
+</body>
+</html>
