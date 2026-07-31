@@ -70,3 +70,4 @@ ios/App/Podfile.lock
 *.bak
 ios_install.log
 ios_add.log
+pics/
