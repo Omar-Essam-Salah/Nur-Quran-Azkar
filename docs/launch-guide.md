@@ -23,8 +23,8 @@
 ## 3) رسالة جاهزة لإرسالها للمختبرين
 
 **عربي:**
-> السلام عليكم 🌙
-> بجرّب أنشر تطبيق قرآن وأذكار مجاني اسمه «نُور» (بلا إعلانات، ويعمل بدون إنترنت)، ومحتاج مساعدتك كمُختبِر أسبوعين بس — والأجر صدقة جارية إن شاء الله 🤍
+> السلام عليكم
+> بجرّب أنشر تطبيق قرآن وأذكار مجاني اسمه «نُور» (بلا إعلانات، ويعمل بدون إنترنت)، ومحتاج مساعدتك كمُختبِر أسبوعين بس — والأجر صدقة جارية إن شاء الله
 > من موبايل أندرويد:
 > 1) افتح الرابط ده: [الصق رابط الانضمام هنا]
 > 2) اضغط «Become a tester» ثم نزّل التطبيق من Google Play.
@@ -32,7 +32,7 @@
 > جزاك الله خيرًا.
 
 **English:**
-> Assalāmu ʿalaykum 🌙 I’m publishing a free, ad-free, offline Quran & Azkar app called “Nur”, and I need your help as a tester for just two weeks.
+> Assalāmu ʿalaykum I’m publishing a free, ad-free, offline Quran & Azkar app called “Nur”, and I need your help as a tester for just two weeks.
 > On an Android phone:
 > 1) Open this link: [paste the opt-in link]
 > 2) Tap “Become a tester”, then install the app from Google Play.
