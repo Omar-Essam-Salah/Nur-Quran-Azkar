@@ -83,6 +83,6 @@ Offered freely, as a ṣadaqah jāriyah, for the sake of Allah.
 ## Suggested metadata
 - Category: **Books & Reference** (alt: Lifestyle)
 - Tags: Quran, Islam, Azkar, Prayer times, Qibla, Hadith, Dua
-- Contact email: omar.essam.salahh@gmail.com
+- Contact email: nur.quran.help@gmail.com
 - Privacy policy URL: https://omar-essam-salah.github.io/Nur-Quran-Azkar/privacy-policy.html
 - Content rating: Everyone / 3+
