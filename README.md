@@ -24,6 +24,20 @@ tafsir) streams on demand and is then cached for offline reuse.
 
 Packaged as a single **~29 MB** Android APK that installs on any phone.
 
+## Screenshots
+
+<div align="center">
+
+| Home | Paper Mushaf + tafsir | Reader + recitation | Prayer times |
+|:-:|:-:|:-:|:-:|
+| ![Home](docs/screenshots/01-home.png) | ![Paper Mushaf with tafsir](docs/screenshots/02-mushaf-tafsir.png) | ![Reader with recitation](docs/screenshots/03-reader-recitation.png) | ![Prayer times](docs/screenshots/04-prayer-times.png) |
+
+| Azkar | Reciters | More features | Languages |
+|:-:|:-:|:-:|:-:|
+| ![Azkar](docs/screenshots/05-azkar.png) | ![Reciters](docs/screenshots/06-reciters.png) | ![More features](docs/screenshots/07-features.png) | ![Interface languages](docs/screenshots/08-languages.png) |
+
+</div>
+
 ## Features
 
 - **Qur'an reader** — word-by-word Arabic with tajweed colouring, many
